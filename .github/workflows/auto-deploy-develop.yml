@@ -1,0 +1,22 @@
+name: Deploy [develop] Mina Bridge
+run-name: ${{ github.actor }} is deploying develop branch [dev] 🌏 🚀 🛰️ 🌕
+on:
+  push:
+    branches:
+      - "develop"
+jobs:
+  DeployDevelop:
+    runs-on: [self-hosted, mina-bridge-dev]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16.15.0
+      - run: |
+          echo "${{ vars.MINA_BRIDGE_BE_DEV }}" >> .env
+          docker-compose -p mina-bridge-dev-env up -d
+          yarn
+          yarn prebuild
+          yarn build
+          yarn migration:run
+          npx pm2 reload ecosystem.config.js
