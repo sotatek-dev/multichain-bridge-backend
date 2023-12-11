@@ -4,3 +4,15 @@ export enum ENetworkName {
   ETH = 'eth',
   MINA = 'mina',
 }
+
+export enum EEventName {
+  LOCK = 'Lock',
+  UNLOCK = 'Unlock',
+}
+
+export enum EEventStatus {
+  WAITING = 'waiting',
+  PROCESSING = 'processing',
+  DONE = 'done',
+  FAILED = 'failed',
+}
