@@ -5,7 +5,7 @@ import { ETableName } from '@constants/entity.constant';
 
 import { BaseEntityIncludeTime } from '@core/base.entity';
 
-import { EEventStatus } from './../../../constants/blockchain.constant';
+import { EEventStatus } from '../../../constants/blockchain.constant';
 
 @Entity(ETableName.EVENT_LOGS)
 export class EventLog extends BaseEntityIncludeTime {
@@ -35,4 +35,9 @@ export class EventLog extends BaseEntityIncludeTime {
 
   @Column({ name: 'retry', type: 'int' })
   retry: number;
+
+  constructor(value: Partial<EventLog>) {
+    super();
+    Object.assign(this, value);
+  }
 }

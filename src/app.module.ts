@@ -24,6 +24,7 @@ const modules = [
   ConsoleModule,
   ...MODULES,
 ];
+
 @Module({
   imports: modules,
   providers: [],

@@ -15,4 +15,9 @@ export class CrawlContract extends BaseEntityIncludeTime {
 
   @Column({ name: 'network_name', type: 'varchar', enum: ENetworkName, nullable: false })
   networkName: ENetworkName;
+
+  constructor(value: Partial<CrawlContract>) {
+    super();
+    Object.assign(this, value);
+  }
 }
