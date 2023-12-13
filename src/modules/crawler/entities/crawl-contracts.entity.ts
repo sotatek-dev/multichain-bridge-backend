@@ -11,7 +11,7 @@ export class CrawlContract extends BaseEntityIncludeTime {
   contractAddress: string;
 
   @Column({ name: 'latest_block', type: 'bigint', nullable: false })
-  latestBlock: number;
+  latestBlock: string;
 
   @Column({ name: 'network_name', type: 'varchar', enum: ENetworkName, nullable: false })
   networkName: ENetworkName;
