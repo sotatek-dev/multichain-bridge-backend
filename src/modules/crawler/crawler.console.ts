@@ -85,7 +85,7 @@ export class CrawlerConsole {
           await sleep(5);
         }
       } catch (e) {
-        console.error(e);
+        console.error('[handleCrawlETHBridge]', e);
       }
     }
   }
