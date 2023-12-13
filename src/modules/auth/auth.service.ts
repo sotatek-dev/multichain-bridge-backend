@@ -24,8 +24,7 @@ export class AuthService {
     private configService: ConfigService,
     private readonly userRepository: UserRepository,
     private dataSource: DataSource,
-  ) {
-  }
+  ) {}
 
   async login(data: LoginDto) {
     const user = await this.userRepository.findOne({
