@@ -31,17 +31,24 @@ import redisConfig from './redis.config';
         [EEnvKey.JWT_REFRESH_TOKEN_EXPIRE]: Joi.string().required(),
         //crawler
         [EEnvKey.CRAWLER_NETWORK]: Joi.string().required(),
-        [EEnvKey.CRAWLER_START_BLOCK]: Joi.number().optional().allow(''),
-        [EEnvKey.RPC_OPTIONS]: Joi.string().required(),
+        [EEnvKey.ETH_BRIDGE_START_BLOCK]: Joi.number().optional().allow(''),
+        [EEnvKey.MINA_BRIDGE_START_BLOCK]: Joi.string().required(),
+        [EEnvKey.MINA_BRIDGE_RPC_OPTIONS]: Joi.string().required(),
+        [EEnvKey.ETH_BRIDGE_RPC_OPTIONS]: Joi.string().required(),
         [EEnvKey.SIGNER_PRIVATE_KEY]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
+        [EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
         // Mina Bridge
         [EEnvKey.ADMIN_ADDRESS]: Joi.string().required(),
       }).custom(value => {
-        value[EEnvKey.CRAWLER_START_BLOCK] = isNumber(value[EEnvKey.CRAWLER_START_BLOCK])
-          ? value[EEnvKey.CRAWLER_START_BLOCK]
+        value[EEnvKey.ETH_BRIDGE_START_BLOCK] = isNumber(value[EEnvKey.ETH_BRIDGE_START_BLOCK])
+          ? value[EEnvKey.ETH_BRIDGE_START_BLOCK]
           : Number.MAX_SAFE_INTEGER;
-        value[EEnvKey.RPC_OPTIONS] = value[EEnvKey.RPC_OPTIONS].split(',');
+        value[EEnvKey.MINA_BRIDGE_START_BLOCK] = isNumber(value[EEnvKey.MINA_BRIDGE_START_BLOCK])
+          ? value[EEnvKey.MINA_BRIDGE_START_BLOCK]
+          : Number.MAX_SAFE_INTEGER;
+        value[EEnvKey.MINA_BRIDGE_RPC_OPTIONS] = value[EEnvKey.MINA_BRIDGE_RPC_OPTIONS].split(',');
+        value[EEnvKey.ETH_BRIDGE_RPC_OPTIONS] = value[EEnvKey.ETH_BRIDGE_RPC_OPTIONS].split(',');
         value[EEnvKey.SIGNER_PRIVATE_KEY] = value[EEnvKey.SIGNER_PRIVATE_KEY].split(',');
 
         return value;
