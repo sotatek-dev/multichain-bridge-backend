@@ -2,29 +2,53 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Web3 from 'web3';
 
+import { ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
-import { COLLECTION_ADDRESS_INJECT, RPC_SERVICE_INJECT } from '@constants/service.constant';
+import {
+  ETH_BRIDGE_ADDRESS_INJECT,
+  ETH_BRIDGE_START_BLOCK_INJECT,
+  RPC_ETH_SERVICE_INJECT,
+  RPC_SERVICE_INJECT,
+} from '@constants/service.constant';
 
 import { sleep } from '@shared/utils/promise';
 
-import { CollectionContract, MinaBridgeContract } from './web3.service';
+import { ETHBridgeContract, MinaBridgeContract } from './web3.service';
 
 @Global()
 @Module({
   providers: [
     {
       provide: RPC_SERVICE_INJECT,
-      useFactory: async (configService: ConfigService) => RpcFactory(configService),
+      useFactory: async (configService: ConfigService) => await RpcFactory(configService),
       inject: [ConfigService],
     },
     {
-      provide: COLLECTION_ADDRESS_INJECT,
-      useValue: ""
+      provide: RPC_ETH_SERVICE_INJECT,
+      useFactory: async (configService: ConfigService) => await RpcFactory(configService, ENetworkName.ETH),
+      inject: [ConfigService],
+    },
+    {
+      provide: ETH_BRIDGE_ADDRESS_INJECT,
+      useFactory: (configService: ConfigService) => configService.get<string>(EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS),
+      inject: [ConfigService],
+    },
+    {
+      provide: ETH_BRIDGE_START_BLOCK_INJECT,
+      useFactory: (configService: ConfigService) => +configService.get<number>(EEnvKey.ETH_BRIDGE_START_BLOCK),
+      inject: [ConfigService],
     },
     MinaBridgeContract,
-    CollectionContract,
+    ETHBridgeContract,
   ],
-  exports: [RPC_SERVICE_INJECT, COLLECTION_ADDRESS_INJECT, MinaBridgeContract, CollectionContract],
+  exports: [
+    RPC_SERVICE_INJECT,
+    RPC_ETH_SERVICE_INJECT,
+    ETH_BRIDGE_ADDRESS_INJECT,
+    ETH_BRIDGE_START_BLOCK_INJECT,
+    MinaBridgeContract,
+    ETHBridgeContract,
+  ],
 })
 export class Web3Module {}
 
@@ -36,9 +60,12 @@ export interface IRpcService {
   getNonce: (walletAddress: string) => Promise<number>;
   handleSignerCallback: () => (callback: CallableFunction, tried?: number) => Promise<any>;
 }
-export const RpcFactory = async (configService: ConfigService): Promise<IRpcService> => {
+
+export const RpcFactory = async (configService: ConfigService, network?: ENetworkName): Promise<IRpcService> => {
   let rpcRound = 0;
-  const rpc = configService.get<string[]>(EEnvKey.RPC_OPTIONS);
+  const rpc = configService.get<string[]>(
+    network === ENetworkName.ETH ? EEnvKey.ETH_BRIDGE_RPC_OPTIONS : EEnvKey.MINA_BRIDGE_RPC_OPTIONS,
+  );
   const privateKeys = configService.get<string[]>(EEnvKey.SIGNER_PRIVATE_KEY);
   const keyStatus: Array<boolean> = privateKeys.map(() => false); // all signers is set to free by default.
 
