@@ -80,7 +80,7 @@ export class CrawlerConsole {
           await this.crawlContractRepository.save(currentCrawledBlock);
         } else {
           console.log(
-            `[handleCrawlETHBridge] currentCrawledBlock: ${currentCrawledBlock.latestBlock}, latestBlock: ${latestBlock}. Waiting for enough batch...`,
+            `[handleCrawlETHBridge] startBlockNumber: ${startBlockNumber}, latestBlockNumber: ${latestBlock}. Waiting for enough batch...`,
           );
           await sleep(5);
         }
