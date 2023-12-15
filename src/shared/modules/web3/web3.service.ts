@@ -1,27 +1,37 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TransactionReceipt } from 'web3-core';
-import { EventData } from 'web3-eth-contract';
-import { Contract } from 'web3-eth-contract';
+import { Contract, EventData } from 'web3-eth-contract';
 import { toBN, toHex } from 'web3-utils';
 
 import { EEnvKey } from '@constants/env.constant';
-import { COLLECTION_ADDRESS_INJECT, RPC_SERVICE_INJECT } from '@constants/service.constant';
+import {
+  ETH_BRIDGE_ADDRESS_INJECT,
+  ETH_BRIDGE_START_BLOCK_INJECT,
+  RPC_ETH_SERVICE_INJECT,
+  RPC_SERVICE_INJECT,
+} from '@constants/service.constant';
 
-import { addDecimal } from '@shared/utils/bignumber';
 import { sleep } from '@shared/utils/promise';
 
-import CollectionAbi from './abis/collection.json';
+import ETHBridgeAbi from './abis/eth-bridge-contract.json';
 import MinaBridgeAbi from './abis/mina-bridge.json';
-import { IRpcService, RpcFactory } from './web3.module';
+import { IRpcService } from './web3.module';
 
 export class DefaultContract {
   private contract: Contract;
-  private contractAddress: string;
-  private abi: any;
-  constructor(private rpcService: IRpcService, _abi: any, _contractAddress: any) {
+  private readonly contractAddress: string;
+  private readonly abi: any;
+  private readonly startBlock: number;
+  constructor(
+    private rpcService: IRpcService,
+    _abi: any,
+    _contractAddress: any,
+    _startBlock: number,
+  ) {
     this.abi = _abi;
     this.contractAddress = _contractAddress;
+    this.startBlock = _startBlock;
     this.initContract();
   }
 
@@ -30,6 +40,9 @@ export class DefaultContract {
   }
   public getContractAddress() {
     return this.contractAddress;
+  }
+  public getStartBlock() {
+    return this.startBlock;
   }
   public async getBlockNumber() {
     const safeBlock = parseInt(process.env.SAFE_BLOCK) || 0;
@@ -143,10 +156,19 @@ export class DefaultContract {
     }
   }
 }
+
 @Injectable()
 export class MinaBridgeContract extends DefaultContract {
-  constructor(@Inject(RPC_SERVICE_INJECT) rpcService, private configService: ConfigService) {
-    super(rpcService, MinaBridgeAbi, configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
+  constructor(
+    @Inject(RPC_SERVICE_INJECT) rpcService: IRpcService,
+    private configService: ConfigService,
+  ) {
+    super(
+      rpcService,
+      MinaBridgeAbi,
+      configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS),
+      configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS),
+    );
   }
   public async createGameCollection(name: string, symbol: string) {
     return this.write(
@@ -165,9 +187,13 @@ export class MinaBridgeContract extends DefaultContract {
 }
 
 @Injectable()
-export class CollectionContract extends DefaultContract {
-  constructor(@Inject(RPC_SERVICE_INJECT) rpcService, @Inject(COLLECTION_ADDRESS_INJECT) address) {
-    super(rpcService, CollectionAbi, address);
+export class ETHBridgeContract extends DefaultContract {
+  constructor(
+    @Inject(RPC_ETH_SERVICE_INJECT) rpcETHService: IRpcService,
+    @Inject(ETH_BRIDGE_ADDRESS_INJECT) address: string,
+    @Inject(ETH_BRIDGE_START_BLOCK_INJECT) startBlock: number,
+  ) {
+    super(rpcETHService, ETHBridgeAbi, address, startBlock);
   }
   public async getBaseURI() {
     return this.call('getBaseURI', []);
