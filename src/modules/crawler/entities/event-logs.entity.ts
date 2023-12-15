@@ -12,17 +12,47 @@ export class EventLog extends BaseEntityIncludeTime {
   @Column({ name: 'sender_address', type: 'varchar', nullable: false })
   senderAddress: string;
 
-  @Column({ name: 'tx_hash_lock', type: 'varchar', nullable: true })
+  @Column({ name: 'amount_from', type: 'varchar', nullable: false })
+  amountFrom: string;
+
+  @Column({ name: 'token_from_address', type: 'varchar', nullable: false })
+  tokenFromAddress: string;
+
+  @Column({ name: 'network_from', type: 'varchar', enum: ENetworkName, nullable: false })
+  networkFrom: ENetworkName;
+
+  @Column({ name: 'token_from_name', type: 'varchar', nullable: false })
+  tokenFromName: string;
+
+  @Column({ name: 'tx_hash_lock', type: 'varchar', nullable: false })
   txHashLock: string;
+
+  @Column({ name: 'receive_address', type: 'varchar', nullable: true })
+  receiveAddress: string;
+
+  @Column({ name: 'amount_received', type: 'varchar', nullable: true })
+  amountReceived: string;
+
+  @Column({ name: 'token_received_address', type: 'varchar', nullable: true })
+  tokenReceivedAddress: string;
+
+  @Column({ name: 'network_received', type: 'varchar', enum: ENetworkName, nullable: true })
+  networkReceived: ENetworkName;
+
+  @Column({ name: 'token_received_name', type: 'varchar', nullable: true })
+  tokenReceivedName: string;
 
   @Column({ name: 'tx_hash_unlock', type: 'varchar', nullable: true })
   txHashUnlock: string;
 
-  @Column({ name: 'network_name', type: 'varchar', enum: ENetworkName, nullable: false })
-  networkName: ENetworkName;
+  @Column({ name: 'block_number', type: 'bigint', nullable: true })
+  blockNumber: number;
 
-  @Column({ name: 'block_number', type: 'bigint', nullable: false })
-  blockNumber: string;
+  @Column({ name: 'block_time_lock', type: 'bigint', nullable: true })
+  blockTimeLock: number;
+
+  @Column({ name: 'protocol_fee', type: 'varchar', nullable: true })
+  protocolFee: string;
 
   @Column({ name: 'event', type: 'varchar', enum: EEventName, nullable: false })
   event: EEventName;
