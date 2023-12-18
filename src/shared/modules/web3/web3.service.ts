@@ -87,7 +87,7 @@ export class DefaultContract {
 
       const data = this.contract.methods[method](...param).encodeABI();
       const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-      const nonce = await this.rpcService.getNonce(signer.address);
+      const nonce = await this.rpcService.getNonce(signer.address);      
 
       // gas estimation
       const rawTx = {
@@ -104,7 +104,7 @@ export class DefaultContract {
         ...rawTx,
         gasLimit: toHex(toBN(gasLimit).add(toBN(10000))),
       } as any);
-
+      
       return {
         success: true,
         error: null,
@@ -203,6 +203,9 @@ export class ETHBridgeContract extends DefaultContract {
   }
   public async mintNFT(toAddress: string) {
     return this.write('mint', [toAddress]);
+  }
+  public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress) {
+    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock])
   }
   public async getTokenURI(tokenId: number) {
     return this.call('tokenURI', [tokenId]);

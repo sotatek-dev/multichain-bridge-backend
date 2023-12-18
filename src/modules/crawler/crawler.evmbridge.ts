@@ -7,7 +7,7 @@ import { EEnvKey } from '@constants/env.constant';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
 import { EventData } from 'web3-eth-contract';
-import { CrawlContract, EventLog } from '@modules/crawler/entities'  
+import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 @Injectable()
 export class BlockchainEVMCrawler {
@@ -35,11 +35,13 @@ export class BlockchainEVMCrawler {
                 event,
                 this.handlerLockEvent.bind(this),
               );
+              break;
             case 'Unlock':
               await this.handleEvent(
                 event,
                 this.handlerUnLockEvent.bind(this),
               );
+              break;
             default:
               continue;
           }

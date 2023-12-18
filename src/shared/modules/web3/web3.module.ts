@@ -64,7 +64,7 @@ export interface IRpcService {
 export const RpcFactory = async (configService: ConfigService, network?: ENetworkName): Promise<IRpcService> => {
   let rpcRound = 0;
   const rpc = configService.get<string[]>(
-    network === ENetworkName.ETH ? EEnvKey.ETH_BRIDGE_RPC_OPTIONS : EEnvKey.MINA_BRIDGE_RPC_OPTIONS,
+    network === ENetworkName.ETH ? EEnvKey.ETH_BRIDGE_RPC_OPTIONS : EEnvKey.ETH_BRIDGE_RPC_OPTIONS,
   );
   const privateKeys = configService.get<string[]>(EEnvKey.SIGNER_PRIVATE_KEY);
   const keyStatus: Array<boolean> = privateKeys.map(() => false); // all signers is set to free by default.

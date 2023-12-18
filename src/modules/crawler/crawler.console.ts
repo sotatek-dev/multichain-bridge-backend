@@ -1,12 +1,9 @@
 import { ConfigService } from '@nestjs/config';
-import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
-import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { Command, Console } from 'nestjs-console';
 
 import { EEnvKey } from '@constants/env.constant';
-
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';
+import { SenderEVMBridge } from './sender.evmbridge';
 import { sleep } from '@shared/utils/promise';
 
 @Console()
@@ -16,6 +13,7 @@ export class CrawlerConsole {
   constructor(
     private readonly configService: ConfigService,
     private blockchainEVMCrawler: BlockchainEVMCrawler,
+    private senderEVMBridge: SenderEVMBridge,
 
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
@@ -34,6 +32,21 @@ export class CrawlerConsole {
     } catch (error) {
       console.log(error);
       
+    }
+  }
+
+  @Command({
+    command: 'sender-eth-bridge-unlock',
+    description: 'sender ETH Bridge unlock',
+  })
+  async handleSenderETHBridgeUnlock() {
+    try {
+      while (true) {
+        this.senderEVMBridge.handleUnlockEVM();
+        await sleep(15);
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 }
