@@ -16,9 +16,9 @@ export class SenderEVMBridge {
   async handleUnlockEVM() {
     try {
       const dataLock = await this.eventLogRepository.getEventLockWithNetwork(ENetworkName.ETH);
-      const { tokenFromAddress, txHashLock, receiveAddress, amountFrom } = dataLock
+      const { tokenReceivedAddress, txHashLock, receiveAddress, amountFrom } = dataLock
 
-      const result = await this.ethBridgeContract.unlock(tokenFromAddress, BigNumber(amountFrom), txHashLock, receiveAddress)
+      const result = await this.ethBridgeContract.unlock(tokenReceivedAddress, BigNumber(amountFrom), txHashLock, receiveAddress)
 
       // Update status eventLog when call function unlock
       if (result.success) {

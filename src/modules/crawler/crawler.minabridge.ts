@@ -9,8 +9,11 @@ import { CrawlContractRepository } from 'database/repositories/crawl-contract.re
 import { EventData } from 'web3-eth-contract';
 import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
+import { Mina, PublicKey, SmartContract, UInt32, fetchAccount, PrivateKey } from 'o1js';
+import { TestEvent } from './add.js';
+
 @Injectable()
-export class BlockchainEVMCrawler {
+export class BlockchainMinaCrawler {
   private readonly numberOfBlockPerJob: number;
   constructor(
     private readonly configService: ConfigService,
@@ -23,60 +26,89 @@ export class BlockchainEVMCrawler {
 
   }
   // private logger = this.loggerService.getLogger('CrawlContractEVMBridge');
-
   public async handleEventCrawlBlock() {
+    try {
+        // const {startBlockNumber, toBlock} = await this.getFromToBlock();
+        // const events = await this.ethBridgeContract.getEvent(startBlockNumber, toBlock);
+        // console.log({events});
+
+      const Network = Mina.Network({
+      mina: 'https://api.minascan.io/node/berkeley/v1/graphql',
+      archive: 'https://api.minascan.io/archive/berkeley/v1/graphql/',
+      });
+      Mina.setActiveInstance(Network);
+      let zkappAddress = PublicKey.fromBase58(
+        'B62qm7xwx5pp9kgtPSsAQrm99fBUzwcPoG6EWWqG7b8mnZ8UoKgevjd'
+      );
+      const zkapp = new TestEvent(zkappAddress);
+      const events = await zkapp.fetchEvents(UInt32.from(0));
+
+      for (const event of events) {
+        switch (event.type) {
+          case 'ChangeState':
+            await this.handleEvent(
+              JSON.stringify(event.event),
+              this.handlerLockEvent.bind(this),
+            );
+            break;
+          // case 'Unlock':
+          //   await this.handleEvent(
+          //     event,
+          //     this.handlerUnLockEvent.bind(this),
+          //   );
+          //   break;
+          default:
+            continue;
+        }
+      }
+      // console.log(
+      //   `[handleCrawlETHBridge] Crawled from============================= ${startBlockNumber} to ${toBlock}`,
+      // );
+      // await this.handleEvent(toBlock, this.updateLatestBlockCrawl.bind(this))
+        
+    } catch (error) {
+      throw error;
+    } finally {
+    }
+  }
+
+  private async handleEvent(event, callback: CallableFunction) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-        const {startBlockNumber, toBlock} = await this.getFromToBlock();
-        const events = await this.ethBridgeContract.getEvent(startBlockNumber, toBlock);
-        for (const event of events) {
-          switch (event.event) {
-            case 'Lock':
-              await this.handlerLockEvent(event, queryRunner);
-              break;
-            case 'Unlock':
-              await this.handlerUnLockEvent(event, queryRunner)
-              break;
-            default:
-              continue;
-          }
-        }
-        console.log(
-          `[handleCrawlETHBridge] Crawled from ${startBlockNumber} to ${toBlock}`,
-        );
-        await this.updateLatestBlockCrawl(toBlock, queryRunner)
-        return await queryRunner.commitTransaction();
-      } catch (error) {
-        await queryRunner.rollbackTransaction();
-        throw error;
-      } finally {
-        await queryRunner.release();
+      await callback(event, queryRunner);
+      return await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      // this.logger.error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
   private async handlerLockEvent(
-    event: EventData,
+    event,
     queryRunner: QueryRunner,
   ) {
-
+    const objectEvent = JSON.parse(event);
+    
     const eventUnlock = {
-      senderAddress: event.returnValues.locker,
-      amountFrom: event.returnValues.amount,
-      tokenFromAddress: event.returnValues.token,
-      networkFrom: ENetworkName.ETH,
-      networkReceived: ENetworkName.MINA,
-      tokenFromName: event.returnValues.tokenName,
-      tokenReceivedAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
-      txHashLock: event.transactionHash,
-      receiveAddress: event.returnValues.receipt,
+      senderAddress: "event.returnValues.receiver",
+      amountFrom: objectEvent.data.amount1,
+      tokenFromAddress: "event.returnValues.token",
+      networkFrom: ENetworkName.MINA,
+      networkReceived: ENetworkName.ETH,
+      tokenFromName: 'ETH',
+      txHashLock: objectEvent.transactionInfo.transactionHash,
+      receiveAddress: "event.returnValues.receiver",
       blockNumber: event.blockNumber,
       event: EEventName.LOCK,
-      returnValues: JSON.stringify(event.returnValues),
+      returnValues: event,
       status: EEventStatus.WAITING,
       retry: 0,
     }
+
     await queryRunner.manager.save(EventLog, eventUnlock);
   }
 
@@ -94,7 +126,7 @@ export class BlockchainEVMCrawler {
       txHashUnlock: event.transactionHash,
       amountReceived: event.returnValues.amount,
       tokenReceivedAddress: event.returnValues.token,
-      protocolFee: event.returnValues.fee,
+      networkReceived: ENetworkName.MINA,
       tokenReceivedName: "ETH",
     });
   }
@@ -112,7 +144,8 @@ export class BlockchainEVMCrawler {
   private async getFromToBlock(): Promise<{startBlockNumber, toBlock}> {
 
     let startBlockNumber = this.ethBridgeContract.getStartBlock();
-    let toBlock = await this.ethBridgeContract.getBlockNumber();
+    const latestBlock = await this.ethBridgeContract.getBlockNumber();
+    let toBlock;
 
     let currentCrawledBlock = await this.crawlContractRepository.findOne({
       where: { networkName: ENetworkName.ETH },
@@ -128,7 +161,7 @@ export class BlockchainEVMCrawler {
       startBlockNumber = currentCrawledBlock.latestBlock;
     }
   
-    if (toBlock >= Number(startBlockNumber) + Number(this.numberOfBlockPerJob)) {
+    if (latestBlock >= Number(startBlockNumber) + Number(this.numberOfBlockPerJob)) {
       toBlock = Number(startBlockNumber) + this.numberOfBlockPerJob;
     }
 

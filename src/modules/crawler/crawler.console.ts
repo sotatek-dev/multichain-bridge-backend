@@ -4,6 +4,7 @@ import { Command, Console } from 'nestjs-console';
 import { EEnvKey } from '@constants/env.constant';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';
 import { SenderEVMBridge } from './sender.evmbridge';
+import { BlockchainMinaCrawler } from './crawler.minabridge';
 import { sleep } from '@shared/utils/promise';
 
 @Console()
@@ -13,6 +14,7 @@ export class CrawlerConsole {
   constructor(
     private readonly configService: ConfigService,
     private blockchainEVMCrawler: BlockchainEVMCrawler,
+    private blockchainMinaCrawler: BlockchainMinaCrawler,
     private senderEVMBridge: SenderEVMBridge,
 
   ) {
@@ -20,7 +22,7 @@ export class CrawlerConsole {
   }
 
   @Command({
-    command: 'crawl-eth-bridge',
+    command: 'crawl-eth-bridge-contract',
     description: 'Crawl ETH Bridge contract',
   })
   async handleCrawlETHBridge() {
@@ -43,6 +45,21 @@ export class CrawlerConsole {
     try {
       while (true) {
         this.senderEVMBridge.handleUnlockEVM();
+        await sleep(15);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  @Command({
+    command: 'crawl-mina-bridge-contract',
+    description: 'crawl Mina Bridge Contract',
+  })
+  async handleCrawlMinaBridge() {
+    try {
+      while (true) {
+        this.blockchainMinaCrawler.handleEventCrawlBlock();
         await sleep(15);
       }
     } catch (error) {

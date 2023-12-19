@@ -38,6 +38,8 @@ import redisConfig from './redis.config';
         [EEnvKey.SIGNER_PRIVATE_KEY]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
+        [EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
+        [EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
         // Mina Bridge
         [EEnvKey.ADMIN_ADDRESS]: Joi.string().required(),
       }).custom(value => {

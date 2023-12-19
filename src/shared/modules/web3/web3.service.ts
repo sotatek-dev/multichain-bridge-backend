@@ -75,6 +75,9 @@ export class DefaultContract {
   public call(method: string, param: Array<any>) {
     return this.wrapper(() => this.contract.methods[method](...param).call(), true);
   }
+  public async estimateGas() {
+    return await this.rpcService.web3.eth.getGasPrice();
+  }
   public async write(
     method: string,
     param: Array<any>,
@@ -104,7 +107,7 @@ export class DefaultContract {
         ...rawTx,
         gasLimit: toHex(toBN(gasLimit).add(toBN(10000))),
       } as any);
-      
+
       return {
         success: true,
         error: null,
@@ -205,7 +208,8 @@ export class ETHBridgeContract extends DefaultContract {
     return this.write('mint', [toAddress]);
   }
   public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress) {
-    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock])
+    const gasPrice = await this.estimateGas()
+    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(gasPrice)])
   }
   public async getTokenURI(tokenId: number) {
     return this.call('tokenURI', [tokenId]);
