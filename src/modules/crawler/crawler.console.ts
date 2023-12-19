@@ -4,6 +4,7 @@ import { Command, Console } from 'nestjs-console';
 import { EEnvKey } from '@constants/env.constant';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';
 import { SenderEVMBridge } from './sender.evmbridge';
+import { SenderMinaBridge } from './sender.minabridge';
 import { BlockchainMinaCrawler } from './crawler.minabridge';
 import { sleep } from '@shared/utils/promise';
 
@@ -16,6 +17,7 @@ export class CrawlerConsole {
     private blockchainEVMCrawler: BlockchainEVMCrawler,
     private blockchainMinaCrawler: BlockchainMinaCrawler,
     private senderEVMBridge: SenderEVMBridge,
+    private senderMinaBridge: SenderMinaBridge,
 
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
@@ -60,6 +62,21 @@ export class CrawlerConsole {
     try {
       while (true) {
         this.blockchainMinaCrawler.handleEventCrawlBlock();
+        await sleep(15);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  @Command({
+    command: 'sender-mina-bridge-unlock',
+    description: 'sender Mina Bridge unlock',
+  })
+  async handleSenderMinaBridgeUnlock() {
+    try {
+      while (true) {
+        this.senderMinaBridge.handleUnlockMina();
         await sleep(15);
       }
     } catch (error) {

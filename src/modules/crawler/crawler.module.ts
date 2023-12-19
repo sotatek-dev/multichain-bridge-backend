@@ -8,10 +8,11 @@ import { CrawlerService } from './crawler.service';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';
 import { BlockchainMinaCrawler } from './crawler.minabridge';
 import { SenderEVMBridge } from './sender.evmbridge';
+import { SenderMinaBridge } from './sender.minabridge'
 
 @Module({
   imports: [CustomRepositoryModule.forFeature([CrawlContractRepository, EventLogRepository])],
-  providers: [CrawlerConsole, CrawlerService, BlockchainEVMCrawler, SenderEVMBridge, BlockchainMinaCrawler],
+  providers: [CrawlerConsole, CrawlerService, BlockchainEVMCrawler, SenderEVMBridge, BlockchainMinaCrawler, SenderMinaBridge],
   exports: [CrawlerService],
 })
 export class CrawlerModule {}

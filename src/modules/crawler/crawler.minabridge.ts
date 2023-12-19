@@ -41,7 +41,7 @@ export class BlockchainMinaCrawler {
         'B62qm7xwx5pp9kgtPSsAQrm99fBUzwcPoG6EWWqG7b8mnZ8UoKgevjd'
       );
       const zkapp = new TestEvent(zkappAddress);
-      const events = await zkapp.fetchEvents(UInt32.from(startBlockNumber + 1));
+      const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
       for (const event of events) {
         switch (event.type) {
           case 'ChangeState':
