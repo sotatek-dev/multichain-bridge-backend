@@ -8,7 +8,7 @@ import { ETH_BRIDGE_ADDRESS_INJECT, RPC_ETH_SERVICE_INJECT, RPC_SERVICE_INJECT }
 import { GuardPublic } from '@guards/guard.decorator';
 
 import { IRpcService } from '@shared/modules/web3/web3.module';
-import { ETHBridgeContract, MinaBridgeContract } from '@shared/modules/web3/web3.service';
+import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 
 import { AuthService } from './auth.service';
 import { LoginDto, RefreshTokenRequestDto, SignupDto } from './dto/auth-request.dto';
@@ -22,7 +22,7 @@ export class AuthController {
     @Inject(ETH_BRIDGE_ADDRESS_INJECT) private ethBridgeContractAddress: string,
     @Inject(RPC_SERVICE_INJECT) private rpcService: IRpcService,
     @Inject(RPC_ETH_SERVICE_INJECT) private rpcETHService: IRpcService,
-    private minaBridgeContract: MinaBridgeContract,
+    // private minaBridgeContract: MinaBridgeContract,
     private authService: AuthService,
     private readonly configService: ConfigService,
   ) {
@@ -54,21 +54,21 @@ export class AuthController {
   }
 
   //example web3 interact
-  @Get('web3-interact')
-  @GuardPublic()
-  async web3Interact() {
-    const testGenerateCollectionAddress = await this.minaBridgeContract.generateCollectionAddress('TUAN1', 'TUAN1');
-    this.setETHBridgeAddress(this.configService.get(EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS));
-    const ethBridgeContract = new ETHBridgeContract(
-      this.rpcETHService,
-      this.ethBridgeContractAddress,
-      this.ethBridgeStartBlock,
-    );
-    const getContractAddress = ethBridgeContract.getContractAddress();
-    // const mintNftResult = await collectionContract.mintNFT("0xa3de5504750dcadeCC49331E6D2730978397407B");//insert address
-    const nftBaseUri = await ethBridgeContract.getBaseURI();
-    const latestIndex = await ethBridgeContract.latestIndex();
-    const nftToken = await ethBridgeContract.getTokenURI(latestIndex);
-    return { testGenerateCollectionAddress, latestIndex, nftToken, nftBaseUri, getContractAddress };
-  }
+  // @Get('web3-interact')
+  // @GuardPublic()
+  // async web3Interact() {
+  //   const testGenerateCollectionAddress = await this.minaBridgeContract.generateCollectionAddress('TUAN1', 'TUAN1');
+  //   this.setETHBridgeAddress(this.configService.get(EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS));
+  //   const ethBridgeContract = new ETHBridgeContract(
+  //     this.rpcETHService,
+  //     this.ethBridgeContractAddress,
+  //     this.ethBridgeStartBlock,
+  //   );
+  //   const getContractAddress = ethBridgeContract.getContractAddress();
+  //   // const mintNftResult = await collectionContract.mintNFT("0xa3de5504750dcadeCC49331E6D2730978397407B");//insert address
+  //   const nftBaseUri = await ethBridgeContract.getBaseURI();
+  //   const latestIndex = await ethBridgeContract.latestIndex();
+  //   const nftToken = await ethBridgeContract.getTokenURI(latestIndex);
+  //   return { testGenerateCollectionAddress, latestIndex, nftToken, nftBaseUri, getContractAddress };
+  // }
 }

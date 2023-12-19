@@ -161,35 +161,6 @@ export class DefaultContract {
 }
 
 @Injectable()
-export class MinaBridgeContract extends DefaultContract {
-  constructor(
-    @Inject(RPC_SERVICE_INJECT) rpcService: IRpcService,
-    private configService: ConfigService,
-  ) {
-    super(
-      rpcService,
-      MinaBridgeAbi,
-      configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS),
-      configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS),
-    );
-  }
-  public async createGameCollection(name: string, symbol: string) {
-    return this.write(
-      'createGameCollection',
-      [name, symbol, '0xa3de5504750dcadeCC49331E6D2730978397407B'], //hard-fix the address
-    );
-  }
-  // use this to get the address before creating the collection
-  public async generateCollectionAddress(_name: string, _symbol: string) {
-    return this.call('getAddress', [_name, _symbol]);
-  }
-  // use this to get created collection
-  public async getCollection(name: string, symbol: string) {
-    return this.call('getCollection', [name, symbol]);
-  }
-}
-
-@Injectable()
 export class ETHBridgeContract extends DefaultContract {
   constructor(
     @Inject(RPC_ETH_SERVICE_INJECT) rpcETHService: IRpcService,

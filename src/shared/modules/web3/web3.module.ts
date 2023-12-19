@@ -13,7 +13,7 @@ import {
 
 import { sleep } from '@shared/utils/promise';
 
-import { ETHBridgeContract, MinaBridgeContract } from './web3.service';
+import { ETHBridgeContract } from './web3.service';
 
 @Global()
 @Module({
@@ -38,7 +38,6 @@ import { ETHBridgeContract, MinaBridgeContract } from './web3.service';
       useFactory: (configService: ConfigService) => +configService.get<number>(EEnvKey.ETH_BRIDGE_START_BLOCK),
       inject: [ConfigService],
     },
-    MinaBridgeContract,
     ETHBridgeContract,
   ],
   exports: [
@@ -46,7 +45,6 @@ import { ETHBridgeContract, MinaBridgeContract } from './web3.service';
     RPC_ETH_SERVICE_INJECT,
     ETH_BRIDGE_ADDRESS_INJECT,
     ETH_BRIDGE_START_BLOCK_INJECT,
-    MinaBridgeContract,
     ETHBridgeContract,
   ],
 })

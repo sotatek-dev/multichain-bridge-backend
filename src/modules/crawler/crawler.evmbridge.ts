@@ -102,10 +102,10 @@ export class BlockchainEVMCrawler {
   private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
     await queryRunner.manager.update(CrawlContract, 
       {
-      contractAddress: "0x00bA9C6204C791543B95a29cA1f0DDE68e228224",
-      networkName: 'eth'
+        contractAddress: this.configService.get(EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS),
+        networkName: ENetworkName.ETH
       }, {
-      latestBlock: blockNumber
+        latestBlock: blockNumber
       })
   }
 

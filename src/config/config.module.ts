@@ -46,9 +46,7 @@ import redisConfig from './redis.config';
         value[EEnvKey.ETH_BRIDGE_START_BLOCK] = isNumber(value[EEnvKey.ETH_BRIDGE_START_BLOCK])
           ? value[EEnvKey.ETH_BRIDGE_START_BLOCK]
           : Number.MAX_SAFE_INTEGER;
-        value[EEnvKey.MINA_BRIDGE_START_BLOCK] = isNumber(value[EEnvKey.MINA_BRIDGE_START_BLOCK])
-          ? value[EEnvKey.MINA_BRIDGE_START_BLOCK]
-          : Number.MAX_SAFE_INTEGER;
+        value[EEnvKey.MINA_BRIDGE_START_BLOCK] = value[EEnvKey.MINA_BRIDGE_START_BLOCK];
         value[EEnvKey.MINA_BRIDGE_RPC_OPTIONS] = value[EEnvKey.MINA_BRIDGE_RPC_OPTIONS].split(',');
         value[EEnvKey.ETH_BRIDGE_RPC_OPTIONS] = value[EEnvKey.ETH_BRIDGE_RPC_OPTIONS].split(',');
         value[EEnvKey.SIGNER_PRIVATE_KEY] = value[EEnvKey.SIGNER_PRIVATE_KEY].split(',');
