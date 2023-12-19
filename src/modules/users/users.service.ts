@@ -6,9 +6,7 @@ import { DataSource, In, Not } from 'typeorm';
 import { EError } from '@constants/error.constant';
 
 import { httpBadRequest, httpForbidden, httpNotFound } from '@shared/exceptions/http-exeption';
-
-import { CreateUserDto, UpdateProfileBodyDto } from './dto/user-request.dto';
-import { User } from './entities/user.entity';
+import { EventLogRepository } from 'database/repositories/event-log.repository';
 
 @Injectable()
 export class UsersService {
@@ -16,6 +14,7 @@ export class UsersService {
     private readonly usersRepository: UserRepository,
     private dataSource: DataSource,
     private configService: ConfigService,
+    private readonly eventLogRepository: EventLogRepository,
   ) {}
   async getProfile(userId: number) {
     const user = await this.usersRepository.findOne({
@@ -25,5 +24,14 @@ export class UsersService {
     if (!user) httpBadRequest(EError.USER_NOT_FOUND);
 
     return user;
+  }
+
+  async getHistoriesOfUser(address: string, options ) {
+    try {
+      const [data, count] = await this.eventLogRepository.getHistoriesOfUser(address, options)
+      return data.toPageDto(options, count);
+    } catch (error) {
+      
+    }
   }
 }

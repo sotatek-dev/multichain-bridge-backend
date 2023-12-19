@@ -32,4 +32,12 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     .where(`${this.alias}.id = :id`, { id })
     .execute()
   }
+
+  public async getHistoriesOfUser(address: string, options) {
+    const queryBuilder = this.createQb();
+    queryBuilder
+    .where(`${this.alias}.sender_address = :address`, { address})
+    this.queryBuilderAddPagination(queryBuilder, options);
+    return queryBuilder.getManyAndCount();
+  }
 }
