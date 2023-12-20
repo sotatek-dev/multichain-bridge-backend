@@ -11,7 +11,7 @@ import { IRpcService } from '@shared/modules/web3/web3.module';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 
 import { AuthService } from './auth.service';
-import { LoginDto, RefreshTokenRequestDto, SignupDto } from './dto/auth-request.dto';
+import { LoginDto, LoginMinaDto, RefreshTokenRequestDto, SignupDto } from './dto/auth-request.dto';
 import { LoginResponseDto, RefreshTokenResponseDto } from './dto/auth-response.dto';
 
 @ApiTags('Auth')
@@ -35,8 +35,15 @@ export class AuthController {
   @Post('/login-admin-evm')
   @GuardPublic()
   @ApiOkResponse({ type: LoginResponseDto })
-  loginAdmin(@Body() body: LoginDto) {
+  loginAdminEVM(@Body() body: LoginDto) {
       return this.authService.login(body);
+  }
+
+  @Post('/login-admin-mina')
+  @GuardPublic()
+  @ApiOkResponse({ type: LoginResponseDto })
+  loginAdminMina(@Body() body: LoginMinaDto) {
+      return this.authService.loginMina(body);
   }
 
   // @Post('register')

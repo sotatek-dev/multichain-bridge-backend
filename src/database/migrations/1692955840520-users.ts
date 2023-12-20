@@ -13,12 +13,12 @@ export class Users1692955840520 implements MigrationInterface {
             isGenerated: true,
           },
           {
-            name: 'email',
+            name: 'wallet_address',
             type: 'varchar',
             length: '255',
           },
           {
-            name: 'password',
+            name: 'name',
             type: 'varchar',
             length: '255',
             isNullable: true,

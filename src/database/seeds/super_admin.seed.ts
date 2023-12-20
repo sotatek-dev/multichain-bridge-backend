@@ -8,11 +8,11 @@ export default class SuperAdminSeeder implements Seeder {
   public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {
     dotenv.config();
     const repository = dataSource.getRepository(User);
-    // await repository.insert(
-    //   new User({
-    //     email: process.env.SUPER_ADMIN_EMAIL,
-    //     password: '$2b$14$iXtmv2E0ujE9NabdtG1SkeS.JnsmKV5SDmnIxk2iupJEVB8l5Sr3a', //Abc@123
-    //   }),
-    // );
+    await repository.insert(
+      new User({
+        walletAddress: '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0',
+        name: 'admin 1',
+      }),
+    );
   }
 }

@@ -10,13 +10,12 @@ import { EError } from '@constants/error.constant';
 import { User } from '@modules/users/entities/user.entity';
 
 import { toChecksumAddress } from 'web3-utils';
+import Client from 'mina-signer';
 
-import { httpBadRequest, httpInternalServerErrorException, httpNotFound } from '@shared/exceptions/http-exeption';
-import { isPhoneNumberValid } from '@shared/utils/check-object';
+import { httpBadRequest, httpNotFound } from '@shared/exceptions/http-exeption';
 import { generateHash, validateHash } from '@shared/utils/hash-string';
-import { decode } from '@shared/utils/util';
 
-import { LoginDto, SignupDto } from './dto/auth-request.dto';
+import { LoginDto, LoginMinaDto, SignupDto } from './dto/auth-request.dto';
 import { IJwtPayload, IUpdateEmail } from './interfaces/auth.interface';
 import Web3 from 'web3';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
@@ -36,7 +35,20 @@ export class AuthService {
     try {
       // Validate signature and check for address in database
       if (!this.validateSignature(data.address, data.signature)) throw new Error('Invalid signature');
-      const admin = await this.validateAdminAccount(data.address);
+      const admin = await this.validateAdminAccount(data.address, true);
+
+      // Generate access and refresh token
+      return this.getToken(admin);
+    } catch (err) {
+        console.log('[err] auth.service.ts: ---', err);
+        throw new httpBadRequest(EError.USER_NOT_FOUND);
+    }
+  }
+
+  async loginMina(data: LoginMinaDto) {
+    try {
+      if(! await this.validateSignatureMina(data.address, data.signature)) throw new httpBadRequest(EError.INVALID_SIGNATURE);
+      const admin = await this.validateAdminAccount(data.address, false);
 
       // Generate access and refresh token
       return this.getToken(admin);
@@ -69,10 +81,23 @@ export class AuthService {
     const checksumAddress = toChecksumAddress(address);
 
     return checksumRecover === checksumAddress;
-}
+  }
 
-  private async validateAdminAccount(address: string) {
-    address = toChecksumAddress(address);
+  private async validateSignatureMina(address: string, signature) {
+    const client = new Client({ network: 'mainnet' });
+    const signer = {
+      signature,
+      publicKey: address,
+      data: this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN)
+    }
+    return client.verifyMessage(signer)
+
+  }
+
+  private async validateAdminAccount(address: string, is_evm: boolean) {
+    if(is_evm) {
+      address = toChecksumAddress(address);
+    }
     const admin = await this.userRepository.findOneBy({ walletAddress: address });
 
     if (!admin) httpBadRequest(EError.USER_NOT_FOUND);
@@ -100,14 +125,14 @@ export class AuthService {
     return this.getToken(user);
   }
 
-  async register(data: SignupDto) {
-    const { email, password } = data;
-    const hashedPassword = await generateHash(password);
-    const newUserData = {
-      email,
-      password: hashedPassword,
-    };
-    const newUser = await this.userRepository.save(newUserData);
-    return this.getToken(newUser);
-  }
+  // async register(data: SignupDto) {
+  //   const { email, password } = data;
+  //   const hashedPassword = await generateHash(password);
+  //   const newUserData = {
+  //     email,
+  //     password: hashedPassword,
+  //   };
+  //   const newUser = await this.userRepository.save(newUserData);
+  //   return this.getToken(newUser);
+  // }
 }

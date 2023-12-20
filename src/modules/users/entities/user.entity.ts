@@ -12,7 +12,7 @@ export class User extends BaseEntityIncludeTime implements IUserInterface {
   walletAddress: string;
 
   @Column({ type: 'varchar', length: '255', nullable: true })
-  password: string;
+  name: string;
 
   constructor(value: Partial<User>) {
     super();
