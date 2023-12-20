@@ -43,15 +43,13 @@ export class EventLogRepository extends BaseRepository<EventLog> {
 
   public async getHistories(options) {
     const queryBuilder = this.createQb();
+    queryBuilder
+    .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.PROCESSING, EEventStatus.FAILED] })
     if(options.address) {
       queryBuilder
       .andWhere(`${this.alias}.sender_address = :address`, { address: options.address})
     }
 
-    if(options.status) {
-      queryBuilder
-      .andWhere(`${this.alias}.status = :status`, { status: options.status})
-    }
     this.queryBuilderAddPagination(queryBuilder, options);
     return queryBuilder.getManyAndCount();
   }

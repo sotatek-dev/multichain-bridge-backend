@@ -61,13 +61,4 @@ export class getHistoryDto extends BasePaginationRequestDto {
   @IsString()
   @Expose()
   address: string;
-
-  @ApiProperty({ 
-    required: false,
-    enum: EEventStatus,
-
-  })
-  @IsOptional()
-  @Expose()
-  status: EEventStatus;
 }
