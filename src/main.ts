@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { EEnvKey } from './constants/env.constant';
 import './core/paginate-typeorm';
 import { initSwagger } from './swagger';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,6 +13,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix(configService.get<string>(EEnvKey.GLOBAL_PREFIX) || 'api');
   app.enableCors();
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
   // Swagger
   if (configService.get(EEnvKey.SWAGGER_PATH)) {
     initSwagger(app, configService.get(EEnvKey.SWAGGER_PATH));
