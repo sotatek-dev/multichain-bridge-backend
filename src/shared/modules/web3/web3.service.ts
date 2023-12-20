@@ -164,6 +164,10 @@ export class DefaultContract {
       return { success: false, error, data: null };
     }
   }
+
+  public async getBlockTimeByBlockNumber(blockNumber: number) {
+    return this.rpcService.web3.eth.getBlock(blockNumber);
+  }
 }
 
 @Injectable()

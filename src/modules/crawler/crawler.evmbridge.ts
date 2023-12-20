@@ -60,7 +60,7 @@ export class BlockchainEVMCrawler {
     event: EventData,
     queryRunner: QueryRunner,
   ) {
-
+    const blockTimeOfBlockNumber = await this.ethBridgeContract.getBlockTimeByBlockNumber(event.blockNumber)    
     const eventUnlock = {
       senderAddress: event.returnValues.locker,
       amountFrom: event.returnValues.amount,
@@ -72,11 +72,13 @@ export class BlockchainEVMCrawler {
       txHashLock: event.transactionHash,
       receiveAddress: event.returnValues.receipt,
       blockNumber: event.blockNumber,
+      blockTimeLock: Number(blockTimeOfBlockNumber.timestamp),
       event: EEventName.LOCK,
       returnValues: JSON.stringify(event.returnValues),
       status: EEventStatus.WAITING,
       retry: 0,
     }
+
     await queryRunner.manager.save(EventLog, eventUnlock);
   }
 
