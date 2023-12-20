@@ -34,4 +34,13 @@ export class UsersService {
       
     }
   }
+
+  async getHistories(options ) {
+    try {
+      const [data, count] = await this.eventLogRepository.getHistories(options)
+      return data.toPageDto(options, count);
+    } catch (error) {
+      
+    }
+  }
 }

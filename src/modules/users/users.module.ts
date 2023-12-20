@@ -5,10 +5,11 @@ import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { AdminController } from './admin.controller';
 
 @Module({
   imports: [CustomRepositoryModule.forFeature([UserRepository, EventLogRepository])],
-  controllers: [UsersController],
+  controllers: [UsersController, AdminController],
   providers: [UsersService],
   exports: [UsersService],
 })

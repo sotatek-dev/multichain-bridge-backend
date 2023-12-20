@@ -32,19 +32,26 @@ export class AuthController {
     this.ethBridgeContractAddress = newValue;
   }
 
-  @Post('register')
+  @Post('/login-admin-evm')
   @GuardPublic()
   @ApiOkResponse({ type: LoginResponseDto })
-  register(@Body() body: SignupDto) {
-    return this.authService.register(body);
+  loginAdmin(@Body() body: LoginDto) {
+      return this.authService.login(body);
   }
 
-  @Post('login')
-  @GuardPublic()
-  @ApiOkResponse({ type: LoginResponseDto })
-  login(@Body() body: LoginDto) {
-    return this.authService.login(body);
-  }
+  // @Post('register')
+  // @GuardPublic()
+  // @ApiOkResponse({ type: LoginResponseDto })
+  // register(@Body() body: SignupDto) {
+  //   return this.authService.register(body);
+  // }
+
+  // @Post('login')
+  // @GuardPublic()
+  // @ApiOkResponse({ type: LoginResponseDto })
+  // login(@Body() body: LoginDto) {
+  //   return this.authService.login(body);
+  // }
 
   @Post('refresh-token')
   @GuardPublic()

@@ -18,17 +18,15 @@ export class SignupDto {
 }
 
 export class LoginDto {
-  @ApiProperty({ example: 'John' })
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @Expose()
-  email: string;
+  address: string;
 
-  @ApiProperty({ example: 'Abc@123' })
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  @Expose()
-  password: string;
+  signature: string;
 }
 
 export class RefreshTokenRequestDto {

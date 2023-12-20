@@ -8,8 +8,8 @@ import { IUserInterface } from '../interfaces/user.interface';
 
 @Entity(ETableName.USERS)
 export class User extends BaseEntityIncludeTime implements IUserInterface {
-  @Column({ name: 'email', type: 'varchar', length: '255', nullable: true })
-  email: string;
+  @Column({ name: 'wallet_address', type: 'varchar', length: '255', nullable: true })
+  walletAddress: string;
 
   @Column({ type: 'varchar', length: '255', nullable: true })
   password: string;

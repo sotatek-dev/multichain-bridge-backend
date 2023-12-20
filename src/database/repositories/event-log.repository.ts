@@ -40,4 +40,19 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     this.queryBuilderAddPagination(queryBuilder, options);
     return queryBuilder.getManyAndCount();
   }
+
+  public async getHistories(options) {
+    const queryBuilder = this.createQb();
+    if(options.address) {
+      queryBuilder
+      .andWhere(`${this.alias}.sender_address = :address`, { address: options.address})
+    }
+
+    if(options.status) {
+      queryBuilder
+      .andWhere(`${this.alias}.status = :status`, { status: options.status})
+    }
+    this.queryBuilderAddPagination(queryBuilder, options);
+    return queryBuilder.getManyAndCount();
+  }
 }

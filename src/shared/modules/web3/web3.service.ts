@@ -50,6 +50,12 @@ export class DefaultContract {
 
     return blockNumber - safeBlock;
   }
+
+  public async recover(signature, message) {
+    const recover = this.rpcService.web3.eth.accounts.recover(message,signature);
+    return recover
+  }
+
   public async getEvent(fromBlock: number, toBlock: number): Promise<EventData[]> {
     return this.wrapper(() =>
       this.contract.getPastEvents('allEvents', {

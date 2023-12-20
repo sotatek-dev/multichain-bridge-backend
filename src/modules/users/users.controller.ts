@@ -19,13 +19,13 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
-  @Get('profile')
-  @AuthUserGuard()
-  @ApiBearerAuth('Authorization')
-  @ApiOkResponse({ type: GetProfileResponseDto })
-  getProfile(@AuthUser() user: IJwtPayload) {
-    return this.userService.getProfile(user.userId);
-  }
+  // @Get('profile')
+  // @AuthUserGuard()
+  // @ApiBearerAuth('Authorization')
+  // @ApiOkResponse({ type: GetProfileResponseDto })
+  // getProfile(@AuthUser() user: IJwtPayload) {
+  //   return this.userService.getProfile(user.userId);
+  // }
 
   @Get('history/:address')
   @GuardPublic()

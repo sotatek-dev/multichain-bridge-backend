@@ -9,6 +9,8 @@ import { EError } from '@constants/error.constant';
 
 import { User } from '@modules/users/entities/user.entity';
 
+import { toChecksumAddress } from 'web3-utils';
+
 import { httpBadRequest, httpInternalServerErrorException, httpNotFound } from '@shared/exceptions/http-exeption';
 import { isPhoneNumberValid } from '@shared/utils/check-object';
 import { generateHash, validateHash } from '@shared/utils/hash-string';
@@ -16,30 +18,32 @@ import { decode } from '@shared/utils/util';
 
 import { LoginDto, SignupDto } from './dto/auth-request.dto';
 import { IJwtPayload, IUpdateEmail } from './interfaces/auth.interface';
+import Web3 from 'web3';
+import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 
 @Injectable()
 export class AuthService {
+  private web3: Web3;
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
     private readonly userRepository: UserRepository,
+    private readonly ethBridgeContract: ETHBridgeContract,
     private dataSource: DataSource,
   ) {}
 
   async login(data: LoginDto) {
-    const user = await this.userRepository.findOne({
-      where: {
-        email: data.email,
-      },
-    });
+    try {
+      // Validate signature and check for address in database
+      if (!this.validateSignature(data.address, data.signature)) throw new Error('Invalid signature');
+      const admin = await this.validateAdminAccount(data.address);
 
-    if (!user || user.password === null) httpBadRequest(EError.WRONG_EMAIL_OR_PASS);
-
-    const checkPassword = await validateHash(data.password, user.password);
-
-    if (!checkPassword) httpBadRequest(EError.WRONG_EMAIL_OR_PASS);
-
-    return this.getToken(user);
+      // Generate access and refresh token
+      return this.getToken(admin);
+    } catch (err) {
+        console.log('[err] auth.service.ts: ---', err);
+        throw new httpBadRequest(EError.USER_NOT_FOUND);
+    }
   }
 
   private async getToken(user: User) {
@@ -57,6 +61,23 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  private async validateSignature(address: string, signature: string) {
+    const recover = await this.ethBridgeContract.recover(signature, this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN))
+    const checksumRecover = toChecksumAddress(recover);
+    const checksumAddress = toChecksumAddress(address);
+
+    return checksumRecover === checksumAddress;
+}
+
+  private async validateAdminAccount(address: string) {
+    address = toChecksumAddress(address);
+    const admin = await this.userRepository.findOneBy({ walletAddress: address });
+
+    if (!admin) httpBadRequest(EError.USER_NOT_FOUND);
+
+    return admin;
   }
 
   async refreshAccessToken(refreshToken: string) {
