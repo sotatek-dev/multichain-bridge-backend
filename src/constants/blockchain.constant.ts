@@ -16,3 +16,8 @@ export enum EEventStatus {
   DONE = 'done',
   FAILED = 'failed',
 }
+
+export enum ETokenPairStatus {
+  ENABLE = 'enable',
+  DISABLE = 'disable'
+}

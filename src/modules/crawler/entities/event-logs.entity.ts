@@ -60,6 +60,9 @@ export class EventLog extends BaseEntityIncludeTime {
   @Column({ name: 'return_values', type: 'text', nullable: false })
   returnValues: string;
 
+  @Column({ name: 'error_detail', type: 'text', nullable: true })
+  errorDetail: string;
+
   @Column({ name: 'status', type: 'varchar', enum: EEventStatus, default: EEventStatus.WAITING, nullable: false })
   status: EEventStatus;
 

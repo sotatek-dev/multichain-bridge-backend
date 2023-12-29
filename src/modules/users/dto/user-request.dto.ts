@@ -26,3 +26,14 @@ export class UpdateProfileBodyDto {
   @Expose()
   email: string;
 }
+
+export class GetProtocolFeeBodyDto {
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  pairId: number;
+
+  @ApiProperty({ example: 1000 })
+  @IsString()
+  @Expose()
+  amount: string;
+}

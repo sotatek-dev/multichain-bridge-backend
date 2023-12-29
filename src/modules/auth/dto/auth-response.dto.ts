@@ -15,3 +15,8 @@ export class RefreshTokenResponseDto {
   @ApiProperty()
   refreshToken: string;
 }
+
+export class MessageResponseDto {
+  @ApiProperty()
+  message: string;
+}

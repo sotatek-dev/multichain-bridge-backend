@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
+import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 
 import { CrawlerConsole } from './crawler.console';
 import { CrawlerService } from './crawler.service';
@@ -11,7 +12,7 @@ import { SenderEVMBridge } from './sender.evmbridge';
 import { SenderMinaBridge } from './sender.minabridge'
 
 @Module({
-  imports: [CustomRepositoryModule.forFeature([CrawlContractRepository, EventLogRepository])],
+  imports: [CustomRepositoryModule.forFeature([CrawlContractRepository, EventLogRepository, CommonConfigRepository])],
   providers: [CrawlerConsole, CrawlerService, BlockchainEVMCrawler, SenderEVMBridge, BlockchainMinaCrawler, SenderMinaBridge],
   exports: [CrawlerService],
 })

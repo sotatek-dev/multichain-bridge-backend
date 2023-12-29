@@ -77,7 +77,7 @@ export class CrawlerConsole {
     try {
       while (true) {
         this.senderMinaBridge.handleUnlockMina();
-        await sleep(15);
+        await sleep(150000);
       }
     } catch (error) {
       console.log(error);

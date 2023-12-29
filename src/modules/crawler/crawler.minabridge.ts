@@ -4,13 +4,12 @@ import { ConfigService } from '@nestjs/config';
 import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 // import { LoggerService } from '@shared/modules/logger/logger.service';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
-import { EventData } from 'web3-eth-contract';
 import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 import { Mina, PublicKey, SmartContract, UInt32, fetchAccount, PrivateKey, fetchLastBlock } from 'o1js';
-import { TestEvent } from './add.js';
+import { Bridge } from './bridgeSC.js';
+import dayjs from'dayjs';
 
 @Injectable()
 export class BlockchainMinaCrawler {
@@ -37,18 +36,22 @@ export class BlockchainMinaCrawler {
       archive: 'https://api.minascan.io/archive/berkeley/v1/graphql/',
       });
       Mina.setActiveInstance(Network);
-      let zkappAddress = PublicKey.fromBase58(
-        'B62qm7xwx5pp9kgtPSsAQrm99fBUzwcPoG6EWWqG7b8mnZ8UoKgevjd'
-      );
-      const zkapp = new TestEvent(zkappAddress);
+      let zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
+      const zkapp = new Bridge(zkappAddress);
       const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
+      const time = await this.getDateTimeByBlock(26164);
+      console.log({time});
       for (const event of events) {
+        console.log({event});
+        console.log("global", event.globalSlot.value.toString());
+        console.log("global", event.event.transactionInfo);
+        
         switch (event.type) {
-          case 'ChangeState':
-            await this.handlerLockEvent(event, queryRunner);
+          case 'Lock':
+            // await this.handlerLockEvent(event, queryRunner);
             break;
           case 'Unlock':
-            await this.handlerUnLockEvent(event, queryRunner);
+            // await this.handlerUnLockEvent(event, queryRunner);
             break;
           default:
             continue;
@@ -58,7 +61,7 @@ export class BlockchainMinaCrawler {
         `[handleCrawlMinaBridge] Crawled from============================= ${startBlockNumber}`,
       );
       if(events.length > 0) {
-        await this.updateLatestBlockCrawl(Number(events.reverse()[0].blockHeight.value), queryRunner)
+        // await this.updateLatestBlockCrawl(Number(events.reverse()[0].blockHeight.value), queryRunner)
       }
       return await queryRunner.commitTransaction();
         
@@ -151,5 +154,34 @@ export class BlockchainMinaCrawler {
     // }
 
     return {startBlockNumber, toBlock }
+  }
+
+  private async getDateTimeByBlock(blockNumber: number) {
+    const endpoint = 'https://berkeley.graphql.minaexplorer.com/'; // Replace with your GraphQL endpoint
+    const query = `
+      query {
+          transaction(query: {blockHeight: ${blockNumber}}) {
+            block {
+              dateTime
+            }
+          }
+        }
+    `;
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+      }),
+    });
+  
+    const result = await response.json();
+    const dateTime = dayjs(result.data.transaction.block.dateTime);
+
+    // Convert DateTime to Unix timestamp in seconds
+    const unixTimestampInSeconds = Math.floor(dateTime.valueOf() / 1000);
+    return unixTimestampInSeconds
   }
 }

@@ -81,9 +81,40 @@ export class DefaultContract {
   public call(method: string, param: Array<any>) {
     return this.wrapper(() => this.contract.methods[method](...param).call(), true);
   }
-  public async estimateGas() {
-    return await this.rpcService.web3.eth.getGasPrice();
+  // public async estimateGas() {
+  //   return await this.rpcService.web3.eth.getGasPrice();
+  // }
+
+  public async estimateGas(
+    method: string,
+    param: Array<any>,
+    specifySignerIndex?: number,
+  ): Promise<number> {
+    try {
+      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
+        this.rpcService.privateKeys[specifySignerIndex ?? 0],
+      );
+
+      const data = this.contract.methods[method](...param).encodeABI();
+      const gasPrice = await this.rpcService.web3.eth.getGasPrice();
+      const nonce = await this.rpcService.getNonce(signer.address);      
+
+      // gas estimation
+      const rawTx = {
+        nonce: nonce,
+        gasPrice: toHex(toBN(gasPrice)),
+        from: signer.address,
+        to: this.contractAddress,
+        data: data,
+      };
+
+      const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
+      return gasLimit;
+    } catch (error) {
+      return error;
+    }
   }
+
   public async write(
     method: string,
     param: Array<any>,
@@ -188,9 +219,11 @@ export class ETHBridgeContract extends DefaultContract {
   public async mintNFT(toAddress: string) {
     return this.write('mint', [toAddress]);
   }
-  public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress) {
-    const gasPrice = await this.estimateGas()
-    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(gasPrice)])
+  public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
+    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(fee)])
+  }
+  public async getEstimateGas(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
+    return await this.estimateGas('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(fee)])
   }
   public async getTokenURI(tokenId: number) {
     return this.call('tokenURI', [tokenId]);
