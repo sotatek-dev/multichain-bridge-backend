@@ -9,6 +9,7 @@ export const addDecimal = (value: string | number, decimal: number) => {
 };
 
 export const calculateFee = (amount: string | number, decimal: number, gasFee: string | number, tipPercent: number) => {
-  const tip = BigNumber(addDecimal(amount, decimal)).minus(BigNumber(gasFee)).multipliedBy(tipPercent * 100).dividedBy(100)
+  const tip = BigNumber(addDecimal(amount, decimal)).minus(BigNumber(gasFee)).multipliedBy(tipPercent * 100).dividedBy(100);
+
   return BigNumber(gasFee).plus(tip).toFixed(0, BigNumber.ROUND_DOWN);
 }
