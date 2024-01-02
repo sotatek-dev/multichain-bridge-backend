@@ -7,29 +7,48 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { PublicKey, SmartContract, UInt64, method, Struct } from 'o1js';
+import { PublicKey, SmartContract, State, UInt64, method, state, Struct } from 'o1js';
 class UnlockEvent extends Struct({
-    tokenAddress: PublicKey,
     receiver: PublicKey,
-    amount: UInt64
+    tokenAddress: PublicKey,
+    amount: UInt64,
+    id: UInt64,
 }) {
-    constructor(tokenAddress, receiver, amount) {
-        super({ tokenAddress, receiver, amount });
+    constructor(receiver, tokenAddress, amount, id) {
+        super({ receiver, tokenAddress, amount, id });
+    }
+}
+class LockEvent extends Struct({
+    tokenAddress: PublicKey,
+    amount: UInt64,
+}) {
+    constructor(tokenAddress, amount) {
+        super({ tokenAddress, amount });
     }
 }
 export class Bridge extends SmartContract {
     constructor() {
         super(...arguments);
-        this.events = { "Unlock": UnlockEvent };
+        this.minter = State();
+        this.events = { "Unlock": UnlockEvent, "Lock": LockEvent };
     }
     decrementBalance(amount) {
         this.balance.subInPlace(amount);
+        this.minter.set(this.sender);
     }
-    unlock(tokenAddress, receiver, amount) {
+    setMinter(_minter) {
+        this.minter.set(_minter);
+    }
+    unlock(tokenAddress, amount, receiver, id) {
+        this.minter.getAndRequireEquals().assertEquals(this.sender);
         this.balance.subInPlace(amount);
-        this.emitEvent("Unlock", new UnlockEvent(tokenAddress, receiver, amount));
+        this.emitEvent("Unlock", new UnlockEvent(receiver, tokenAddress, amount, id));
     }
 }
+__decorate([
+    state(PublicKey),
+    __metadata("design:type", Object)
+], Bridge.prototype, "minter", void 0);
 __decorate([
     method,
     __metadata("design:type", Function),
@@ -39,7 +58,13 @@ __decorate([
 __decorate([
     method,
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [PublicKey, PublicKey, UInt64]),
+    __metadata("design:paramtypes", [PublicKey]),
+    __metadata("design:returntype", void 0)
+], Bridge.prototype, "setMinter", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [PublicKey, UInt64, PublicKey, UInt64]),
     __metadata("design:returntype", void 0)
 ], Bridge.prototype, "unlock", null);
 //# sourceMappingURL=Bridge.js.map

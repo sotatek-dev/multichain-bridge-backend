@@ -7,7 +7,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { AccountUpdate, Experimental, Int64, Permissions, PublicKey, SmartContract, State, UInt64, method, state, Struct, } from 'o1js';
+import { AccountUpdate, Experimental, Field, Int64, Permissions, PublicKey, SmartContract, State, UInt64, method, state, Struct, } from 'o1js';
 class Transfer extends Struct({
     from: PublicKey,
     to: PublicKey,
@@ -17,6 +17,15 @@ class Transfer extends Struct({
         super({ from, to, amount });
     }
 }
+class Lock extends Struct({
+    locker: PublicKey,
+    receipt: Field,
+    amount: UInt64
+}) {
+    constructor(locker, receipt, amount) {
+        super({ locker, receipt, amount });
+    }
+}
 export class Token extends SmartContract {
     constructor() {
         super(...arguments);
@@ -24,7 +33,7 @@ export class Token extends SmartContract {
         this.maxSupply = State();
         this.circulatingSupply = State();
         this.owner = State();
-        this.events = { "Transfer": Transfer };
+        this.events = { "Transfer": Transfer, "Lock": Lock };
     }
     deploy(args) {
         super.deploy(args);
@@ -63,6 +72,14 @@ export class Token extends SmartContract {
         this.emitEvent("Transfer", {
             from: sender,
             to: receiver,
+            amount,
+        });
+    }
+    lock(receipt, bridgeAddress, amount) {
+        this.token.send({ from: this.sender, to: bridgeAddress, amount });
+        this.emitEvent("Lock", {
+            locker: this.sender,
+            receipt,
             amount,
         });
     }
@@ -159,6 +176,12 @@ __decorate([
     __metadata("design:paramtypes", [PublicKey, PublicKey, UInt64]),
     __metadata("design:returntype", void 0)
 ], Token.prototype, "transfer", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Field, PublicKey, UInt64]),
+    __metadata("design:returntype", void 0)
+], Token.prototype, "lock", null);
 __decorate([
     method,
     __metadata("design:type", Function),

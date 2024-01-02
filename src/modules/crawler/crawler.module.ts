@@ -7,13 +7,14 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { CrawlerConsole } from './crawler.console';
 import { CrawlerService } from './crawler.service';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';
-import { BlockchainMinaCrawler } from './crawler.minabridge';
+import { SCBridgeMinaCrawler } from './crawler.minabridge';
 import { SenderEVMBridge } from './sender.evmbridge';
 import { SenderMinaBridge } from './sender.minabridge'
+import { SCTokenMinaCrawler } from './crawler.minatoken';
 
 @Module({
   imports: [CustomRepositoryModule.forFeature([CrawlContractRepository, EventLogRepository, CommonConfigRepository])],
-  providers: [CrawlerConsole, CrawlerService, BlockchainEVMCrawler, SenderEVMBridge, BlockchainMinaCrawler, SenderMinaBridge],
+  providers: [CrawlerConsole, CrawlerService, BlockchainEVMCrawler, SCTokenMinaCrawler, SenderEVMBridge, SCBridgeMinaCrawler, SenderMinaBridge],
   exports: [CrawlerService],
 })
 export class CrawlerModule {}

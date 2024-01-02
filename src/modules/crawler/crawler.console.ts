@@ -5,7 +5,8 @@ import { EEnvKey } from '@constants/env.constant';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';
 import { SenderEVMBridge } from './sender.evmbridge';
 import { SenderMinaBridge } from './sender.minabridge';
-import { BlockchainMinaCrawler } from './crawler.minabridge';
+import { SCBridgeMinaCrawler } from './crawler.minabridge';
+import { SCTokenMinaCrawler } from './crawler.minatoken';
 import { sleep } from '@shared/utils/promise';
 
 @Console()
@@ -15,7 +16,8 @@ export class CrawlerConsole {
   constructor(
     private readonly configService: ConfigService,
     private blockchainEVMCrawler: BlockchainEVMCrawler,
-    private blockchainMinaCrawler: BlockchainMinaCrawler,
+    private scBridgeMinaCrawler: SCBridgeMinaCrawler,
+    private scTokenMinaCrawler: SCTokenMinaCrawler,
     private senderEVMBridge: SenderEVMBridge,
     private senderMinaBridge: SenderMinaBridge,
 
@@ -61,7 +63,22 @@ export class CrawlerConsole {
   async handleCrawlMinaBridge() {
     try {
       while (true) {
-        this.blockchainMinaCrawler.handleEventCrawlBlock();
+        this.scBridgeMinaCrawler.handleEventCrawlBlock();
+        await sleep(15);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  @Command({
+    command: 'crawl-mina-token-contract',
+    description: 'crawl Mina Token Contract',
+  })
+  async handleCrawlMinaToken() {
+    try {
+      while (true) {
+        this.scTokenMinaCrawler.handleEventCrawlBlock();
         await sleep(15);
       }
     } catch (error) {
