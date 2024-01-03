@@ -9,7 +9,7 @@ import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 import { Mina, PublicKey, UInt32, Field } from 'o1js';
 
-import { Token } from './erc20.js';
+import { Token } from './minaTokenErc20.js';
 import dayjs from'dayjs';
 
 @Injectable()
