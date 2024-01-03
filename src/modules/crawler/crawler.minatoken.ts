@@ -8,7 +8,6 @@ import { CrawlContractRepository } from 'database/repositories/crawl-contract.re
 import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 import { Mina, PublicKey, UInt32, Field } from 'o1js';
-import { toChecksumAddress } from 'web3-utils';
 
 import { Token } from './erc20.js';
 import dayjs from'dayjs';

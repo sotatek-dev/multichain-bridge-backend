@@ -7,7 +7,6 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { Mina, PublicKey, Experimental, fetchAccount, PrivateKey, UInt64, AccountUpdate } from 'o1js';
 import { Token } from './erc20.js';
 import { Bridge } from './bridgeSC.js';
-import { addDecimal, calculateFee } from '@shared/utils/bignumber.js';
 import { ConfigService } from '@nestjs/config';
 import { EEnvKey } from '@constants/env.constant';
 import BigNumber from 'bignumber.js';
