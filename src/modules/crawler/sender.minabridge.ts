@@ -7,7 +7,7 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { Mina, PublicKey, Experimental, fetchAccount, PrivateKey, UInt64, AccountUpdate } from 'o1js';
 import { Token } from './erc20.js';
 import { Bridge } from './bridgeSC.js';
-import { calculateFee } from '@shared/utils/bignumber.js';
+import { addDecimal, calculateFee } from '@shared/utils/bignumber.js';
 import { ConfigService } from '@nestjs/config';
 import { EEnvKey } from '@constants/env.constant';
 import BigNumber from 'bignumber.js';
@@ -28,13 +28,13 @@ export class SenderMinaBridge {
       ]) 
 
       const { tokenReceivedAddress, id, receiveAddress, amountFrom } = dataLock
-      // const protocolFee = calculateFee(amountFrom, 0 , this.configService.get(EEnvKey.GASFEEMINA), configTip.tip)
+      // const protocolFee = calculateFee(amountFrom, 0 , addDecimal(this.configService.get(EEnvKey.GASFEEMINA), 18), configTip.tip)
       
-      // const isPassDailyQuota = await this.isPassDailyQuota(receiveAddress);
-      // if(!isPassDailyQuota) {
-      //   await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
-      //   return ;
-      // }
+      const isPassDailyQuota = await this.isPassDailyQuota(receiveAddress);
+      if(!isPassDailyQuota) {
+        await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
+        return ;
+      }
 
       const result = await this.callUnlockFunction(amountFrom, id, receiveAddress)
 
@@ -103,10 +103,9 @@ export class SenderMinaBridge {
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address)
     ])
 
-    if(totalamount && totalamount > dailyQuota.dailyQuota) {
+    if(totalamount && totalamount.totalamount > dailyQuota.dailyQuota) {
       return false
     }
-
     return true
   }
 }

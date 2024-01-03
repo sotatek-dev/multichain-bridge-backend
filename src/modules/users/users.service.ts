@@ -12,6 +12,8 @@ import { TokenPair } from '@modules/users/entities/tokenpair.entity';
 import { ENetworkName } from '@constants/blockchain.constant';
 import { addDecimal, calculateFee } from '@shared/utils/bignumber';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
+import { ConfigService } from '@nestjs/config';
+import { EEnvKey } from '@constants/env.constant';
 
 @Injectable()
 export class UsersService {
@@ -21,6 +23,7 @@ export class UsersService {
     private readonly commonConfigRepository: CommonConfigRepository,
     private readonly dataSource: DataSource,
     private readonly ethBridgeContract: ETHBridgeContract,
+    private readonly configService: ConfigService,
 
   ) {}
   async getProfile(userId: number) {
@@ -91,7 +94,7 @@ export class UsersService {
     ])
 
     if(tokenPair.toChain == ENetworkName.MINA) {
-      gasFee = addDecimal(10, 18);
+      gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA), 18);
     } else {
       gasFee = await this.ethBridgeContract.getEstimateGas(tokenPair.fromAddress, addDecimal(0, tokenPair.toDecimal), 1 , tokenPair.toScAddress, 0);
     }
