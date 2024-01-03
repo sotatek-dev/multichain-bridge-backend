@@ -14,6 +14,7 @@ export enum EEventStatus {
   WAITING = 'waiting',
   PROCESSING = 'processing',
   DONE = 'done',
+  COMPLETED = 'Completed',
   FAILED = 'failed',
 }
 

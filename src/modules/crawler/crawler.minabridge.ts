@@ -76,7 +76,7 @@ export class SCBridgeMinaCrawler {
     })
 
     await queryRunner.manager.update(EventLog, existLockTx.id, {
-      status: EEventStatus.DONE,
+      status: EEventStatus.COMPLETED,
       txHashUnlock: event.event.transactionInfo.transactionHash,
       amountReceived: event.event.data.amount.toString(),
       tokenReceivedAddress: event.event.data.tokenAddress.toBase58(),
