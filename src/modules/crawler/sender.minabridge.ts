@@ -26,10 +26,10 @@ export class SenderMinaBridge {
         this.commonConfigRepository.getCommonConfig()
       ]) 
 
-      const { tokenReceivedAddress, id, receiveAddress, amountFrom } = dataLock
+      const { tokenReceivedAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock
       // const protocolFee = calculateFee(amountFrom, 0 , addDecimal(this.configService.get(EEnvKey.GASFEEMINA), 18), configTip.tip)
       
-      const isPassDailyQuota = await this.isPassDailyQuota(receiveAddress);
+      const isPassDailyQuota = await this.isPassDailyQuota(senderAddress);
       if(!isPassDailyQuota) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
         return ;
@@ -102,7 +102,7 @@ export class SenderMinaBridge {
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address)
     ])
 
-    if(totalamount && totalamount.totalamount > dailyQuota.dailyQuota) {
+    if(totalamount && BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(BigNumber(dailyQuota.dailyQuota))) {
       return false
     }
     return true

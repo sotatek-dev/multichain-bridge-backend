@@ -23,9 +23,9 @@ export class SenderEVMBridge {
         this.eventLogRepository.getEventLockWithNetwork(ENetworkName.ETH),
         this.commonConfigRepository.getCommonConfig()
       ]) 
-      const { tokenReceivedAddress, txHashLock, receiveAddress, amountFrom } = dataLock
+      const { tokenReceivedAddress, txHashLock, receiveAddress, senderAddress, amountFrom } = dataLock
 
-      const isPassDailyQuota = await this.isPassDailyQuota(receiveAddress);
+      const isPassDailyQuota = await this.isPassDailyQuota(senderAddress);
       if(!isPassDailyQuota) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
         return ;
@@ -53,7 +53,7 @@ export class SenderEVMBridge {
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address)
     ])
 
-    if(totalamount && totalamount.totalamount > dailyQuota.dailyQuota) {
+    if(totalamount && BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(BigNumber(dailyQuota.dailyQuota))) {
       return false
     }
     return true
