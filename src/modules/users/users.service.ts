@@ -99,6 +99,6 @@ export class UsersService {
       gasFee = await this.ethBridgeContract.getEstimateGas(tokenPair.fromAddress, addDecimal(0, tokenPair.toDecimal), 1 , tokenPair.toScAddress, 0);
     }
 
-    return {amount : calculateFee(amount, tokenPair.toDecimal , gasFee, configTip.tip)};
+    return {amount : calculateFee(amount, gasFee, configTip.tip)};
   }
 }

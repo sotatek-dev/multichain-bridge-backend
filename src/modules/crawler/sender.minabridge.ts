@@ -10,6 +10,7 @@ import { Bridge } from './minaBridgeSC.js';
 import { ConfigService } from '@nestjs/config';
 import { EEnvKey } from '@constants/env.constant';
 import BigNumber from 'bignumber.js';
+import { addDecimal, calculateFee } from '@shared/utils/bignumber';
 
 @Injectable()
 export class SenderMinaBridge {
@@ -27,7 +28,7 @@ export class SenderMinaBridge {
       ]) 
 
       const { tokenReceivedAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock
-      // const protocolFee = calculateFee(amountFrom, 0 , addDecimal(this.configService.get(EEnvKey.GASFEEMINA), 18), configTip.tip)
+      const protocolFeeAmount = calculateFee(amountFrom, addDecimal(this.configService.get(EEnvKey.GASFEEMINA), 18), configTip.tip)
       
       const isPassDailyQuota = await this.isPassDailyQuota(senderAddress);
       if(!isPassDailyQuota) {
@@ -35,7 +36,7 @@ export class SenderMinaBridge {
         return ;
       }
 
-      const result = await this.callUnlockFunction(amountFrom, id, receiveAddress)
+      const result = await this.callUnlockFunction(amountFrom, id, receiveAddress, protocolFeeAmount)
 
 
       //Update status eventLog when call function unlock
@@ -45,16 +46,17 @@ export class SenderMinaBridge {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
       }
     } catch (error) {
+      console.log(error);
       
     }    
     
   }
 
-  private async callUnlockFunction(amount, txId, receiveAddress) {
+  private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount) {
     try {      
       await Token.compile();
       await Bridge.compile();
-      const Berkeley = Mina.Network(this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS));
+      const Berkeley = Mina.Network(`${this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS)}`);
       Mina.setActiveInstance(Berkeley);
 
       // call update() and send transaction
@@ -63,6 +65,7 @@ export class SenderMinaBridge {
       let zkBridgeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
       let zkAppAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
       let receiveiAdd = PublicKey.fromBase58(receiveAddress);
+      let protocolFeeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.FEE_MINA_ADDRESS));
       let zkApp = new Token(zkAppAddress);
 
       const bridgeApp = new Bridge(zkBridgeAddress, zkApp.token.id);
@@ -84,6 +87,8 @@ export class SenderMinaBridge {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
         const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
         zkApp.sendTokensFromZkApp(receiveiAdd, UInt64.from(amount), callback);
+        const callbackFee = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(protocolFeeAmount), protocolFeeAddress, UInt64.from(txId)]);
+        zkApp.sendTokensFromZkApp(protocolFeeAddress, UInt64.from(protocolFeeAmount), callbackFee);
       });
       await tx.prove();
       console.log('send transaction...');
