@@ -13,9 +13,9 @@ export enum EEventName {
 export enum EEventStatus {
   WAITING = 'waiting',
   PROCESSING = 'processing',
-  DONE = 'done',
-  COMPLETED = 'Completed',
+  COMPLETED = 'completed',
   FAILED = 'failed',
+  NOTOKENPAIR = "noTokenPair"
 }
 
 export enum ETokenPairStatus {
