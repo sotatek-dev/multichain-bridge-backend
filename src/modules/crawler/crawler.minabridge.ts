@@ -75,14 +75,21 @@ export class SCBridgeMinaCrawler {
       where: { id: event.event.data.id.toString() },
     })
 
-    await queryRunner.manager.update(EventLog, existLockTx.id, {
-      status: EEventStatus.COMPLETED,
-      txHashUnlock: event.event.transactionInfo.transactionHash,
-      amountReceived: event.event.data.amount.toString(),
-      tokenReceivedAddress: event.event.data.tokenAddress.toBase58(),
-      // protocolFee: event.event.data.fee.toString(),
-      tokenReceivedName: "WETH",
-    });
+    const receiverAddress =  event.event.data.receiver.toBase58()
+
+    if(receiverAddress == this.configService.get(EEnvKey.FEE_MINA_ADDRESS)) {
+      await queryRunner.manager.update(EventLog, existLockTx.id, {
+        protocolFee: event.event.data.amount.toString(),
+      });
+    } else {
+      await queryRunner.manager.update(EventLog, existLockTx.id, {
+        status: EEventStatus.COMPLETED,
+        txHashUnlock: event.event.transactionInfo.transactionHash,
+        amountReceived: event.event.data.amount.toString(),
+        tokenReceivedAddress: event.event.data.tokenAddress.toBase58(),
+        tokenReceivedName: "WETH",
+      });
+    }
   }
 
   private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
