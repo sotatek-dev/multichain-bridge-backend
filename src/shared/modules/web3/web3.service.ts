@@ -15,8 +15,8 @@ import {
 import { sleep } from '@shared/utils/promise';
 
 import ETHBridgeAbi from './abis/eth-bridge-contract.json';
-import MinaBridgeAbi from './abis/mina-bridge.json';
 import { IRpcService } from './web3.module';
+import BigNumber from 'bignumber.js';
 
 export class DefaultContract {
   private contract: Contract;
@@ -81,9 +81,6 @@ export class DefaultContract {
   public call(method: string, param: Array<any>) {
     return this.wrapper(() => this.contract.methods[method](...param).call(), true);
   }
-  // public async estimateGas() {
-  //   return await this.rpcService.web3.eth.getGasPrice();
-  // }
 
   public async estimateGas(
     method: string,
@@ -199,6 +196,17 @@ export class DefaultContract {
   public async getBlockTimeByBlockNumber(blockNumber: number) {
     return this.rpcService.web3.eth.getBlock(blockNumber);
   }
+
+  public async convertGasPriceToEther(amount : number) {
+    try {
+      const gasPrice = await this.rpcService.web3.eth.getGasPrice();
+      console.log('Current gas price:', gasPrice, 'wei'); // Gas price is returned in wei
+      const estimateGasToWei = BigNumber(amount).multipliedBy(BigNumber(gasPrice)).toString()
+      return this.rpcService.web3.utils.fromWei(estimateGasToWei, 'ether');
+    } catch (error) {
+      console.error('Error getting gas price:', error);
+    }
+  }
 }
 
 @Injectable()
@@ -223,7 +231,9 @@ export class ETHBridgeContract extends DefaultContract {
     return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(fee)])
   }
   public async getEstimateGas(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
-    return await this.estimateGas('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(fee)])
+    const estimateGas = await this.estimateGas('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(fee)])
+    const getGasPrice = await this.convertGasPriceToEther(estimateGas);
+    return getGasPrice
   }
   public async getTokenURI(tokenId: number) {
     return this.call('tokenURI', [tokenId]);
