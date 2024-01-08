@@ -119,7 +119,7 @@ export class SenderMinaBridge {
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address)
     ])
 
-    if(totalamount && BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(BigNumber(dailyQuota.dailyQuota).multipliedBy(BigNumber(10).pow(fromDecimal)))) {
+    if(totalamount && BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(addDecimal(dailyQuota.dailyQuota, fromDecimal))) {
       return false
     }
     return true

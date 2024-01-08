@@ -6,7 +6,7 @@ import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
-import { calculateFee } from '@shared/utils/bignumber';
+import { addDecimal, calculateFee } from '@shared/utils/bignumber';
 import { EError } from '@constants/error.constant';
 
 @Injectable()
@@ -63,7 +63,7 @@ export class SenderEVMBridge {
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address)
     ])
 
-    if(totalamount && BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(BigNumber(dailyQuota.dailyQuota).multipliedBy(BigNumber(10).pow(fromDecimal)))) {
+    if(totalamount && BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(addDecimal(dailyQuota.dailyQuota, fromDecimal))) {
       return false
     }
     return true
