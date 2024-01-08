@@ -15,7 +15,7 @@ export class CommonConfig extends BaseEntityIncludeTime {
     default: 0,
     nullable: false
   })
-  dailyQuota: string;
+  dailyQuota: number;
 
   @Column({
     name: 'tip',

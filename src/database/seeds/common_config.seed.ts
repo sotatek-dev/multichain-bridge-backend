@@ -12,7 +12,7 @@ export default class CommonConfigSeeder implements Seeder {
     await repository.insert(
       new CommonConfig({
         tip: 0.5,
-        dailyQuota: addDecimal(500, 18).toString(),
+        dailyQuota: 500,
         asset: "ETH"
       }),
     );
