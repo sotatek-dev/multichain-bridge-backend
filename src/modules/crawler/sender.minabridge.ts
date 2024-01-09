@@ -32,7 +32,7 @@ export class SenderMinaBridge {
       ]) 
 
       const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock
-      const protocolFeeAmount = calculateFee(amountFrom, addDecimal(this.configService.get(EEnvKey.GASFEEMINA), 18), configTip.tip)
+      const protocolFeeAmount = calculateFee(amountFrom, addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)), configTip.tip)
 
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
       if(!tokenPair) {
@@ -95,7 +95,7 @@ export class SenderMinaBridge {
       await fetchAccount({ publicKey: receiveiAdd, tokenId });
       const hasAccount = Mina.hasAccount(receiveiAdd, tokenId);
 
-      let tx = await Mina.transaction({ sender: feepayerAddress, fee: transactionFee }, async () => {
+      let tx = await Mina.transaction({ sender: feepayerAddress, fee: protocolFeeAmount }, async () => {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
         const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
         zkApp.sendTokensFromZkApp(receiveiAdd, UInt64.from(amount), callback);
