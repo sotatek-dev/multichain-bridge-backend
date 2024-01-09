@@ -4,6 +4,8 @@ import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EError } from '@constants/error.constant';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
+import { TokenPairRepository } from 'database/repositories/token-pair.repository';
+
 import { Mina, PublicKey, Experimental, fetchAccount, PrivateKey, UInt64, AccountUpdate } from 'o1js';
 import { Token } from './minaTokenErc20.js';
 import { Bridge } from './minaBridgeSC.js';
@@ -18,6 +20,8 @@ export class SenderMinaBridge {
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
+    private readonly tokenPairRepository: TokenPairRepository,
+
   ) {}
 
   public async handleUnlockMina() {
@@ -27,16 +31,24 @@ export class SenderMinaBridge {
         this.commonConfigRepository.getCommonConfig()
       ]) 
 
-      const { tokenReceivedAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock
-      const protocolFeeAmount = calculateFee(amountFrom, addDecimal(this.configService.get(EEnvKey.GASFEEMINA), 18), configTip.tip)
+      const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock
+      const protocolFeeAmount = calculateFee(amountFrom, addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)), configTip.tip)
+
+      const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
+      if(!tokenPair) {
+        await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.NOTOKENPAIR);
+        return;
+      }
       
-      const isPassDailyQuota = await this.isPassDailyQuota(senderAddress);
+      let amountReceive = BigNumber(amountFrom).dividedBy(BigNumber(10).pow(tokenPair.fromDecimal)).multipliedBy(BigNumber(10).pow(tokenPair.toDecimal)).toString();
+      
+      const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
       if(!isPassDailyQuota) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
         return ;
       }
 
-      const result = await this.callUnlockFunction(amountFrom, id, receiveAddress, protocolFeeAmount)
+      const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount)
 
 
       //Update status eventLog when call function unlock
@@ -83,7 +95,7 @@ export class SenderMinaBridge {
       await fetchAccount({ publicKey: receiveiAdd, tokenId });
       const hasAccount = Mina.hasAccount(receiveiAdd, tokenId);
 
-      let tx = await Mina.transaction({ sender: feepayerAddress, fee: transactionFee }, async () => {
+      let tx = await Mina.transaction({ sender: feepayerAddress, fee: protocolFeeAmount }, async () => {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
         const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
         zkApp.sendTokensFromZkApp(receiveiAdd, UInt64.from(amount), callback);
@@ -101,13 +113,13 @@ export class SenderMinaBridge {
       }
   }
 
-  private async isPassDailyQuota(address: string): Promise<boolean> {
+  private async isPassDailyQuota(address: string, fromDecimal: number): Promise<boolean> {
     const [dailyQuota , totalamount] = await Promise.all([
       await this.commonConfigRepository.getCommonConfig(),
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address)
     ])
 
-    if(totalamount && BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(BigNumber(dailyQuota.dailyQuota))) {
+    if(totalamount && BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(addDecimal(dailyQuota.dailyQuota, fromDecimal))) {
       return false
     }
     return true

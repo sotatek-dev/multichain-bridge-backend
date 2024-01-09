@@ -94,7 +94,7 @@ export class UsersService {
     ])
 
     if(tokenPair.toChain == ENetworkName.MINA) {
-      gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA), 18);
+      gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA));
     } else {
       gasFee = await this.ethBridgeContract.getEstimateGas(tokenPair.fromAddress, addDecimal(0, tokenPair.toDecimal), 1 , tokenPair.toScAddress, 0);
     }
