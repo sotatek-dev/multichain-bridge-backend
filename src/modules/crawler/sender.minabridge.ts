@@ -29,10 +29,13 @@ export class SenderMinaBridge {
       const [ dataLock, configTip ] = await Promise.all([
         this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA),
         this.commonConfigRepository.getCommonConfig()
-      ]) 
+      ])
+
+      if(!dataLock) {
+        return;
+      }
 
       const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock
-      const protocolFeeAmount = calculateFee(amountFrom, addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)), configTip.tip)
 
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
       if(!tokenPair) {
@@ -40,8 +43,9 @@ export class SenderMinaBridge {
         return;
       }
       
-      let amountReceive = BigNumber(amountFrom).dividedBy(BigNumber(10).pow(tokenPair.fromDecimal)).multipliedBy(BigNumber(10).pow(tokenPair.toDecimal)).toString();
-      
+      const amountReceiveConvert = BigNumber(amountFrom).dividedBy(BigNumber(10).pow(tokenPair.fromDecimal)).multipliedBy(BigNumber(10).pow(tokenPair.toDecimal)).toString();
+      const protocolFeeAmount = calculateFee(amountReceiveConvert, addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)), configTip.tip)
+      const amountReceive = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toString();
       const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
       if(!isPassDailyQuota) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
@@ -69,6 +73,7 @@ export class SenderMinaBridge {
       await Token.compile();
       await Bridge.compile();
       const Berkeley = Mina.Network(`${this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS)}`);
+      // const Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
       Mina.setActiveInstance(Berkeley);
 
       // call update() and send transaction
@@ -87,8 +92,9 @@ export class SenderMinaBridge {
       try {
         await fetchAccount({ publicKey: feepayerAddress });
       }
-      catch (e) {
-        console.log(e);
+      catch (error) {
+        console.log(error);
+        return { success: false, error, data: null };
       }
 
       const tokenId = zkApp.token.id
@@ -106,7 +112,12 @@ export class SenderMinaBridge {
       console.log('send transaction...');
       let sentTx = await tx.sign([feepayerKey]).send();
       console.log('transaction=======', sentTx.hash());
-      return { success: true, error: null, data: sentTx.hash() };
+
+      if(sentTx.hash()) {
+        return { success: true, error: null, data: sentTx.hash() };
+      } else {
+        return { success: false, error: sentTx, data: null };
+      }
       } catch (error) {
         console.log(error);
         return { success: false, error, data: null };
