@@ -25,6 +25,11 @@ export class SenderEVMBridge {
         this.eventLogRepository.getEventLockWithNetwork(ENetworkName.ETH),
         this.commonConfigRepository.getCommonConfig()
       ]) 
+
+      if(!dataLock) {
+        return;
+      }
+
       const { tokenReceivedAddress, tokenFromAddress, txHashLock, receiveAddress, senderAddress, amountFrom } = dataLock
 
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
