@@ -1,3 +1,7 @@
+/* eslint-disable max-statements */
+/* eslint-disable max-lines */
+/* eslint-disable new-cap */
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -7,7 +11,13 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { AccountUpdate, Experimental, Field, Int64, Permissions, PublicKey, SmartContract, State, UInt64, method, state, Struct, } from 'o1js';
+import { AccountUpdate, Bool, SmartContract, method, PublicKey, UInt64, Account, state, State, VerificationKey, Field, Experimental, Int64, Struct } from 'o1js';
+// eslint-disable-next-line max-len
+// eslint-disable-next-line no-duplicate-imports, @typescript-eslint/consistent-type-imports
+import { TransferFromToOptions, } from './interfaces/token/transferable.js';
+import errors from './errors.js';
+import { AdminAction, } from './interfaces/token/adminable.js';
+import Hooks from './Hooks.js';
 class Transfer extends Struct({
     from: PublicKey,
     to: PublicKey,
@@ -26,57 +36,95 @@ class Lock extends Struct({
         super({ locker, receipt, amount });
     }
 }
-export class Token extends SmartContract {
+class Token extends SmartContract {
     constructor() {
         super(...arguments);
-        this.decimals = State();
-        this.maxSupply = State();
+        this.hooks = State();
+        this.totalSupply = State();
         this.circulatingSupply = State();
-        this.owner = State();
+        this.paused = State();
+        this.decimals = UInt64.from(Token.defaultDecimals);
         this.events = { "Transfer": Transfer, "Lock": Lock };
     }
-    deploy(args) {
-        super.deploy(args);
-        this.account.permissions.set({
-            ...Permissions.default(),
-            access: Permissions.proofOrSignature(),
-        });
-        this.decimals.set(UInt64.from(18));
-        this.maxSupply.set(UInt64.from(10000000000000000000));
-        this.owner.set(this.sender);
-        this.account.tokenSymbol.set('WETH');
+    getHooksContract() {
+        const admin = this.getHooks();
+        return new Hooks(admin);
     }
-    mint(receiver, amount) {
-        this.owner.getAndRequireEquals().assertEquals(this.sender);
-        const maxSupply = this.maxSupply.getAndRequireEquals();
-        const circulatingSupply = this.circulatingSupply.getAndRequireEquals();
+    initialize(hooks, totalSupply) {
+        super.init();
+        this.account.provedState.assertEquals(Bool(false));
+        this.hooks.set(hooks);
+        this.totalSupply.set(totalSupply);
+        this.circulatingSupply.set(UInt64.from(0));
+        this.paused.set(Bool(false));
+    }
+    /**
+     * Mintable
+     */
+    mint(to, amount) {
+        const hooksContract = this.getHooksContract();
+        hooksContract.canAdmin(AdminAction.fromType(AdminAction.types.mint));
+        const totalSupply = this.getTotalSupply();
+        const circulatingSupply = this.getCirculatingSupply();
         const newCirculatingSupply = circulatingSupply.add(amount);
-        newCirculatingSupply.assertLessThanOrEqual(maxSupply);
-        this.token.mint({
-            address: receiver,
-            amount,
-        });
-        this.circulatingSupply.set(newCirculatingSupply);
+        newCirculatingSupply.assertLessThanOrEqual(totalSupply, errors.mintAmountExceedsTotalSupply);
+        // eslint-disable-next-line no-warning-comments
+        // TODO: find out why amount can't be Int64, also for burn
+        // eslint-disable-next-line putout/putout
+        return this.token.mint({ address: to, amount });
     }
-    burn(burner, amount) {
-        const circulatingSupply = this.circulatingSupply.getAndRequireEquals();
-        const newCirculatingSupply = circulatingSupply.sub(amount);
-        this.token.burn({
-            address: burner,
-            amount,
-        });
-        this.circulatingSupply.set(newCirculatingSupply);
+    setTotalSupply(amount) {
+        const hooksContract = this.getHooksContract();
+        hooksContract.canAdmin(AdminAction.fromType(AdminAction.types.setTotalSupply));
+        this.totalSupply.set(amount);
     }
-    transfer(sender, receiver, amount) {
-        this.token.send({ from: sender, to: receiver, amount });
-        this.emitEvent("Transfer", {
-            from: sender,
-            to: receiver,
-            amount,
-        });
+    /**
+     * Burnable
+     */
+    burn(from, amount) {
+        const hooksContract = this.getHooksContract();
+        hooksContract.canAdmin(AdminAction.fromType(AdminAction.types.burn));
+        // eslint-disable-next-line putout/putout
+        return this.token.mint({ address: from, amount });
+    }
+    /**
+     * Upgradable
+     */
+    setVerificationKey(verificationKey) {
+        const hooksContract = this.getHooksContract();
+        hooksContract.canAdmin(AdminAction.fromType(AdminAction.types.setVerificationKey));
+        this.account.verificationKey.set(verificationKey);
+    }
+    /**
+     * Pausable
+     */
+    setPaused(paused) {
+        const hooksContract = this.getHooksContract();
+        hooksContract.canAdmin(AdminAction.fromType(AdminAction.types.setPaused));
+        this.paused.set(paused);
+    }
+    /**
+     * Approvable
+     */
+    // TODO
+    hasNoBalanceChange(accountUpdates) {
+        return Bool(true);
+    }
+    assertHasNoBalanceChange(accountUpdates) {
+        this.hasNoBalanceChange(accountUpdates).assertTrue(errors.nonZeroBalanceChange);
+    }
+    approveTransfer(from, to) {
+        this.assertHasNoBalanceChange([from, to]);
+        this.approve(from, AccountUpdate.Layout.NoChildren);
+        this.approve(to, AccountUpdate.Layout.NoChildren);
+    }
+    approveDeploy(deploy) {
+        this.assertHasNoBalanceChange([deploy]);
+        this.approve(deploy, AccountUpdate.Layout.NoChildren);
     }
     lock(receipt, bridgeAddress, amount) {
-        this.token.send({ from: this.sender, to: bridgeAddress, amount });
+        // this.token.send({ from: this.sender, to: bridgeAddress, amount })
+        this.burn(this.sender, amount);
         this.emitEvent("Lock", {
             locker: this.sender,
             receipt,
@@ -141,41 +189,183 @@ export class Token extends SmartContract {
         let receiverAccountUpdate = Experimental.createChildAccountUpdate(this.self, receiverAddress, tokenId);
         receiverAccountUpdate.balance.addInPlace(amount);
     }
+    mintToken(receiverAddress, amount, callback) {
+        // approves the callback which deductes the amount of tokens from the sender
+        let senderAccountUpdate = this.approve(callback);
+        // // Create constraints for the sender account update and amount
+        // let negativeAmount = Int64.fromObject(
+        //     senderAccountUpdate.body.balanceChange
+        // );
+        // negativeAmount.assertEquals(Int64.from(amount).neg());
+        // let tokenId = this.token.id;
+        // // Create receiver accountUpdate
+        // let receiverAccountUpdate = Experimental.createChildAccountUpdate(
+        //     this.self,
+        //     receiverAddress,
+        //     tokenId
+        // );
+        // receiverAccountUpdate.balance.addInPlace(amount);
+        this.mint(receiverAddress, amount);
+    }
+    /**
+     * Transferable
+     */
+    transferFromTo({ from, to, amount, }) {
+        const [fromAccountUpdate] = this.transferFrom(from, amount, AccountUpdate.MayUseToken.ParentsOwnToken);
+        const [, toAccountUpdate] = this.transferTo(to, amount, AccountUpdate.MayUseToken.ParentsOwnToken);
+        fromAccountUpdate.requireSignature();
+        return [fromAccountUpdate, toAccountUpdate];
+    }
+    transferFrom(from, amount, mayUseToken) {
+        const fromAccountUpdate = AccountUpdate.create(from, this.token.id);
+        fromAccountUpdate.balance.subInPlace(amount);
+        fromAccountUpdate.body.mayUseToken = mayUseToken;
+        return [fromAccountUpdate, undefined];
+    }
+    transferTo(to, amount, mayUseToken) {
+        const toAccountUpdate = AccountUpdate.create(to, this.token.id);
+        toAccountUpdate.body.mayUseToken = mayUseToken;
+        toAccountUpdate.balance.addInPlace(amount);
+        return [undefined, toAccountUpdate];
+    }
+    transfer({ from, to, amount, mayUseToken, }) {
+        if (!from && !to) {
+            throw new Error(errors.fromOrToNotProvided);
+        }
+        if (from && to) {
+            return this.transferFromTo({
+                from,
+                to,
+                amount,
+            });
+        }
+        if (!mayUseToken) {
+            throw new Error(errors.mayUseTokenNotProvided);
+        }
+        if (from && !to) {
+            return this.transferFrom(from, amount, mayUseToken);
+        }
+        if (!to) {
+            throw new Error(errors.fromOrToNotProvided);
+        }
+        return this.transferTo(to, amount, mayUseToken);
+    }
+    /**
+     * Viewable
+     */
+    getAccountOf(address) {
+        return Account(address, this.token.id);
+    }
+    getBalanceOf(address, { preconditions } = Token.defaultViewableOptions) {
+        const account = this.getAccountOf(address);
+        const balance = account.balance.get();
+        if (preconditions.shouldAssertEquals) {
+            account.balance.assertEquals(balance);
+        }
+        return balance;
+    }
+    getTotalSupply({ preconditions } = Token.defaultViewableOptions) {
+        const totalSupply = this.totalSupply.get();
+        if (preconditions.shouldAssertEquals) {
+            this.totalSupply.assertEquals(totalSupply);
+        }
+        return totalSupply;
+    }
+    getCirculatingSupply({ preconditions } = Token.defaultViewableOptions) {
+        const circulatingSupply = this.circulatingSupply.get();
+        if (preconditions.shouldAssertEquals) {
+            this.circulatingSupply.assertEquals(circulatingSupply);
+        }
+        return circulatingSupply;
+    }
+    getHooks({ preconditions } = Token.defaultViewableOptions) {
+        const hooks = this.hooks.get();
+        if (preconditions.shouldAssertEquals) {
+            this.hooks.assertEquals(hooks);
+        }
+        return hooks;
+    }
+    getPaused({ preconditions } = Token.defaultViewableOptions) {
+        const paused = this.paused.get();
+        if (preconditions.shouldAssertEquals) {
+            this.paused.assertEquals(paused);
+        }
+        return paused;
+    }
+    getDecimals() {
+        return this.decimals;
+    }
 }
+Token.defaultViewableOptions = {
+    preconditions: { shouldAssertEquals: true },
+};
+// eslint-disable-next-line no-warning-comments
+// TODO: check how many decimals mina has by default
+Token.defaultDecimals = 9;
+__decorate([
+    state(PublicKey),
+    __metadata("design:type", Object)
+], Token.prototype, "hooks", void 0);
 __decorate([
     state(UInt64),
     __metadata("design:type", Object)
-], Token.prototype, "decimals", void 0);
-__decorate([
-    state(UInt64),
-    __metadata("design:type", Object)
-], Token.prototype, "maxSupply", void 0);
+], Token.prototype, "totalSupply", void 0);
 __decorate([
     state(UInt64),
     __metadata("design:type", Object)
 ], Token.prototype, "circulatingSupply", void 0);
 __decorate([
-    state(PublicKey),
+    state(Bool),
     __metadata("design:type", Object)
-], Token.prototype, "owner", void 0);
+], Token.prototype, "paused", void 0);
 __decorate([
     method,
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [PublicKey, UInt64]),
     __metadata("design:returntype", void 0)
+], Token.prototype, "initialize", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [PublicKey, UInt64]),
+    __metadata("design:returntype", AccountUpdate)
 ], Token.prototype, "mint", null);
 __decorate([
     method,
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [PublicKey, UInt64]),
+    __metadata("design:paramtypes", [UInt64]),
     __metadata("design:returntype", void 0)
+], Token.prototype, "setTotalSupply", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [PublicKey, UInt64]),
+    __metadata("design:returntype", AccountUpdate)
 ], Token.prototype, "burn", null);
 __decorate([
     method,
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [PublicKey, PublicKey, UInt64]),
+    __metadata("design:paramtypes", [VerificationKey]),
     __metadata("design:returntype", void 0)
-], Token.prototype, "transfer", null);
+], Token.prototype, "setVerificationKey", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Bool]),
+    __metadata("design:returntype", void 0)
+], Token.prototype, "setPaused", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [AccountUpdate, AccountUpdate]),
+    __metadata("design:returntype", void 0)
+], Token.prototype, "approveTransfer", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [AccountUpdate]),
+    __metadata("design:returntype", void 0)
+], Token.prototype, "approveDeploy", null);
 __decorate([
     method,
     __metadata("design:type", Function),
@@ -209,4 +399,18 @@ __decorate([
         UInt64, Experimental.Callback]),
     __metadata("design:returntype", void 0)
 ], Token.prototype, "sendTokensFromZkApp", null);
-//# sourceMappingURL=erc20.js.map
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [PublicKey,
+        UInt64, Experimental.Callback]),
+    __metadata("design:returntype", void 0)
+], Token.prototype, "mintToken", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [TransferFromToOptions]),
+    __metadata("design:returntype", Array)
+], Token.prototype, "transferFromTo", null);
+export default Token;
+//# sourceMappingURL=token.js.map

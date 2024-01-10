@@ -2,17 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EError } from '@constants/error.constant';
+import { ConfigService } from '@nestjs/config';
+import { EEnvKey } from '@constants/env.constant';
+import BigNumber from 'bignumber.js';
+import { addDecimal, calculateFee } from '@shared/utils/bignumber';
+
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 
 import { Mina, PublicKey, Experimental, fetchAccount, PrivateKey, UInt64, AccountUpdate } from 'o1js';
-import { Token } from './minaTokenErc20.js';
+import Token from './minaTokenErc20.js';
 import { Bridge } from './minaBridgeSC.js';
-import { ConfigService } from '@nestjs/config';
-import { EEnvKey } from '@constants/env.constant';
-import BigNumber from 'bignumber.js';
-import { addDecimal, calculateFee } from '@shared/utils/bignumber';
+import Hook from './Hooks.js';
 
 @Injectable()
 export class SenderMinaBridge {
@@ -31,6 +33,8 @@ export class SenderMinaBridge {
         this.commonConfigRepository.getCommonConfig()
       ])
 
+      console.log({dataLock});
+      
       if(!dataLock) {
         return;
       }
@@ -52,6 +56,8 @@ export class SenderMinaBridge {
         return ;
       }
 
+      console.log({amountReceive, receiveAddress, protocolFeeAmount});
+      
       const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount)
 
 
@@ -72,6 +78,7 @@ export class SenderMinaBridge {
     try {      
       await Token.compile();
       await Bridge.compile();
+      await Hook.compile();
       const Berkeley = Mina.Network(`${this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS)}`);
       // const Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
       Mina.setActiveInstance(Berkeley);
@@ -104,9 +111,9 @@ export class SenderMinaBridge {
       let tx = await Mina.transaction({ sender: feepayerAddress, fee: protocolFeeAmount }, async () => {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
         const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
-        zkApp.sendTokensFromZkApp(receiveiAdd, UInt64.from(amount), callback);
+        zkApp.mintToken(receiveiAdd, UInt64.from(amount), callback);
         const callbackFee = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(protocolFeeAmount), protocolFeeAddress, UInt64.from(txId)]);
-        zkApp.sendTokensFromZkApp(protocolFeeAddress, UInt64.from(protocolFeeAmount), callbackFee);
+        zkApp.mintToken(protocolFeeAddress, UInt64.from(protocolFeeAmount), callbackFee);
       });
       await tx.prove();
       console.log('send transaction...');

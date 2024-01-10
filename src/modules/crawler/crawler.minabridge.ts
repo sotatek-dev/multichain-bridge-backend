@@ -9,7 +9,7 @@ import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 import { Mina, PublicKey, UInt32 } from 'o1js';
 import { Bridge } from './minaBridgeSC.js';
-import { Token } from './minaTokenErc20.js';
+import Token from './minaTokenErc20.js';
 
 @Injectable()
 export class SCBridgeMinaCrawler {
