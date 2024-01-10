@@ -90,6 +90,9 @@ export class BlockchainEVMCrawler {
     let existLockTx = await queryRunner.manager.findOne(EventLog, {
       where: { txHashLock: event.returnValues.hash },
     })
+    if(!existLockTx) {
+      return;
+    }
 
     await queryRunner.manager.update(EventLog, existLockTx.id, {
       status: EEventStatus.COMPLETED,
@@ -127,7 +130,7 @@ export class BlockchainEVMCrawler {
       });
       currentCrawledBlock = await this.crawlContractRepository.save(tmpData);
     } else {
-      startBlockNumber = currentCrawledBlock.latestBlock;
+      startBlockNumber = Number(currentCrawledBlock.latestBlock) + 1;
     }
   
     if (toBlock >= Number(startBlockNumber) + Number(this.numberOfBlockPerJob)) {

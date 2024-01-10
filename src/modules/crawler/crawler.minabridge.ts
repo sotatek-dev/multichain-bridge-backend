@@ -75,6 +75,10 @@ export class SCBridgeMinaCrawler {
       where: { id: event.event.data.id.toString() },
     })
 
+    if(!existLockTx) {
+      return;
+    }
+
     const receiverAddress =  event.event.data.receiver.toBase58()
 
     if(receiverAddress == this.configService.get(EEnvKey.FEE_MINA_ADDRESS)) {
