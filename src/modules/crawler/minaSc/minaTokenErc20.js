@@ -14,9 +14,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 import { AccountUpdate, Bool, SmartContract, method, PublicKey, UInt64, Account, state, State, VerificationKey, Field, Experimental, Int64, Struct } from 'o1js';
 // eslint-disable-next-line max-len
 // eslint-disable-next-line no-duplicate-imports, @typescript-eslint/consistent-type-imports
-import { TransferFromToOptions, } from './interfaces/token/transferable.js';
+import { TransferFromToOptions, } from '../interfaces/token/transferable.js';
 import errors from './errors.js';
-import { AdminAction, } from './interfaces/token/adminable.js';
+import { AdminAction, } from '../interfaces/token/adminable.js';
 import Hooks from './Hooks.js';
 class Transfer extends Struct({
     from: PublicKey,

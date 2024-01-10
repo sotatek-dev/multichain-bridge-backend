@@ -12,9 +12,9 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 
 import { Mina, PublicKey, Experimental, fetchAccount, PrivateKey, UInt64, AccountUpdate } from 'o1js';
-import Token from './minaTokenErc20.js';
-import { Bridge } from './minaBridgeSC.js';
-import Hook from './Hooks.js';
+import Token from './minaSc/minaTokenErc20.js';
+import { Bridge } from './minaSc/minaBridgeSC.js';
+import Hook from './minaSc/Hooks.js';
 
 @Injectable()
 export class SenderMinaBridge {
@@ -56,8 +56,8 @@ export class SenderMinaBridge {
         return ;
       }
 
-      console.log({amountReceive, receiveAddress, protocolFeeAmount});
-      
+      // const AMOUNT_TRANSFER = UInt64.from(5000000000000);
+      // const AMOUNT_TRANSFER_USER = UInt64.from(5000000000);
       const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount)
 
 
@@ -89,21 +89,21 @@ export class SenderMinaBridge {
       let zkBridgeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
       let zkAppAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
       let receiveiAdd = PublicKey.fromBase58(receiveAddress);
-      let protocolFeeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.FEE_MINA_ADDRESS));
+      // let protocolFeeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.FEE_MINA_ADDRESS));
       let zkApp = new Token(zkAppAddress);
 
       const bridgeApp = new Bridge(zkBridgeAddress, zkApp.token.id);
-      const transactionFee = 1_000_000_000;
       console.log('build transaction and create proof...');
 
       try {
         await fetchAccount({ publicKey: feepayerAddress });
+        await fetchAccount({ publicKey: zkAppAddress });
       }
       catch (error) {
         console.log(error);
         return { success: false, error, data: null };
       }
-
+ 
       const tokenId = zkApp.token.id
       await fetchAccount({ publicKey: receiveiAdd, tokenId });
       const hasAccount = Mina.hasAccount(receiveiAdd, tokenId);
@@ -112,8 +112,6 @@ export class SenderMinaBridge {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
         const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
         zkApp.mintToken(receiveiAdd, UInt64.from(amount), callback);
-        const callbackFee = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(protocolFeeAmount), protocolFeeAddress, UInt64.from(txId)]);
-        zkApp.mintToken(protocolFeeAddress, UInt64.from(protocolFeeAmount), callbackFee);
       });
       await tx.prove();
       console.log('send transaction...');

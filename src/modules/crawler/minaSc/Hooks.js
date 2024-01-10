@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
 import { Bool, PublicKey, State, state, SmartContract, method, AccountUpdate, } from 'o1js';
-import { AdminAction } from './interfaces/token/adminable.js';
+import { AdminAction } from '../interfaces/token/adminable.js';
 class Hooks extends SmartContract {
     constructor() {
         super(...arguments);
