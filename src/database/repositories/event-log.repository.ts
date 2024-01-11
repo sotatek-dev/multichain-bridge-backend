@@ -42,6 +42,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     const queryBuilder = this.createQb();
     queryBuilder
     .where(`${this.alias}.sender_address = :address`, { address})
+    .orderBy(`${this.alias}.id`, EDirection.DESC)
     .select([
       `${this.alias}.id`,
       `${this.alias}.senderAddress`,
@@ -73,6 +74,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     const queryBuilder = this.createQb();
     queryBuilder
     .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.PROCESSING, EEventStatus.FAILED] })
+    .orderBy(`${this.alias}.id`, EDirection.DESC)
     if(options.address) {
       queryBuilder
       .andWhere(`${this.alias}.sender_address = :address`, { address: options.address})
