@@ -66,8 +66,11 @@ class Token extends SmartContract {
         hooksContract.canAdmin(AdminAction.fromType(AdminAction.types.mint));
         const totalSupply = this.getTotalSupply();
         const circulatingSupply = this.getCirculatingSupply();
-        const newCirculatingSupply = circulatingSupply.add(amount);
-        newCirculatingSupply.assertLessThanOrEqual(totalSupply, errors.mintAmountExceedsTotalSupply);
+        // const newCirculatingSupply = circulatingSupply.add(amount);
+        // newCirculatingSupply.assertLessThanOrEqual(
+        //   totalSupply,
+        //   errors.mintAmountExceedsTotalSupply
+        // );
         // eslint-disable-next-line no-warning-comments
         // TODO: find out why amount can't be Int64, also for burn
         // eslint-disable-next-line putout/putout
