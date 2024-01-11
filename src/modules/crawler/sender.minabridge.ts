@@ -32,15 +32,11 @@ export class SenderMinaBridge {
         this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA),
         this.commonConfigRepository.getCommonConfig()
       ])
-
-      console.log({dataLock});
-      
       if(!dataLock) {
         return;
       }
 
       const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock
-
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
       if(!tokenPair) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.NOTOKENPAIR);
@@ -56,14 +52,10 @@ export class SenderMinaBridge {
         return ;
       }
 
-      // const AMOUNT_TRANSFER = UInt64.from(5000000000000);
-      // const AMOUNT_TRANSFER_USER = UInt64.from(5000000000);
       const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount)
-
-
       //Update status eventLog when call function unlock
       if (result.success) {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.PROCESSING, result.error, result.data);
+        await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.PROCESSING, result.error, result.data, protocolFeeAmount);
       } else {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
       }
@@ -89,7 +81,6 @@ export class SenderMinaBridge {
       let zkBridgeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
       let zkAppAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
       let receiveiAdd = PublicKey.fromBase58(receiveAddress);
-      // let protocolFeeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.FEE_MINA_ADDRESS));
       let zkApp = new Token(zkAppAddress);
 
       const bridgeApp = new Bridge(zkBridgeAddress, zkApp.token.id);
@@ -114,6 +105,7 @@ export class SenderMinaBridge {
         zkApp.mintToken(receiveiAdd, UInt64.from(amount), callback);
       });
       await tx.prove();
+
       console.log('send transaction...');
       let sentTx = await tx.sign([feepayerKey]).send();
       console.log('transaction=======', sentTx.hash());

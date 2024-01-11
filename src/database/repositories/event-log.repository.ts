@@ -24,14 +24,15 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     .getOne();
   }
 
-  public async updateStatusAndRetryEvenLog(id: number, retry: number, status: EEventStatus, errorDetail?, txHashUnlock? ) {
+  public async updateStatusAndRetryEvenLog(id: number, retry: number, status: EEventStatus, errorDetail?, txHashUnlock?, protocolFee? ) {
     return this.createQueryBuilder(`${this.alias}`)
     .update(EventLog)
     .set({
       status,
       retry,
       errorDetail,
-      txHashUnlock
+      txHashUnlock,
+      protocolFee
     })
     .where(`${this.alias}.id = :id`, { id })
     .execute()
