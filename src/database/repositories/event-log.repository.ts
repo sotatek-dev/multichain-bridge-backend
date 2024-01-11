@@ -42,6 +42,29 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     const queryBuilder = this.createQb();
     queryBuilder
     .where(`${this.alias}.sender_address = :address`, { address})
+    .select([
+      `${this.alias}.id`,
+      `${this.alias}.senderAddress`,
+      `${this.alias}.tokenFromAddress`,
+      `${this.alias}.amountFrom`,
+      `${this.alias}.networkFrom`,
+      `${this.alias}.tokenFromName`,
+      `${this.alias}.txHashLock`,
+      `${this.alias}.receiveAddress`,
+      `${this.alias}.amountReceived`,
+      `${this.alias}.tokenReceivedAddress`,
+      `${this.alias}.networkReceived`,
+      `${this.alias}.tokenReceivedName`,
+      `${this.alias}.txHashUnlock`,
+      `${this.alias}.blockNumber`,
+      `${this.alias}.blockTimeLock`,
+      `${this.alias}.protocolFee`,
+      `${this.alias}.fromTokenDecimal`,
+      `${this.alias}.toTokenDecimal`,
+      `${this.alias}.status`,
+      `${this.alias}.createdAt`,
+      ]);
+
     this.queryBuilderAddPagination(queryBuilder, options);
     return queryBuilder.getManyAndCount();
   }

@@ -5,6 +5,7 @@ import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.co
 import { EEnvKey } from '@constants/env.constant';
 // import { LoggerService } from '@shared/modules/logger/logger.service';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
+import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 import { Mina, PublicKey, UInt32, Field } from 'o1js';
@@ -19,6 +20,8 @@ export class SCTokenMinaCrawler {
     private readonly dataSource: DataSource,
     // private loggerService: LoggerService,
     private readonly crawlContractRepository: CrawlContractRepository,
+    private readonly tokenPairRepository: TokenPairRepository,
+
   ) {
 
   }
@@ -84,7 +87,6 @@ export class SCTokenMinaCrawler {
       tokenFromName: 'WETH',
       tokenReceivedAddress: this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
       txHashLock: event.event.transactionInfo.transactionHash,
-      // receiveAddress: "toChecksumAddress(receiveAddress)",
       receiveAddress: receiveAddress,
       blockNumber: event.blockHeight.toString(),
       blockTimeLock: Number(timeLock),
@@ -92,6 +94,16 @@ export class SCTokenMinaCrawler {
       returnValues: JSON.stringify(event),
       status: EEventStatus.WAITING,
       retry: 0,
+      fromTokenDecimal: null,
+      toTokenDecimal: null
+    }
+
+    const tokenPair = await this.tokenPairRepository.getTokenPair(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS), this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS));
+    if(!tokenPair) {
+      eventUnlock.status = EEventStatus.NOTOKENPAIR
+    } else {
+      eventUnlock.fromTokenDecimal = tokenPair.fromDecimal
+      eventUnlock.toTokenDecimal = tokenPair.toDecimal
     }
 
     await queryRunner.manager.save(EventLog, eventUnlock);
