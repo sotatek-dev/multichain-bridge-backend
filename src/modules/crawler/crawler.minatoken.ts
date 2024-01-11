@@ -9,7 +9,7 @@ import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 import { Mina, PublicKey, UInt32, Field } from 'o1js';
 
-import { Token } from './minaTokenErc20.js';
+import Token from './minaSc/minaTokenErc20.js';
 import dayjs from'dayjs';
 
 @Injectable()
@@ -38,6 +38,8 @@ export class SCTokenMinaCrawler {
 
       let zkAppToke = new Token(zkAppToken);
       const events = await zkAppToke.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
+      
+      console.log({events});
       
       for (const event of events) {
         switch (event.type) {

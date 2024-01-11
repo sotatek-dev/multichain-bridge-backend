@@ -8,8 +8,8 @@ import { CrawlContractRepository } from 'database/repositories/crawl-contract.re
 import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 import { Mina, PublicKey, UInt32 } from 'o1js';
-import { Bridge } from './minaBridgeSC.js';
-import { Token } from './minaTokenErc20.js';
+import { Bridge } from './minaSc/minaBridgeSC.js';
+import Token from './minaSc/minaTokenErc20.js';
 
 @Injectable()
 export class SCBridgeMinaCrawler {
@@ -79,21 +79,14 @@ export class SCBridgeMinaCrawler {
       return;
     }
 
-    const receiverAddress =  event.event.data.receiver.toBase58()
-
-    if(receiverAddress == this.configService.get(EEnvKey.FEE_MINA_ADDRESS)) {
-      await queryRunner.manager.update(EventLog, existLockTx.id, {
-        protocolFee: event.event.data.amount.toString(),
-      });
-    } else {
-      await queryRunner.manager.update(EventLog, existLockTx.id, {
-        status: EEventStatus.COMPLETED,
-        txHashUnlock: event.event.transactionInfo.transactionHash,
-        amountReceived: event.event.data.amount.toString(),
-        tokenReceivedAddress: event.event.data.tokenAddress.toBase58(),
-        tokenReceivedName: "WETH",
-      });
-    }
+    await queryRunner.manager.update(EventLog, existLockTx.id, {
+      status: EEventStatus.COMPLETED,
+      txHashUnlock: event.event.transactionInfo.transactionHash,
+      amountReceived: event.event.data.amount.toString(),
+      tokenReceivedAddress: event.event.data.tokenAddress.toBase58(),
+      tokenReceivedName: "WETH",
+    });
+  
   }
 
   private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
