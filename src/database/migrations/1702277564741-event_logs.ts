@@ -85,7 +85,6 @@ export class EventLogs1702277564741 implements MigrationInterface {
           {
             name: 'block_time_lock',
             type: 'bigint',
-            length: '255',
             isNullable: true,
           },
           {
@@ -107,12 +106,6 @@ export class EventLogs1702277564741 implements MigrationInterface {
           {
             name: 'to_token_decimal',
             type: 'int',
-            isNullable: true,
-          },
-          {
-            name: 'retry',
-            type: 'varchar',
-            length: '255',
             isNullable: true,
           },
           {
@@ -163,5 +156,7 @@ export class EventLogs1702277564741 implements MigrationInterface {
     );
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    return queryRunner.dropTable('event_logs');
+  }
 }

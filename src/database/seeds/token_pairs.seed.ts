@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm';
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
 import { TokenPair } from '@modules/users/entities/tokenpair.entity';
-import { ENetworkName } from '@constants/blockchain.constant';
+import { ENetworkName, ETokenPairStatus } from '@constants/blockchain.constant';
 
 export default class TokenPairsSeeder implements Seeder {
   public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {
@@ -47,7 +47,8 @@ export default class TokenPairsSeeder implements Seeder {
           fromDecimal: listToken[i].fromDecimal,
           toDecimal: listToken[i].toDecimal,
           fromScAddress: listToken[i].fromScAddress,
-          toScAddress: listToken[i].toScAddress
+          toScAddress: listToken[i].toScAddress,
+          status: ETokenPairStatus.ENABLE
         }
       );
       await repository.insert(newToken);
