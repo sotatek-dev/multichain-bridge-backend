@@ -6,6 +6,7 @@ import { EEnvKey } from '@constants/env.constant';
 // import { LoggerService } from '@shared/modules/logger/logger.service';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
+import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { EventData } from 'web3-eth-contract';
 import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
@@ -18,6 +19,8 @@ export class BlockchainEVMCrawler {
     // private loggerService: LoggerService,
     private readonly ethBridgeContract: ETHBridgeContract,
     private readonly crawlContractRepository: CrawlContractRepository,
+    private readonly tokenPairRepository: TokenPairRepository,
+
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
 
@@ -77,6 +80,16 @@ export class BlockchainEVMCrawler {
       returnValues: JSON.stringify(event.returnValues),
       status: EEventStatus.WAITING,
       retry: 0,
+      fromTokenDecimal: null,
+      toTokenDecimal: null
+    }
+
+    const tokenPair = await this.tokenPairRepository.getTokenPair(this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS), this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+    if(!tokenPair) {
+      eventUnlock.status = EEventStatus.NOTOKENPAIR
+    } else {
+      eventUnlock.fromTokenDecimal = tokenPair.fromDecimal
+      eventUnlock.toTokenDecimal = tokenPair.toDecimal
     }
 
     await queryRunner.manager.save(EventLog, eventUnlock);
@@ -90,6 +103,9 @@ export class BlockchainEVMCrawler {
     let existLockTx = await queryRunner.manager.findOne(EventLog, {
       where: { txHashLock: event.returnValues.hash },
     })
+    if(!existLockTx) {
+      return;
+    }
 
     await queryRunner.manager.update(EventLog, existLockTx.id, {
       status: EEventStatus.COMPLETED,
@@ -127,7 +143,7 @@ export class BlockchainEVMCrawler {
       });
       currentCrawledBlock = await this.crawlContractRepository.save(tmpData);
     } else {
-      startBlockNumber = currentCrawledBlock.latestBlock;
+      startBlockNumber = Number(currentCrawledBlock.latestBlock) + 1;
     }
   
     if (toBlock >= Number(startBlockNumber) + Number(this.numberOfBlockPerJob)) {

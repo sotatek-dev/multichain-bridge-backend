@@ -84,7 +84,11 @@ export class AuthService {
   }
 
   private async validateSignatureMina(address: string, signature) {
-    const client = new Client({ network: 'mainnet' });
+    let client = new Client({ network: 'mainnet' });
+    if(process.env.NODE_ENV !== "production") {
+      client = new Client({ network: 'testnet' });
+    }
+
     const signer = {
       signature,
       publicKey: address,

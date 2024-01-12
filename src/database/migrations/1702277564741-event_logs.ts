@@ -32,10 +32,93 @@ export class EventLogs1702277564741 implements MigrationInterface {
             isNullable: true,
           },
           {
-            name: 'network_name',
+            name: 'amount_from',
             type: 'varchar',
             length: '255',
-            enum: Object.values(ENetworkName),
+          },
+          {
+            name: 'token_from_address',
+            type: 'varchar',
+            length: '255',
+          },
+          {
+            name: 'network_from',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'token_from_name',
+            type: 'varchar',
+            length: '255',
+          },
+          {
+            name: 'receive_address',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'amount_received',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'token_received_address',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'token_received_name',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'network_received',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'block_time_lock',
+            type: 'bigint',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'protocol_fee',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'return_values',
+            type: 'text',
+            isNullable: true,
+          },
+          {
+            name: 'from_token_decimal',
+            type: 'int',
+            isNullable: true,
+          },
+          {
+            name: 'to_token_decimal',
+            type: 'int',
+            isNullable: true,
+          },
+          {
+            name: 'retry',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'error_detail',
+            type: 'text',
+            isNullable: true,
           },
           {
             name: 'block_number',
@@ -48,11 +131,6 @@ export class EventLogs1702277564741 implements MigrationInterface {
             enum: Object.values(EEventName),
           },
           {
-            name: 'return_values',
-            type: 'text',
-            isNullable: true,
-          },
-          {
             name: 'status',
             type: 'varchar',
             length: '255',
@@ -63,6 +141,7 @@ export class EventLogs1702277564741 implements MigrationInterface {
             name: 'retry',
             type: 'int',
             isNullable: true,
+            default: 0,
           },
           {
             name: 'created_at',

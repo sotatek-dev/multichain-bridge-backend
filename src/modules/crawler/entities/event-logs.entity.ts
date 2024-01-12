@@ -60,6 +60,12 @@ export class EventLog extends BaseEntityIncludeTime {
   @Column({ name: 'return_values', type: 'text', nullable: false })
   returnValues: string;
 
+  @Column({ name: 'from_token_decimal', type: 'int', nullable: true })
+  fromTokenDecimal: number;
+
+  @Column({ name: 'to_token_decimal', type: 'int', nullable: true })
+  toTokenDecimal: number;
+
   @Column({ name: 'error_detail', type: 'text', nullable: true })
   errorDetail: string;
 
