@@ -73,7 +73,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
   public async getHistories(options) {
     const queryBuilder = this.createQb();
     queryBuilder
-    .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.PROCESSING, EEventStatus.FAILED] })
+    .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.PROCESSING, EEventStatus.WAITING, EEventStatus.FAILED] })
     .orderBy(`${this.alias}.id`, EDirection.DESC)
     if(options.address) {
       queryBuilder
