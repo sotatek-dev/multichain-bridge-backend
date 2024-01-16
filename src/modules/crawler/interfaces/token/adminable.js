@@ -1,6 +1,6 @@
 /* eslint-disable new-cap */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import { Struct, Field } from 'o1js';
+import { Struct, Field, } from 'o1js';
 class AdminAction extends Struct({
     type: Field,
 }) {

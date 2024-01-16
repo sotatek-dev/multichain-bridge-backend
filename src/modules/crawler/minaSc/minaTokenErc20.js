@@ -11,7 +11,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { AccountUpdate, Bool, SmartContract, method, PublicKey, UInt64, Account, state, State, VerificationKey, Field, Experimental, Int64, Struct } from 'o1js';
+import { AccountUpdate, Bool, SmartContract, method, PublicKey, UInt64, Account, state, State, VerificationKey, Field, Experimental, Int64, Struct, Permissions } from 'o1js';
 // eslint-disable-next-line max-len
 // eslint-disable-next-line no-duplicate-imports, @typescript-eslint/consistent-type-imports
 import { TransferFromToOptions, } from '../interfaces/token/transferable.js';
@@ -50,6 +50,14 @@ class Token extends SmartContract {
         const admin = this.getHooks();
         return new Hooks(admin);
     }
+    deploy(args) {
+        super.deploy(args);
+        this.account.permissions.set({
+            ...Permissions.default(),
+            access: Permissions.proofOrSignature()
+        });
+        this.account.tokenSymbol.set('WETH');
+    }
     initialize(hooks, totalSupply) {
         super.init();
         this.account.provedState.assertEquals(Bool(false));
@@ -57,6 +65,7 @@ class Token extends SmartContract {
         this.totalSupply.set(totalSupply);
         this.circulatingSupply.set(UInt64.from(0));
         this.paused.set(Bool(false));
+        // this.account.tokenSymbol.set('WETH');
     }
     /**
      * Mintable
@@ -88,7 +97,7 @@ class Token extends SmartContract {
         const hooksContract = this.getHooksContract();
         hooksContract.canAdmin(AdminAction.fromType(AdminAction.types.burn));
         // eslint-disable-next-line putout/putout
-        return this.token.mint({ address: from, amount });
+        return this.token.burn({ address: from, amount });
     }
     /**
      * Upgradable
@@ -125,9 +134,14 @@ class Token extends SmartContract {
         this.assertHasNoBalanceChange([deploy]);
         this.approve(deploy, AccountUpdate.Layout.NoChildren);
     }
-    lock(receipt, bridgeAddress, amount) {
+    lock(receipt, bridgeAddress, callback) {
         // this.token.send({ from: this.sender, to: bridgeAddress, amount })
-        this.burn(this.sender, amount);
+        // this.burn(this.sender, amount);
+        // eslint-disable-next-line
+        const callbackAmount = callback?.args?.toString() ?? "0";
+        const amount = UInt64.from(callbackAmount);
+        const senderAccountUpdate = this.approve(callback, AccountUpdate.Layout.AnyChildren);
+        this.token.burn({ address: this.sender, amount });
         this.emitEvent("Lock", {
             locker: this.sender,
             receipt,
@@ -372,7 +386,7 @@ __decorate([
 __decorate([
     method,
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Field, PublicKey, UInt64]),
+    __metadata("design:paramtypes", [Field, PublicKey, Experimental.Callback]),
     __metadata("design:returntype", void 0)
 ], Token.prototype, "lock", null);
 __decorate([

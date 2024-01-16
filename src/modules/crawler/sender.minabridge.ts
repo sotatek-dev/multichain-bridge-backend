@@ -99,7 +99,7 @@ export class SenderMinaBridge {
       await fetchAccount({ publicKey: receiveiAdd, tokenId });
       const hasAccount = Mina.hasAccount(receiveiAdd, tokenId);
 
-      let tx = await Mina.transaction({ sender: feepayerAddress, fee: protocolFeeAmount }, async () => {
+      let tx = await Mina.transaction({ sender: feepayerAddress, fee: 1 }, async () => {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
         const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
         zkApp.mintToken(receiveiAdd, UInt64.from(amount), callback);
