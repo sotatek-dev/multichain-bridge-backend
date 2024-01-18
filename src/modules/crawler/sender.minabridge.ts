@@ -71,8 +71,8 @@ export class SenderMinaBridge {
       await Token.compile();
       await Bridge.compile();
       await Hook.compile();
-      const Berkeley = Mina.Network(`${this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS)}`);
-      // const Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+      // const Berkeley = Mina.Network(`${this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS)}`);
+      const Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
       Mina.setActiveInstance(Berkeley);
 
       // call update() and send transaction
@@ -99,7 +99,7 @@ export class SenderMinaBridge {
       await fetchAccount({ publicKey: receiveiAdd, tokenId });
       const hasAccount = Mina.hasAccount(receiveiAdd, tokenId);
 
-      let tx = await Mina.transaction({ sender: feepayerAddress, fee: 1 }, async () => {
+      let tx = await Mina.transaction({ sender: feepayerAddress, fee: Number(protocolFeeAmount) * 2000 }, async () => {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
         const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
         zkApp.mintToken(receiveiAdd, UInt64.from(amount), callback);

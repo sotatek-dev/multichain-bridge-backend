@@ -34,11 +34,15 @@ export class Bridge extends SmartContract {
         this.maxAmount = State();
         this.events = { "Unlock": UnlockEvent, "Lock": LockEvent };
     }
+    firstInitialize(_minter) {
+        this.minter.set(_minter);
+    }
     decrementBalance(amount) {
         this.balance.subInPlace(amount);
         this.minter.set(this.sender);
     }
     setMinter(_minter) {
+        this.minter.getAndRequireEquals().assertEquals(this.sender);
         this.minter.set(_minter);
     }
     setMinAmount(_min) {
@@ -78,6 +82,12 @@ __decorate([
     state(UInt64),
     __metadata("design:type", Object)
 ], Bridge.prototype, "maxAmount", void 0);
+__decorate([
+    method,
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [PublicKey]),
+    __metadata("design:returntype", void 0)
+], Bridge.prototype, "firstInitialize", null);
 __decorate([
     method,
     __metadata("design:type", Function),

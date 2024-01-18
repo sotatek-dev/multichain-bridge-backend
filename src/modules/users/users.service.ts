@@ -76,7 +76,7 @@ export class UsersService {
       this.eventLogRepository.sumAmountBridgeOfUserInDay(address)
     ])
     
-    return { dailyQuota, totalAmountOfToDay: totalamount || 0 }
+    return { dailyQuota, totalAmountOfToDay: totalamount?.totalamount || 0 }
   }
 
   async getListTokenPair() {
