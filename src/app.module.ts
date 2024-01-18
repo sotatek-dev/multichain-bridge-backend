@@ -14,6 +14,8 @@ import { CustomAuthorizationHeaderMiddleware } from '@shared/middleware/custom-a
 import { Web3Module } from '@shared/modules/web3/web3.module';
 
 import { LoggerHttpRequestMiddleware } from './shared/middleware/logger-http-request.middleware';
+import { AppController } from 'app.controller';
+import { AppService } from 'app.service';
 
 const modules = [
   ConfigurationModule,
@@ -26,7 +28,8 @@ const modules = [
 ];
 @Module({
   imports: modules,
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
