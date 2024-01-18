@@ -30,28 +30,44 @@ export class Bridge extends SmartContract {
     constructor() {
         super(...arguments);
         this.minter = State();
+        this.configurator = State();
         this.minAmount = State();
         this.maxAmount = State();
         this.events = { "Unlock": UnlockEvent, "Lock": LockEvent };
     }
-    firstInitialize(_minter) {
-        this.minter.set(_minter);
-    }
     decrementBalance(amount) {
         this.balance.subInPlace(amount);
+    }
+    deploy(args) {
+        super.deploy(args);
+        // this.account.permissions.set({
+        //   ...Permissions.default(),
+        //   access: Permissions.proofOrSignature()
+        // })
+        this.configurator.set(this.sender);
         this.minter.set(this.sender);
     }
-    setMinter(_minter) {
-        this.minter.getAndRequireEquals().assertEquals(this.sender);
-        this.minter.set(_minter);
+    config(_configurator, _min, _max) {
+        this.configurator.getAndRequireEquals().assertEquals(this.sender);
+        this.configurator.assertEquals(this.configurator.get());
+        this.minAmount.assertEquals(this.minAmount.get());
+        this.maxAmount.assertEquals(this.maxAmount.get());
+        this.configurator.set(_configurator);
+        this.minAmount.set(_min);
+        this.maxAmount.set(_max);
+    }
+    setConfigurator(_configurator) {
+        this.configurator.getAndRequireEquals().assertEquals(this.sender);
+        this.configurator.assertEquals(this.configurator.get());
+        this.configurator.set(_configurator);
     }
     setMinAmount(_min) {
-        this.minter.getAndRequireEquals().assertEquals(this.sender);
+        this.configurator.getAndRequireEquals().assertEquals(this.sender);
         this.minAmount.assertEquals(this.minAmount.get());
         this.minAmount.set(_min);
     }
     setMaxAmount(_max) {
-        this.minter.getAndRequireEquals().assertEquals(this.sender);
+        this.configurator.getAndRequireEquals().assertEquals(this.sender);
         this.maxAmount.assertEquals(this.maxAmount.get());
         this.maxAmount.set(_max);
     }
@@ -75,6 +91,10 @@ __decorate([
     __metadata("design:type", Object)
 ], Bridge.prototype, "minter", void 0);
 __decorate([
+    state(PublicKey),
+    __metadata("design:type", Object)
+], Bridge.prototype, "configurator", void 0);
+__decorate([
     state(UInt64),
     __metadata("design:type", Object)
 ], Bridge.prototype, "minAmount", void 0);
@@ -85,21 +105,21 @@ __decorate([
 __decorate([
     method,
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [PublicKey]),
-    __metadata("design:returntype", void 0)
-], Bridge.prototype, "firstInitialize", null);
-__decorate([
-    method,
-    __metadata("design:type", Function),
     __metadata("design:paramtypes", [UInt64]),
     __metadata("design:returntype", void 0)
 ], Bridge.prototype, "decrementBalance", null);
 __decorate([
     method,
     __metadata("design:type", Function),
+    __metadata("design:paramtypes", [PublicKey, UInt64, UInt64]),
+    __metadata("design:returntype", void 0)
+], Bridge.prototype, "config", null);
+__decorate([
+    method,
+    __metadata("design:type", Function),
     __metadata("design:paramtypes", [PublicKey]),
     __metadata("design:returntype", void 0)
-], Bridge.prototype, "setMinter", null);
+], Bridge.prototype, "setConfigurator", null);
 __decorate([
     method,
     __metadata("design:type", Function),
