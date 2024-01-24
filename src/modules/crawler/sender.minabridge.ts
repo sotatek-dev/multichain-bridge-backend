@@ -52,7 +52,8 @@ export class SenderMinaBridge {
         return ;
       }
 
-      const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount)
+      let rateMINAETH = 2000;
+      const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount, rateMINAETH)
       //Update status eventLog when call function unlock
       if (result.success) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.PROCESSING, result.error, result.data, protocolFeeAmount);
@@ -66,7 +67,7 @@ export class SenderMinaBridge {
     
   }
 
-  private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount) {
+  private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount, rateMINAETH) {
     try {      
       await Token.compile();
       await Bridge.compile();
@@ -99,7 +100,7 @@ export class SenderMinaBridge {
       await fetchAccount({ publicKey: receiveiAdd, tokenId });
       const hasAccount = Mina.hasAccount(receiveiAdd, tokenId);
 
-      let tx = await Mina.transaction({ sender: feepayerAddress, fee: Number(protocolFeeAmount) * 2000 }, async () => {
+      let tx = await Mina.transaction({ sender: feepayerAddress, fee: Number(protocolFeeAmount) * rateMINAETH }, async () => {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
         const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
         zkApp.mintToken(receiveiAdd, UInt64.from(amount), callback);

@@ -26,6 +26,10 @@ module.exports = {
     {
       name: `mina-sender-bridge-unlock-${process.env.NODE_ENV}`,
       script: 'yarn console sender-mina-bridge-unlock',
+    },
+    {
+      name: `get-price-token-${process.env.NODE_ENV}`,
+      script: 'yarn console get-price-token',
     }
   ],
 };

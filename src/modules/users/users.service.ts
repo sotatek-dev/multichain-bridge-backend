@@ -1,19 +1,22 @@
-import { Injectable } from '@nestjs/common';
-import { UserRepository } from 'database/repositories/user.repository';
+import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { EError } from '@constants/error.constant';
+import { ENetworkName } from '@constants/blockchain.constant';
+import { EEnvKey } from '@constants/env.constant';
 
+import { addDecimal, calculateFee } from '@shared/utils/bignumber';
+import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 import { httpBadRequest } from '@shared/exceptions/http-exeption';
+
+import { UserRepository } from 'database/repositories/user.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
+import { TokenPriceRepository } from 'database/repositories/token-price.repository';
+
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto';
 import { DataSource } from 'typeorm';
 import { TokenPair } from '@modules/users/entities/tokenpair.entity';
-import { ENetworkName } from '@constants/blockchain.constant';
-import { addDecimal, calculateFee } from '@shared/utils/bignumber';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
-import { ConfigService } from '@nestjs/config';
-import { EEnvKey } from '@constants/env.constant';
 
 @Injectable()
 export class UsersService {
@@ -21,6 +24,7 @@ export class UsersService {
     private readonly usersRepository: UserRepository,
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
+    private readonly tokenPriceRepository: TokenPriceRepository,
     private readonly dataSource: DataSource,
     private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
@@ -94,6 +98,20 @@ export class UsersService {
     ])
 
     if(tokenPair.toChain == ENetworkName.MINA) {
+      const tokenPrice = await this.tokenPriceRepository.getTokenPriceByListSymbol(['MINA', 'ETH'])
+
+      let MINA_USD, ETH_USD, MINA_ETH;
+      tokenPrice.forEach(e => {
+        if(e.symbol == 'MINA') {
+          MINA_USD = e.priceUsd
+        }
+
+        if(e.symbol == 'ETH') {
+          ETH_USD = e.priceUsd
+        }
+      })
+      MINA_ETH = MINA_USD / ETH_USD;
+
       gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA));
     } else {
       gasFee = await this.ethBridgeContract.getEstimateGas(tokenPair.toAddress, addDecimal(0, tokenPair.toDecimal), 1 , '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0', 0);

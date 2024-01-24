@@ -8,6 +8,7 @@ import { SenderMinaBridge } from './sender.minabridge';
 import { SCBridgeMinaCrawler } from './crawler.minabridge';
 import { SCTokenMinaCrawler } from './crawler.minatoken';
 import { sleep } from '@shared/utils/promise';
+import { BatchJobGetPriceToken } from './batch.tokenprice';
 
 @Console()
 export class CrawlerConsole {
@@ -20,6 +21,7 @@ export class CrawlerConsole {
     private scTokenMinaCrawler: SCTokenMinaCrawler,
     private senderEVMBridge: SenderEVMBridge,
     private senderMinaBridge: SenderMinaBridge,
+    private jobGetPrice: BatchJobGetPriceToken,
 
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
@@ -95,6 +97,21 @@ export class CrawlerConsole {
       while (true) {
         this.senderMinaBridge.handleUnlockMina();
         await sleep(900);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  @Command({
+    command: 'get-price-token',
+    description: 'get price of token',
+  })
+  async getPriceCoinMarketCap() {
+    try {
+      while (true) {
+        this.jobGetPrice.handleGetPriceToken();
+        await sleep(43200);
       }
     } catch (error) {
       console.log(error);
