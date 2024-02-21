@@ -1,9 +1,12 @@
 const errors = {
-  onlyNewAccountsCanBeInitialized: 'You can call .initialize() only on new accounts',
-  mayUseTokenNotProvided: 'You must specify the account update token ownership with `mayUseToken`',
+  onlyNewAccountsCanBeInitialized:
+    'You can call .initialize() only on new accounts',
+  mayUseTokenNotProvided:
+    'You must specify the account update token ownership with `mayUseToken`',
   nonZeroBalanceChange: 'Account update has a non-zero balance change',
   fromOrToNotProvided: `You must provide from & to, or either of those to issue a token transfer account update(s)`,
-  mintAmountExceedsTotalSupply: 'Minting the provided amount would overflow the total supply',
+  mintAmountExceedsTotalSupply:
+    'Minting the provided amount would overflow the total supply',
 };
 export default errors;
 //# sourceMappingURL=errors.js.map
