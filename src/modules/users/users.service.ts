@@ -98,19 +98,7 @@ export class UsersService {
     ])
 
     if(tokenPair.toChain == ENetworkName.MINA) {
-      const tokenPrice = await this.tokenPriceRepository.getTokenPriceByListSymbol(['MINA', 'ETH'])
-
-      let MINA_USD, ETH_USD, MINA_ETH;
-      tokenPrice.forEach(e => {
-        if(e.symbol == 'MINA') {
-          MINA_USD = e.priceUsd
-        }
-
-        if(e.symbol == 'ETH') {
-          ETH_USD = e.priceUsd
-        }
-      })
-      MINA_ETH = MINA_USD / ETH_USD;
+      const rate = await this.tokenPriceRepository.getRateETHToMina()
 
       gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA));
     } else {

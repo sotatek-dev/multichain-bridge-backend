@@ -11,13 +11,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
   if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { AccountUpdate, Bool, SmartContract, method, PublicKey, UInt64, Account, state, State, VerificationKey, Field, Experimental, Int64, Struct, Permissions } from 'o1js';
+import { AccountUpdate, Bool, SmartContract, method, PublicKey, UInt64, Account, state, State, VerificationKey, Field, Int64, Struct, Permissions } from 'o1js';
 // eslint-disable-next-line max-len
 // eslint-disable-next-line no-duplicate-imports, @typescript-eslint/consistent-type-imports
 import { TransferFromToOptions, } from '../interfaces/token/transferable.js';
 import errors from './errors.js';
 import { AdminAction, } from '../interfaces/token/adminable.js';
 import Hooks from './Hooks.js';
+import { Bridge } from './minaBridgeSC.js';
 class Transfer extends Struct({
   from: PublicKey,
   to: PublicKey,
@@ -126,12 +127,12 @@ class Token extends SmartContract {
   }
   approveTransfer(from, to) {
       this.assertHasNoBalanceChange([from, to]);
-      this.approve(from, AccountUpdate.Layout.NoChildren);
-      this.approve(to, AccountUpdate.Layout.NoChildren);
+      this.approve(from);
+      this.approve(to);
   }
   approveDeploy(deploy) {
       this.assertHasNoBalanceChange([deploy]);
-      this.approve(deploy, AccountUpdate.Layout.NoChildren);
+      this.approve(deploy);
   }
   // @method lock(receipt: Field, amount: UInt64) {
   //   // this.token.send({ from: this.sender, to: bridgeAddress, amount })
@@ -146,8 +147,8 @@ class Token extends SmartContract {
       // this.token.send({ from: this.sender, to: bridgeAddress, amount })
       // this.burn(this.sender, amount);
       // eslint-disable-next-line
-      // const bridge = new Bridge(bridgeAddress, this.token.id);
-      // bridge.checkMinMax(amount);
+      const bridge = new Bridge(bridgeAddress, this.token.id);
+      bridge.checkMinMax(amount);
       this.token.burn({ address: this.sender, amount });
       // this.burn(this.sender, amount);
       this.emitEvent("Lock", {
@@ -155,33 +156,6 @@ class Token extends SmartContract {
           receipt,
           amount,
       });
-  }
-  approveCallbackAndTransfer(sender, receiver, amount, callback) {
-      const tokenId = this.token.id;
-      const senderAccountUpdate = this.approve(callback, AccountUpdate.Layout.AnyChildren);
-      senderAccountUpdate.body.tokenId.assertEquals(tokenId);
-      senderAccountUpdate.body.publicKey.assertEquals(sender);
-      const negativeAmount = Int64.fromObject(senderAccountUpdate.body.balanceChange);
-      negativeAmount.assertEquals(Int64.from(amount).neg());
-      const receiverAccountUpdate = Experimental.createChildAccountUpdate(this.self, receiver, tokenId);
-      receiverAccountUpdate.balance.addInPlace(amount);
-  }
-  approveUpdateAndTransfer(zkappUpdate, receiver, amount) {
-      // TODO: THIS IS INSECURE. The proper version has a prover error (compile != prove) that must be fixed
-      this.approve(zkappUpdate, AccountUpdate.Layout.AnyChildren);
-      // THIS IS HOW IT SHOULD BE DONE:
-      // // approve a layout of two grandchildren, both of which can't inherit the token permission
-      // let { StaticChildren, AnyChildren } = AccountUpdate.Layout;
-      // this.approve(zkappUpdate, StaticChildren(AnyChildren, AnyChildren));
-      // zkappUpdate.body.mayUseToken.parentsOwnToken.assertTrue();
-      // let [grandchild1, grandchild2] = zkappUpdate.children.accountUpdates;
-      // grandchild1.body.mayUseToken.inheritFromParent.assertFalse();
-      // grandchild2.body.mayUseToken.inheritFromParent.assertFalse();
-      // see if balance change cancels the amount sent
-      const balanceChange = Int64.fromObject(zkappUpdate.body.balanceChange);
-      balanceChange.assertEquals(Int64.from(amount).neg());
-      const receiverAccountUpdate = Experimental.createChildAccountUpdate(this.self, receiver, this.token.id);
-      receiverAccountUpdate.balance.addInPlace(amount);
   }
   approveUpdate(zkappUpdate) {
       this.approve(zkappUpdate);
@@ -202,34 +176,10 @@ class Token extends SmartContract {
    * It does so by deducting the amount of tokens from `senderAddress` by
    * authorizing the deduction with a proof. It then creates the receiver
    * from `receiverAddress` and sends the amount.
-   */
-  sendTokensFromZkApp(receiverAddress, amount, callback) {
-      // approves the callback which deductes the amount of tokens from the sender
-      let senderAccountUpdate = this.approve(callback);
-      // Create constraints for the sender account update and amount
-      let negativeAmount = Int64.fromObject(senderAccountUpdate.body.balanceChange);
-      negativeAmount.assertEquals(Int64.from(amount).neg());
-      let tokenId = this.token.id;
-      // Create receiver accountUpdate
-      let receiverAccountUpdate = Experimental.createChildAccountUpdate(this.self, receiverAddress, tokenId);
-      receiverAccountUpdate.balance.addInPlace(amount);
-  }
-  mintToken(receiverAddress, amount, callback) {
-      // approves the callback which deductes the amount of tokens from the sender
-      let senderAccountUpdate = this.approve(callback);
-      // // Create constraints for the sender account update and amount
-      // let negativeAmount = Int64.fromObject(
-      //     senderAccountUpdate.body.balanceChange
-      // );
-      // negativeAmount.assertEquals(Int64.from(amount).neg());
-      // let tokenId = this.token.id;
-      // // Create receiver accountUpdate
-      // let receiverAccountUpdate = Experimental.createChildAccountUpdate(
-      //     this.self,
-      //     receiverAddress,
-      //     tokenId
-      // );
-      // receiverAccountUpdate.balance.addInPlace(amount);
+  */
+  mintToken(receiverAddress, amount, bridgeAddress, id) {
+      const bridge = new Bridge(bridgeAddress, this.token.id);
+      bridge.unlock(this.address, amount, receiverAddress, id);
       this.mint(receiverAddress, amount);
   }
   /**
@@ -400,20 +350,6 @@ __decorate([
 __decorate([
   method,
   __metadata("design:type", Function),
-  __metadata("design:paramtypes", [PublicKey,
-      PublicKey,
-      UInt64, Experimental.Callback]),
-  __metadata("design:returntype", void 0)
-], Token.prototype, "approveCallbackAndTransfer", null);
-__decorate([
-  method,
-  __metadata("design:type", Function),
-  __metadata("design:paramtypes", [AccountUpdate, PublicKey, UInt64]),
-  __metadata("design:returntype", void 0)
-], Token.prototype, "approveUpdateAndTransfer", null);
-__decorate([
-  method,
-  __metadata("design:type", Function),
   __metadata("design:paramtypes", [AccountUpdate]),
   __metadata("design:returntype", void 0)
 ], Token.prototype, "approveUpdate", null);
@@ -421,14 +357,9 @@ __decorate([
   method,
   __metadata("design:type", Function),
   __metadata("design:paramtypes", [PublicKey,
-      UInt64, Experimental.Callback]),
-  __metadata("design:returntype", void 0)
-], Token.prototype, "sendTokensFromZkApp", null);
-__decorate([
-  method,
-  __metadata("design:type", Function),
-  __metadata("design:paramtypes", [PublicKey,
-      UInt64, Experimental.Callback]),
+      UInt64,
+      PublicKey,
+      UInt64]),
   __metadata("design:returntype", void 0)
 ], Token.prototype, "mintToken", null);
 __decorate([
