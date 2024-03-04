@@ -74,8 +74,9 @@ export class SCTokenMinaCrawler {
     queryRunner: QueryRunner,
   ) {
 
-    const field = Field.from(event.event.data.amount.toString());
-    const receiveAddress = "0x00" + field.toBigInt().toString(16);
+    const field = Field.from(event.event.data.receipt.toString());
+    const receiveAddress = "0x" + field.toBigInt().toString(16);
+
     const timeLock = await this.getDateTimeByBlock(event.blockHeight.toString());
 
     const eventUnlock = {
@@ -150,9 +151,7 @@ export class SCTokenMinaCrawler {
     const query = `
       query {
           transaction(query: {blockHeight: ${blockNumber}}) {
-            block {
-              dateTime
-            }
+            dateTime
           }
         }
     `;
@@ -167,7 +166,7 @@ export class SCTokenMinaCrawler {
     });
   
     const result = await response.json();
-    const dateTime = dayjs(result.data.transaction.block.dateTime);
+    const dateTime = dayjs(result.data.transaction.dateTime);
 
     // Convert DateTime to Unix timestamp in seconds
     const unixTimestampInSeconds = Math.floor(dateTime.valueOf() / 1000);

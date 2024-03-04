@@ -10,6 +10,7 @@ import { addDecimal, calculateFee } from '@shared/utils/bignumber';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
+import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 
 import { Mina, PublicKey, Experimental, fetchAccount, PrivateKey, UInt64, AccountUpdate } from 'o1js';
 import Token from './minaSc/minaTokenErc20.js';
@@ -23,14 +24,16 @@ export class SenderMinaBridge {
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
     private readonly tokenPairRepository: TokenPairRepository,
+    private readonly tokenPriceRepository: TokenPriceRepository
 
   ) {}
 
   public async handleUnlockMina() {
     try {
-      const [ dataLock, configTip ] = await Promise.all([
+      const [ dataLock, configTip, { rateethmina } ] = await Promise.all([
         this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA),
-        this.commonConfigRepository.getCommonConfig()
+        this.commonConfigRepository.getCommonConfig(),
+        this.tokenPriceRepository.getRateETHToMina()
       ])
       if(!dataLock) {
         return;
@@ -52,7 +55,7 @@ export class SenderMinaBridge {
         return ;
       }
 
-      let rateMINAETH = 2000;
+      const rateMINAETH = Number(rateethmina.toFixed(0)) || 2000;
       const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount, rateMINAETH)
       //Update status eventLog when call function unlock
       if (result.success) {
@@ -88,8 +91,9 @@ export class SenderMinaBridge {
       console.log('build transaction and create proof...');
 
       try {
-        await fetchAccount({ publicKey: feepayerAddress });
-        await fetchAccount({ publicKey: zkAppAddress });
+        await fetchAccount({publicKey: zkBridgeAddress, tokenId: zkApp.token.id});
+        await fetchAccount({publicKey: zkBridgeAddress});
+        await fetchAccount({publicKey: zkAppAddress});
       }
       catch (error) {
         console.log(error);
@@ -102,8 +106,7 @@ export class SenderMinaBridge {
 
       let tx = await Mina.transaction({ sender: feepayerAddress, fee: Number(protocolFeeAmount) * rateMINAETH }, async () => {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
-        const callback = Experimental.Callback.create(bridgeApp, "unlock", [zkAppAddress, UInt64.from(amount), receiveiAdd, UInt64.from(txId)]);
-        zkApp.mintToken(receiveiAdd, UInt64.from(amount), callback);
+        zkApp.mintToken(receiveiAdd, UInt64.from(amount), zkBridgeAddress, UInt64.from(txId));
       });
       await tx.prove();
 
