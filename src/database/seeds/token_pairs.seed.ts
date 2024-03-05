@@ -15,24 +15,24 @@ export default class TokenPairsSeeder implements Seeder {
         toChain: ENetworkName.MINA,
         fromSymbol: 'ETH',
         toSymbol: 'WETH',
-        fromAddress: '0x0000000000000000000000000000000000000000',
-        toAddress: 'B62qpwveL98zAusX7yfHTpdCLz9tw4DuV7WLrrAwDjQxbSgCWzHMGnq',
+        fromAddress: process.env.ETH_TOKEN_BRIDGE_ADDRESS,
+        toAddress: process.env.MINA_TOKEN_BRIDGE_ADDRESS,
         fromDecimal: 18,
-        toDecimal: 18,
-        fromScAddress: '0x00bA9C6204C791543B95a29cA1f0DDE68e228224',
-        toScAddress: 'B62qowDqQG6deejJhXoqJ5ggR9gkuAocUUBgnT6h9D8Q6ZNcebPaLfC'
+        toDecimal: 9,
+        fromScAddress: process.env.ETH_BRIDGE_CONTRACT_ADDRESS,
+        toScAddress: process.env.MINA_BRIDGE_CONTRACT_ADDRESS
       },
       {
         fromChain: ENetworkName.MINA,
         toChain: ENetworkName.ETH,
         fromSymbol: 'WETH',
         toSymbol: 'ETH',
-        fromAddress: 'B62qpwveL98zAusX7yfHTpdCLz9tw4DuV7WLrrAwDjQxbSgCWzHMGnq',
-        toAddress: '0x0000000000000000000000000000000000000000',
-        fromDecimal: 18,
+        fromAddress: process.env.MINA_TOKEN_BRIDGE_ADDRESS,
+        toAddress: process.env.ETH_TOKEN_BRIDGE_ADDRESS,
+        fromDecimal: 9,
         toDecimal: 18,
-        fromScAddress: 'B62qowDqQG6deejJhXoqJ5ggR9gkuAocUUBgnT6h9D8Q6ZNcebPaLfC',
-        toScAddress: '0x00bA9C6204C791543B95a29cA1f0DDE68e228224'
+        fromScAddress: process.env.MINA_BRIDGE_CONTRACT_ADDRESS,
+        toScAddress: process.env.ETH_BRIDGE_CONTRACT_ADDRESS
       }
     ]
     for(let i = 0; i< listToken.length; i++) {
