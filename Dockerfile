@@ -17,4 +17,4 @@ COPY --from=build /app/tsconfig.build.json ./tsconfig.build.json
 # RUN apk --no-cache add curl
 EXPOSE 3000
 
-CMD ["sh", "-c", "yarn start"]
+#CMD ["sh", "-c", "yarn start"]
