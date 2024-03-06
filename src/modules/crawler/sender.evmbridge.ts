@@ -48,7 +48,7 @@ export class SenderEVMBridge {
 
       const gasFee = await this.ethBridgeContract.getEstimateGas(tokenReceivedAddress, BigNumber(amountReceive), txHashLock, receiveAddress, 0)
       const protocolFee = calculateFee(amountReceive, gasFee, configTip.tip)
-      const result = await this.ethBridgeContract.unlock(tokenReceivedAddress, BigNumber(amountReceive), txHashLock, receiveAddress, protocolFee)
+      const result = await this.ethBridgeContract.unlock(tokenReceivedAddress, BigNumber(amountReceive), txHashLock, receiveAddress, BigNumber(protocolFee))
 
       // Update status eventLog when call function unlock
       if (result.success) {
