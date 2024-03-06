@@ -228,7 +228,7 @@ export class ETHBridgeContract extends DefaultContract {
     return this.write('mint', [toAddress]);
   }
   public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
-    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(fee)])
+    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, fee])
   }
   public async getEstimateGas(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
     const estimateGas = await this.estimateGas('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, Number(fee)])
