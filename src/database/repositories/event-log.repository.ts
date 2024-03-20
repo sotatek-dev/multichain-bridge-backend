@@ -38,6 +38,16 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     .execute()
   }
 
+  public async updateLockEvenLog(id: number, status: EEventStatus) {
+    return this.createQueryBuilder(`${this.alias}`)
+    .update(EventLog)
+    .set({
+      status,
+    })
+    .where(`${this.alias}.id = :id`, { id })
+    .execute()
+  }
+
   public async getHistoriesOfUser(address: string, options) {
     const queryBuilder = this.createQb();
     queryBuilder

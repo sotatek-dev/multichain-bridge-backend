@@ -15,7 +15,8 @@ export enum EEventStatus {
   PROCESSING = 'processing',
   COMPLETED = 'completed',
   FAILED = 'failed',
-  NOTOKENPAIR = "noTokenPair"
+  NOTOKENPAIR = "noTokenPair",
+  LOCK = 'lock'
 }
 
 export enum ETokenPairStatus {

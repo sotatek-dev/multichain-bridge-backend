@@ -29,6 +29,7 @@ export class SenderEVMBridge {
       if(!dataLock) {
         return;
       }
+      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.LOCK);
 
       const { tokenReceivedAddress, tokenFromAddress, txHashLock, receiveAddress, senderAddress, amountFrom } = dataLock
 
