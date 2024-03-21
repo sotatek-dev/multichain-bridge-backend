@@ -38,7 +38,7 @@ export class SenderMinaBridge {
       if(!dataLock) {
         return;
       }
-      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.LOCK);
+      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
 
       const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
