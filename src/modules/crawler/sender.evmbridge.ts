@@ -20,8 +20,9 @@ export class SenderEVMBridge {
   ) {}
 
   async handleUnlockEVM() {
+    let dataLock, configTip;
     try {
-      const [ dataLock, configTip ] = await Promise.all([
+      [ dataLock, configTip ] = await Promise.all([
         this.eventLogRepository.getEventLockWithNetwork(ENetworkName.ETH),
         this.commonConfigRepository.getCommonConfig()
       ]) 
@@ -58,7 +59,7 @@ export class SenderEVMBridge {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
       }
     } catch (error) {
-
+      await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, error);
     }    
     
   }

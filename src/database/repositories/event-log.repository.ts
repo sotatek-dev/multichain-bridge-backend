@@ -16,10 +16,11 @@ export class EventLogRepository extends BaseRepository<EventLog> {
 
   public async getEventLockWithNetwork(network: ENetworkName): Promise<EventLog> {
     return this.createQueryBuilder(`${this.alias}`)
-    .where(`${this.alias}.networkReceived = :network`, { network,})
+    .where(`${this.alias}.networkReceived = :network`, { network })
     .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.WAITING, EEventStatus.FAILED] })
     .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: 3 })
-    .orderBy(`${this.alias}.id`, EDirection.ASC)
+    .orderBy(`${this.alias}.status`, EDirection.DESC)
+    .addOrderBy(`${this.alias}.id`, EDirection.ASC)
     .addOrderBy(`${this.alias}.retry`, EDirection.ASC)
     .getOne();
   }

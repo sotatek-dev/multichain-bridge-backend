@@ -29,8 +29,9 @@ export class SenderMinaBridge {
   ) {}
 
   public async handleUnlockMina() {
+    let dataLock, configTip, rateethmina;
     try {
-      const [ dataLock, configTip, { rateethmina } ] = await Promise.all([
+      [ dataLock, configTip, { rateethmina } ] = await Promise.all([
         this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA),
         this.commonConfigRepository.getCommonConfig(),
         this.tokenPriceRepository.getRateETHToMina()
@@ -65,8 +66,7 @@ export class SenderMinaBridge {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
       }
     } catch (error) {
-      console.log(error);
-      
+      await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, error);
     }    
     
   }
