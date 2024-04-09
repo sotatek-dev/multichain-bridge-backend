@@ -13,10 +13,10 @@ import { TokenPairRepository } from 'database/repositories/token-pair.repository
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 
 import { Mina, PublicKey, Experimental, fetchAccount, PrivateKey, UInt64, AccountUpdate } from 'o1js';
-import Token from './minaSc/minaTokenErc20.js';
 import { Bridge } from './minaSc/minaBridgeSC.js';
-import Hook from './minaSc/Hooks.js';
-
+// import { FungibleToken } from './node_modules/mina-fungible-token/FungibleToken.js';
+// import { FungibleToken } from '../../../node_modules/mina-fungible-token/FungibleToken.js';
+import { FungibleToken } from './minaSc/fungibleToken.js';
 @Injectable()
 export class SenderMinaBridge {
   constructor(
@@ -63,20 +63,22 @@ export class SenderMinaBridge {
       if (result.success) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, dataLock.retry, EEventStatus.PROCESSING, result.error, result.data, protocolFeeAmount);
       } else {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
+        // await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
+        await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry), EEventStatus.FAILED, result.error);
       }
     } catch (error) {
-      await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, error);
+      // await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, error);
+      await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry), EEventStatus.FAILED, error);
     }    
     
   }
 
   private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount, rateMINAETH) {
-    try {      
-      await Token.compile();
+    try {   
+      console.log('================unlock');
+         
       await Bridge.compile();
-      await Hook.compile();
-      // const Berkeley = Mina.Network(`${this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS)}`);
+      await FungibleToken.compile();
       const Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
       Mina.setActiveInstance(Berkeley);
 
@@ -84,39 +86,47 @@ export class SenderMinaBridge {
       let feepayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
       let feepayerAddress = feepayerKey.toPublicKey();
       let zkBridgeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
-      let zkAppAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+      let zkAppKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
       let receiveiAdd = PublicKey.fromBase58(receiveAddress);
-      let zkApp = new Token(zkAppAddress);
 
-      const bridgeApp = new Bridge(zkBridgeAddress, zkApp.token.id);
+      const zkBridge = new Bridge(zkBridgeAddress);
       console.log('build transaction and create proof...');
 
       try {
-        await fetchAccount({publicKey: zkBridgeAddress, tokenId: zkApp.token.id});
         await fetchAccount({publicKey: zkBridgeAddress});
-        await fetchAccount({publicKey: zkAppAddress});
+        await fetchAccount({publicKey: feepayerAddress});
+        // await fetchAccount({publicKey: receiveiAdd});
       }
       catch (error) {
-        console.log(error);
+        console.log("erorrr====== day",error);
         return { success: false, error, data: null };
       }
- 
-      const tokenId = zkApp.token.id
-      await fetchAccount({ publicKey: receiveiAdd, tokenId });
-      const hasAccount = Mina.hasAccount(receiveiAdd, tokenId);
+
+      await fetchAccount({ publicKey: receiveiAdd });
+      const hasAccount = Mina.hasAccount(receiveiAdd);
+      
+      // const fee = Number(1) * 1e9;
+      // let tx = await Mina.transaction(
+      //   { sender: feepayerAddress, fee },
+      //   async () => {
+      //     // AccountUpdate.fundNewAccount(feepayerAddress, 1);
+      //     zkBridge.unlock(UInt64.from(amount), feepayerAddress, UInt64.from(txId));
+      //   }
+      // );
 
       let tx = await Mina.transaction({ sender: feepayerAddress, fee: Number(protocolFeeAmount) * rateMINAETH }, async () => {
-        if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
-        zkApp.mintToken(receiveiAdd, UInt64.from(amount), zkBridgeAddress, UInt64.from(txId));
+        if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress, 1);
+        zkBridge.unlock(UInt64.from(amount), receiveiAdd, UInt64.from(txId));
       });
       await tx.prove();
 
       console.log('send transaction...');
-      let sentTx = await tx.sign([feepayerKey]).send();
-      console.log('transaction=======', sentTx.hash());
+      let sentTx = await tx.sign([feepayerKey, zkAppKey]).send();
+      console.log('transaction=======', sentTx);
+      await sentTx.wait();
 
-      if(sentTx.hash()) {
-        return { success: true, error: null, data: sentTx.hash() };
+      if(sentTx.hash) {
+        return { success: true, error: null, data: sentTx.hash };
       } else {
         return { success: false, error: sentTx, data: null };
       }
@@ -136,6 +146,35 @@ export class SenderMinaBridge {
       return false
     }
     return true
+  }
+
+  private async fetchNonce(feepayerAddress) {
+    console.log("nonce=======", feepayerAddress);
+    const url = "https://proxy.berkeley.minaexplorer.com/graphql"
+    const query = `
+    query {
+      account(publicKey: "${feepayerAddress}") {
+        inferredNonce
+      }
+    }
+    `
+    const response = await fetch(
+      url, {
+        method: 'POST', 
+        body: JSON.stringify({ operationName: null, query, variables: {} }),
+        headers: {'Content-Type': 'application/json'}
+    })
+    const json = await response.json()
+    console.log("nonce=======", json);
+    
+    const inferredNonce = Number(json.data.account.inferredNonce)
+    return inferredNonce
+  }
+
+  private tweakMintPrecondition(token: FungibleToken, mempoolMintAmount: number) {
+    // here we take `circulating` variable from state slot with index 3 and increase it by `mempoolMintAmount`
+    const prevPreconditionVal = token.self.body.preconditions.account.state[3]!.value
+    token.self.body.preconditions.account.state[3]!.value = prevPreconditionVal.add(mempoolMintAmount)
   }
 }
 

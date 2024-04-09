@@ -9,7 +9,6 @@ import { CrawlContract, EventLog } from '@modules/crawler/entities'
 
 import { Mina, PublicKey, UInt32 } from 'o1js';
 import { Bridge } from './minaSc/minaBridgeSC.js';
-import Token from './minaSc/minaTokenErc20.js';
 
 @Injectable()
 export class SCBridgeMinaCrawler {
@@ -36,8 +35,7 @@ export class SCBridgeMinaCrawler {
       let zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
       let zkAppToken = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
 
-      let zkAppToke = new Token(zkAppToken);
-      const zkapp = new Bridge(zkappAddress, zkAppToke.token.id);
+      const zkapp = new Bridge(zkappAddress);
       const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
       console.log({events});
       

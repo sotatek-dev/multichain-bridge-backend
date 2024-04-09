@@ -6,7 +6,6 @@ import { BlockchainEVMCrawler } from './crawler.evmbridge';
 import { SenderEVMBridge } from './sender.evmbridge';
 import { SenderMinaBridge } from './sender.minabridge';
 import { SCBridgeMinaCrawler } from './crawler.minabridge';
-import { SCTokenMinaCrawler } from './crawler.minatoken';
 import { sleep } from '@shared/utils/promise';
 import { BatchJobGetPriceToken } from './batch.tokenprice';
 
@@ -18,7 +17,6 @@ export class CrawlerConsole {
     private readonly configService: ConfigService,
     private blockchainEVMCrawler: BlockchainEVMCrawler,
     private scBridgeMinaCrawler: SCBridgeMinaCrawler,
-    private scTokenMinaCrawler: SCTokenMinaCrawler,
     private senderEVMBridge: SenderEVMBridge,
     private senderMinaBridge: SenderMinaBridge,
     private jobGetPrice: BatchJobGetPriceToken,
@@ -80,7 +78,6 @@ export class CrawlerConsole {
   async handleCrawlMinaToken() {
     try {
       while (true) {
-        this.scTokenMinaCrawler.handleEventCrawlBlock();
         await sleep(15);
       }
     } catch (error) {
@@ -95,7 +92,7 @@ export class CrawlerConsole {
   async handleSenderMinaBridgeUnlock() {
     try {
       while (true) {
-        this.senderMinaBridge.handleUnlockMina();
+        await this.senderMinaBridge.handleUnlockMina();
         await sleep(900);
       }
     } catch (error) {

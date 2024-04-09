@@ -12,14 +12,13 @@ import { BlockchainEVMCrawler } from './crawler.evmbridge';
 import { SCBridgeMinaCrawler } from './crawler.minabridge';
 import { SenderEVMBridge } from './sender.evmbridge';
 import { SenderMinaBridge } from './sender.minabridge'
-import { SCTokenMinaCrawler } from './crawler.minatoken';
 import { BatchJobGetPriceToken } from './batch.tokenprice';
 
 @Module({
   imports: [CustomRepositoryModule.forFeature([
     CrawlContractRepository, EventLogRepository,
     CommonConfigRepository, TokenPairRepository, TokenPriceRepository])],
-  providers: [CrawlerConsole, CrawlerService, BlockchainEVMCrawler, SCTokenMinaCrawler,
+  providers: [CrawlerConsole, CrawlerService, BlockchainEVMCrawler,
     SenderEVMBridge, SCBridgeMinaCrawler, SenderMinaBridge, BatchJobGetPriceToken
   ],
   exports: [CrawlerService],
