@@ -113,10 +113,11 @@ export class SenderMinaBridge {
 
       console.log('send transaction...');
       let sentTx = await tx.sign([feepayerKey]).send();
-      console.log('transaction=======', sentTx.hash());
+      console.log('transaction=======', sentTx.hash);
+      await sentTx.wait();
 
-      if(sentTx.hash()) {
-        return { success: true, error: null, data: sentTx.hash() };
+      if(sentTx.hash) {
+        return { success: true, error: null, data: sentTx.hash };
       } else {
         return { success: false, error: sentTx, data: null };
       }

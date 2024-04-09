@@ -20,8 +20,8 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.WAITING, EEventStatus.FAILED] })
     .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: 3 })
     .orderBy(`${this.alias}.status`, EDirection.DESC)
-    .addOrderBy(`${this.alias}.id`, EDirection.ASC)
     .addOrderBy(`${this.alias}.retry`, EDirection.ASC)
+    .addOrderBy(`${this.alias}.id`, EDirection.ASC)
     .getOne();
   }
 
