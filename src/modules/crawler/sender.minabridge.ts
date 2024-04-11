@@ -75,48 +75,53 @@ export class SenderMinaBridge {
 
   private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount, rateMINAETH) {
     try {   
-      console.log('================unlock');
-         
+      console.log('================unlock', receiveAddress);
+    
+      const MINAURL = 'https://proxy.berkeley.minaexplorer.com/graphql';
+      const ARCHIVEURL = 'https://api.minascan.io/archive/berkeley/v1/graphql/';
+      //
+      const network = Mina.Network({
+        mina: MINAURL,
+        archive: ARCHIVEURL,
+      });
+      Mina.setActiveInstance(network);
+
       await Bridge.compile();
       await FungibleToken.compile();
-      const Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
-      Mina.setActiveInstance(Berkeley);
+      // const Berkeley = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+      // Mina.setActiveInstance(Berkeley);
 
       // call update() and send transaction
+      console.log('acount======', this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
+      
       let feepayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
       let feepayerAddress = feepayerKey.toPublicKey();
       let zkBridgeAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
       let zkAppKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
-      let receiveiAdd = PublicKey.fromBase58(receiveAddress);
+      // let zkAppKey = PrivateKey.fromBase58('EKEYE13gRys9tS8EhTgX4X1YNi7f12PSRPucDFdBYMfmNGboVbsc');
+      // let tokenAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+      // let receiveiAdd = PublicKey.fromBase58(receiveAddress);
 
       const zkBridge = new Bridge(zkBridgeAddress);
+      // const tokenApp = new FungibleToken(tokenAddress)
       console.log('build transaction and create proof...');
 
       try {
-        await fetchAccount({publicKey: zkBridgeAddress});
-        await fetchAccount({publicKey: feepayerAddress});
-        // await fetchAccount({publicKey: receiveiAdd});
+        // await fetchAccount({ publicKey: zkBridgeAddress });
+        // await fetchAccount({publicKey: feepayerAddress});
+        // await fetchAccount({ publicKey: receiveiAdd, tokenId: tokenApp.deriveTokenId() });
       }
       catch (error) {
         console.log("erorrr====== day",error);
         return { success: false, error, data: null };
       }
 
-      await fetchAccount({ publicKey: receiveiAdd });
-      const hasAccount = Mina.hasAccount(receiveiAdd);
-      
-      // const fee = Number(1) * 1e9;
-      // let tx = await Mina.transaction(
-      //   { sender: feepayerAddress, fee },
-      //   async () => {
-      //     // AccountUpdate.fundNewAccount(feepayerAddress, 1);
-      //     zkBridge.unlock(UInt64.from(amount), feepayerAddress, UInt64.from(txId));
-      //   }
-      // );
+      const hasAccount = Mina.hasAccount(feepayerAddress);
 
-      let tx = await Mina.transaction({ sender: feepayerAddress, fee: Number(protocolFeeAmount) * rateMINAETH }, async () => {
+      const fee = Number(1) * 1e9;
+      let tx = await Mina.transaction({ sender: feepayerAddress, fee }, async () => {
         if(!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress, 1);
-        zkBridge.unlock(UInt64.from(amount), receiveiAdd, UInt64.from(txId));
+        zkBridge.unlock(UInt64.from(amount), feepayerAddress, UInt64.from(txId));
       });
       await tx.prove();
 
