@@ -12,20 +12,15 @@ export class CommonConfigRepository extends BaseRepository<CommonConfig> {
 
   public async getCommonConfig() {
     return this.createQueryBuilder(`${this.alias}`)
-    .select([
-        `${this.alias}.id`,
-        `${this.alias}.tip`,
-        `${this.alias}.dailyQuota`,
-        `${this.alias}.asset`
-    ])
-    .getOne()
+      .select([`${this.alias}.id`, `${this.alias}.tip`, `${this.alias}.dailyQuota`, `${this.alias}.asset`])
+      .getOne();
   }
 
   public async updateCommonConfig(id: number, updateConfig) {
     return this.createQueryBuilder(`${this.alias}`)
-    .update(CommonConfig)
-    .set(updateConfig)
-    .where(`${this.alias}.id = :id`, { id })
-    .execute()
+      .update(CommonConfig)
+      .set(updateConfig)
+      .where(`${this.alias}.id = :id`, { id })
+      .execute();
   }
 }

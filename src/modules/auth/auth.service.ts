@@ -2,23 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from 'database/repositories/user.repository';
-import { DataSource, Not, QueryRunner } from 'typeorm';
+import Client from 'mina-signer';
+import { DataSource } from 'typeorm';
+import Web3 from 'web3';
+import { toChecksumAddress } from 'web3-utils';
 
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
 
 import { User } from '@modules/users/entities/user.entity';
 
-import { toChecksumAddress } from 'web3-utils';
-import Client from 'mina-signer';
-
 import { httpBadRequest, httpNotFound } from '@shared/exceptions/http-exeption';
-import { generateHash, validateHash } from '@shared/utils/hash-string';
-
-import { LoginDto, LoginMinaDto, SignupDto } from './dto/auth-request.dto';
-import { IJwtPayload, IUpdateEmail } from './interfaces/auth.interface';
-import Web3 from 'web3';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
+
+import { LoginDto, LoginMinaDto } from './dto/auth-request.dto';
+import { IJwtPayload } from './interfaces/auth.interface';
 
 @Injectable()
 export class AuthService {
@@ -40,21 +38,22 @@ export class AuthService {
       // Generate access and refresh token
       return this.getToken(admin);
     } catch (err) {
-        console.log('[err] auth.service.ts: ---', err);
-        throw new httpBadRequest(EError.USER_NOT_FOUND);
+      console.log('[err] auth.service.ts: ---', err);
+      throw new httpBadRequest(EError.USER_NOT_FOUND);
     }
   }
 
   async loginMina(data: LoginMinaDto) {
     try {
-      if(! await this.validateSignatureMina(data.address, data.signature)) throw new httpBadRequest(EError.INVALID_SIGNATURE);
+      if (!(await this.validateSignatureMina(data.address, data.signature)))
+        throw new httpBadRequest(EError.INVALID_SIGNATURE);
       const admin = await this.validateAdminAccount(data.address, false);
 
       // Generate access and refresh token
       return this.getToken(admin);
     } catch (err) {
-        console.log('[err] auth.service.ts: ---', err);
-        throw new httpBadRequest(EError.USER_NOT_FOUND);
+      console.log('[err] auth.service.ts: ---', err);
+      throw new httpBadRequest(EError.USER_NOT_FOUND);
     }
   }
 
@@ -76,7 +75,10 @@ export class AuthService {
   }
 
   private async validateSignature(address: string, signature: string) {
-    const recover = await this.ethBridgeContract.recover(signature, this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN))
+    const recover = await this.ethBridgeContract.recover(
+      signature,
+      this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
+    );
     const checksumRecover = toChecksumAddress(recover);
     const checksumAddress = toChecksumAddress(address);
 
@@ -85,21 +87,20 @@ export class AuthService {
 
   private async validateSignatureMina(address: string, signature) {
     let client = new Client({ network: 'mainnet' });
-    if(process.env.NODE_ENV !== "production") {
+    if (process.env.NODE_ENV !== 'production') {
       client = new Client({ network: 'testnet' });
     }
 
     const signer = {
       signature,
       publicKey: address,
-      data: this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN)
-    }
-    return client.verifyMessage(signer)
-
+      data: this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
+    };
+    return client.verifyMessage(signer);
   }
 
   private async validateAdminAccount(address: string, is_evm: boolean) {
-    if(is_evm) {
+    if (is_evm) {
       address = toChecksumAddress(address);
     }
     const admin = await this.userRepository.findOneBy({ walletAddress: address });
