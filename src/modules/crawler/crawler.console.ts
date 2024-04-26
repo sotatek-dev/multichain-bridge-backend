@@ -2,12 +2,14 @@ import { ConfigService } from '@nestjs/config';
 import { Command, Console } from 'nestjs-console';
 
 import { EEnvKey } from '@constants/env.constant';
+
+import { sleep } from '@shared/utils/promise';
+
+import { BatchJobGetPriceToken } from './batch.tokenprice';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';
+import { SCBridgeMinaCrawler } from './crawler.minabridge';
 import { SenderEVMBridge } from './sender.evmbridge';
 import { SenderMinaBridge } from './sender.minabridge';
-import { SCBridgeMinaCrawler } from './crawler.minabridge';
-import { sleep } from '@shared/utils/promise';
-import { BatchJobGetPriceToken } from './batch.tokenprice';
 
 @Console()
 export class CrawlerConsole {
@@ -20,7 +22,6 @@ export class CrawlerConsole {
     private senderEVMBridge: SenderEVMBridge,
     private senderMinaBridge: SenderMinaBridge,
     private jobGetPrice: BatchJobGetPriceToken,
-
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
   }
@@ -37,7 +38,6 @@ export class CrawlerConsole {
       }
     } catch (error) {
       console.log(error);
-      
     }
   }
 
