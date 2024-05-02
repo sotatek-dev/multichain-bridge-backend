@@ -5,7 +5,7 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
-import { fetchAccount, Mina, PrivateKey, UInt64 } from 'o1js';
+import { AccountUpdate, fetchAccount, Mina, PrivateKey, UInt64 } from 'o1js';
 
 import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
@@ -116,14 +116,15 @@ export class SenderMinaBridge {
       await fetchAccount({ publicKey: zkAppAddress });
       await fetchAccount({ publicKey: feepayerAddress });
 
+      const hasAccount = Mina.hasAccount(receiveAddress);
       let sentTx;
       // compile the contract to create prover keys
       try {
         // call update() and send transaction
         console.log('build transaction and create proof...');
         const tx = await Mina.transaction({ sender: feepayerAddress, fee }, async () => {
-          // AccountUpdate.fundNewAccount(feepayerAddress, 1);
-          await zkBridge.unlock(UInt64.from(amount), feepayerAddress, UInt64.from(txId));
+          if(hasAccount) AccountUpdate.fundNewAccount(feepayerAddress, 1);
+          await zkBridge.unlock(UInt64.from(amount), receiveAddress, UInt64.from(txId));
         });
         await tx.prove();
         console.log('send transaction...');
