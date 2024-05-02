@@ -85,22 +85,10 @@ export class SenderMinaBridge {
           protocolFeeAmount,
         );
       } else {
-        // await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          Number(dataLock.retry),
-          EEventStatus.FAILED,
-          result.error,
-        );
+        await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
       }
     } catch (error) {
-      // await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, error);
-      await this.eventLogRepository.updateStatusAndRetryEvenLog(
-        dataLock.id,
-        Number(dataLock.retry),
-        EEventStatus.FAILED,
-        error,
-      );
+      await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, error);
     }
   }
 
@@ -121,7 +109,7 @@ export class SenderMinaBridge {
       await Bridge.compile();
       await FungibleToken.compile();
 
-      const fee = Number(1) * 1e9; // in nanomina (1 billion = 1.0 mina)
+      const fee = protocolFeeAmount *  rateMINAETH// in nanomina (1 billion = 1.0 mina)
       const feepayerAddress = feepayerKey.toPublicKey();
       const zkAppAddress = zkAppKey.toPublicKey();
       const zkBridge = new Bridge(zkAppAddress);

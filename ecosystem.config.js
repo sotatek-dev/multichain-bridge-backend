@@ -20,10 +20,6 @@ module.exports = {
       script: 'yarn console:dev crawl-mina-bridge-contract',
     },
     {
-      name: `mina-token-crawler-${process.env.NODE_ENV}`,
-      script: 'yarn console:dev crawl-mina-token-contract',
-    },
-    {
       name: `mina-sender-bridge-unlock-${process.env.NODE_ENV}`,
       script: 'yarn console:dev sender-mina-bridge-unlock',
     },
