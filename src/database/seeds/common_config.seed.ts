@@ -3,7 +3,6 @@ import { DataSource } from 'typeorm';
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
 import { CommonConfig } from '@modules/crawler/entities/common-config.entity';
-import { addDecimal } from '@shared/utils/bignumber';
 
 export default class CommonConfigSeeder implements Seeder {
   public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {
@@ -13,7 +12,7 @@ export default class CommonConfigSeeder implements Seeder {
       new CommonConfig({
         tip: 0.5,
         dailyQuota: 500,
-        asset: "ETH"
+        asset: 'ETH',
       }),
     );
   }

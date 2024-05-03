@@ -3,7 +3,6 @@ import BigNumber from 'bignumber.js';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
-import { DataSource } from 'typeorm';
 
 import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EError } from '@constants/error.constant';
@@ -46,7 +45,7 @@ export class SenderEVMBridge {
         return;
       }
 
-      let amountReceive = BigNumber(amountFrom)
+      const amountReceive = BigNumber(amountFrom)
         .dividedBy(BigNumber(10).pow(tokenPair.fromDecimal))
         .multipliedBy(BigNumber(10).pow(tokenPair.toDecimal))
         .toString();

@@ -44,7 +44,7 @@ import redisConfig from './redis.config';
         [EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY]: Joi.string().required(),
         // coinmarketcap
         [EEnvKey.COINMARKET_KEY]: Joi.string().required(),
-        [EEnvKey.COINMARKET_URL]: Joi.string().required()
+        [EEnvKey.COINMARKET_URL]: Joi.string().required(),
       }).custom(value => {
         value[EEnvKey.ETH_BRIDGE_START_BLOCK] = isNumber(value[EEnvKey.ETH_BRIDGE_START_BLOCK])
           ? value[EEnvKey.ETH_BRIDGE_START_BLOCK]

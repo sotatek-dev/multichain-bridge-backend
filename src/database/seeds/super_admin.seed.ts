@@ -16,11 +16,11 @@ export default class SuperAdminSeeder implements Seeder {
       {
         walletAddress: process.env.ADMIN_ADDRESS_MINA,
         name: 'admin mina',
-      }
-    ]
+      },
+    ];
 
-    for(let i = 0; i< listAdmin.length; i++) {
-      let newUser = new User({
+    for (let i = 0; i < listAdmin.length; i++) {
+      const newUser = new User({
         walletAddress: listAdmin[i].walletAddress,
         name: listAdmin[i].name,
       });

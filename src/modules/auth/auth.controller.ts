@@ -36,21 +36,21 @@ export class AuthController {
   @GuardPublic()
   @ApiOkResponse({ type: LoginResponseDto })
   loginAdminEVM(@Body() body: LoginDto) {
-      return this.authService.login(body);
+    return this.authService.login(body);
   }
 
   @Post('/login-admin-mina')
   @GuardPublic()
   @ApiOkResponse({ type: LoginResponseDto })
   loginAdminMina(@Body() body: LoginMinaDto) {
-      return this.authService.loginMina(body);
+    return this.authService.loginMina(body);
   }
 
   @Get('/admin/login-message')
   @ApiOkResponse({ type: MessageResponseDto })
   @GuardPublic()
   loginMesage() {
-      return { message : this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN)};
+    return { message: this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN) };
   }
 
   // @Post('register')

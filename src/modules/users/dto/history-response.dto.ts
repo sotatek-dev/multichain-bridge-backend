@@ -1,8 +1,8 @@
-import { EEventStatus } from '@constants/blockchain.constant';
 import { ApiProperty } from '@nestjs/swagger';
-import { BasePaginationRequestDto } from '@shared/dtos/base-request.dto';
 import { Expose } from 'class-transformer';
 import { IsOptional, IsString } from 'class-validator';
+
+import { BasePaginationRequestDto } from '@shared/dtos/base-request.dto';
 
 export class GetHistoryOfUserResponseDto {
   @ApiProperty()
@@ -48,12 +48,10 @@ export class GetHistoryOfUserResponseDto {
   blockTimeLock: string;
 
   @ApiProperty()
-  createdAt: Date
+  createdAt: Date;
 }
 
-export class getHistoryOfUserDto extends BasePaginationRequestDto {
-
-}
+export class getHistoryOfUserDto extends BasePaginationRequestDto {}
 
 export class getHistoryDto extends BasePaginationRequestDto {
   @ApiProperty({ required: false })

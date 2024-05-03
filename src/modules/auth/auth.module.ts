@@ -10,10 +10,11 @@ import { EEnvKey } from '@constants/env.constant';
 
 import { UsersModule } from '@modules/users/users.module';
 
+import { Web3Module } from '@shared/modules/web3/web3.module';
+
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { Web3Module } from '@shared/modules/web3/web3.module';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { Web3Module } from '@shared/modules/web3/web3.module';
           signOptions: {
             expiresIn: '1d',
           },
-        } as JwtModuleOptions),
+        }) as JwtModuleOptions,
       inject: [ConfigService],
     }),
     HttpModule.register({ timeout: 3000 }),

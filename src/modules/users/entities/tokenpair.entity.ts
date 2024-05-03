@@ -5,7 +5,6 @@ import { ETableName } from '@constants/entity.constant';
 
 import { BaseEntityIncludeTime } from '@core/base.entity';
 
-
 @Entity(ETableName.TOKEN_PAIRS)
 export class TokenPair extends BaseEntityIncludeTime {
   @Column({ name: 'from_chain', type: 'varchar', enum: ENetworkName, nullable: false })
@@ -38,7 +37,13 @@ export class TokenPair extends BaseEntityIncludeTime {
   @Column({ name: 'to_sc_address', type: 'varchar', nullable: true })
   toScAddress: string;
 
-  @Column({ name: 'status', type: 'varchar', enum: ETokenPairStatus, default: ETokenPairStatus.ENABLE, nullable: false })
+  @Column({
+    name: 'status',
+    type: 'varchar',
+    enum: ETokenPairStatus,
+    default: ETokenPairStatus.ENABLE,
+    nullable: false,
+  })
   status: ETokenPairStatus;
 
   constructor(value: Partial<TokenPair>) {
