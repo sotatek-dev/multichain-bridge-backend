@@ -119,7 +119,7 @@ export class SenderMinaBridge {
       console.log('compile the contract...');
       await Bridge.compile();
       await FungibleToken.compile();
-      const fee = 2 * Math.pow(10, 9);
+      const fee = 1 * Math.pow(10, 9);
       // const fee = protocolFeeAmount * rateMINAETH + 5 * Math.pow(10, 8); // in nanomina (1 billion = 1.0 mina)
       const feepayerAddress = feepayerKey.toPublicKey();
       const zkAppAddress = zkAppKey.toPublicKey();
