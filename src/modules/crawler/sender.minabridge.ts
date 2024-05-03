@@ -5,7 +5,7 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
-import { AccountUpdate, fetchAccount, Mina, PrivateKey, UInt64 } from 'o1js';
+import { AccountUpdate, fetchAccount, Mina, PrivateKey, PublicKey, UInt64 } from 'o1js';
 
 import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
@@ -74,7 +74,7 @@ export class SenderMinaBridge {
 
       const rateMINAETH = Number(rateethmina.toFixed(0)) || 2000;
       const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount, rateMINAETH);
-      //Update status eventLog when call function unlock
+      // Update status eventLog when call function unlock
       if (result.success) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog(
           dataLock.id,
@@ -85,10 +85,20 @@ export class SenderMinaBridge {
           protocolFeeAmount,
         );
       } else {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, result.error);
+        await this.eventLogRepository.updateStatusAndRetryEvenLog(
+          dataLock.id,
+          Number(dataLock.retry + 1),
+          EEventStatus.FAILED,
+          result.error,
+        );
       }
     } catch (error) {
-      await this.eventLogRepository.updateStatusAndRetryEvenLog(dataLock.id, Number(dataLock.retry + 1), EEventStatus.FAILED, error);
+      await this.eventLogRepository.updateStatusAndRetryEvenLog(
+        dataLock.id,
+        Number(dataLock.retry + 1),
+        EEventStatus.FAILED,
+        error,
+      );
     }
   }
 
@@ -96,6 +106,7 @@ export class SenderMinaBridge {
     try {
       const feepayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
       const zkAppKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
+      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
       const MINAURL = 'https://proxy.devnet.minaexplorer.com/graphql';
       const ARCHIVEURL = 'https://api.minascan.io/archive/devnet/v1/graphql/';
       //
@@ -108,23 +119,23 @@ export class SenderMinaBridge {
       console.log('compile the contract...');
       await Bridge.compile();
       await FungibleToken.compile();
-
-      const fee = protocolFeeAmount *  rateMINAETH// in nanomina (1 billion = 1.0 mina)
+      const fee = 1 * Math.pow(10, 9);
+      // const fee = protocolFeeAmount * rateMINAETH + 5 * Math.pow(10, 8); // in nanomina (1 billion = 1.0 mina)
       const feepayerAddress = feepayerKey.toPublicKey();
       const zkAppAddress = zkAppKey.toPublicKey();
       const zkBridge = new Bridge(zkAppAddress);
       await fetchAccount({ publicKey: zkAppAddress });
       await fetchAccount({ publicKey: feepayerAddress });
 
-      const hasAccount = Mina.hasAccount(receiveAddress);
+      const hasAccount = Mina.hasAccount(receiverPublicKey);
       let sentTx;
       // compile the contract to create prover keys
       try {
         // call update() and send transaction
         console.log('build transaction and create proof...');
         const tx = await Mina.transaction({ sender: feepayerAddress, fee }, async () => {
-          if(hasAccount) AccountUpdate.fundNewAccount(feepayerAddress, 1);
-          await zkBridge.unlock(UInt64.from(amount), receiveAddress, UInt64.from(txId));
+          if (!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress, 1);
+          await zkBridge.unlock(UInt64.from(amount), receiverPublicKey, UInt64.from(txId));
         });
         await tx.prove();
         console.log('send transaction...');
@@ -134,7 +145,7 @@ export class SenderMinaBridge {
       }
       console.log('=====================txhash: ', sentTx?.hash);
       await sentTx?.wait();
-
+      console.log('=====================done: ', sentTx?.hash);
       if (sentTx.hash) {
         return { success: true, error: null, data: sentTx.hash };
       } else {

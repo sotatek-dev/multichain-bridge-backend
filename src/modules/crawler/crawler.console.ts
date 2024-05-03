@@ -93,7 +93,7 @@ export class CrawlerConsole {
     try {
       while (true) {
         await this.senderMinaBridge.handleUnlockMina();
-        await sleep(900);
+        await sleep(1);
       }
     } catch (error) {
       console.log(error);
