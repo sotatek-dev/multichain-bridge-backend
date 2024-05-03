@@ -119,7 +119,7 @@ export class SenderMinaBridge {
       console.log('compile the contract...');
       await Bridge.compile();
       await FungibleToken.compile();
-      const fee = 1 * Math.pow(10, 9);
+      const fee = 2 * Math.pow(10, 9);
       // const fee = protocolFeeAmount * rateMINAETH + 5 * Math.pow(10, 8); // in nanomina (1 billion = 1.0 mina)
       const feepayerAddress = feepayerKey.toPublicKey();
       const zkAppAddress = zkAppKey.toPublicKey();
@@ -128,7 +128,7 @@ export class SenderMinaBridge {
       await fetchAccount({ publicKey: feepayerAddress });
 
       const hasAccount = Mina.hasAccount(receiverPublicKey);
-      let sentTx;
+      let sentTx: Mina.PendingTransaction;
       // compile the contract to create prover keys
       try {
         // call update() and send transaction
@@ -144,7 +144,7 @@ export class SenderMinaBridge {
         console.log(err);
       }
       console.log('=====================txhash: ', sentTx?.hash);
-      await sentTx?.wait();
+      await sentTx?.wait({ maxAttempts: 100 });
       console.log('=====================done: ', sentTx?.hash);
       if (sentTx.hash) {
         return { success: true, error: null, data: sentTx.hash };
