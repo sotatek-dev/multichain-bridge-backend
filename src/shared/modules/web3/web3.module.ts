@@ -88,14 +88,12 @@ export const RpcFactory = async (configService: ConfigService, network?: ENetwor
       return web3;
     },
     getNonce: async (walletAddress: string): Promise<number> => {
-      // TODO: nonce synchronization
       return web3.eth.getTransactionCount(walletAddress);
     },
     handleSignerCallback: () => {
       const handleJob = async (callback: CallableFunction, tried = 0) => {
         const freeKeyIndex = keyStatus.findIndex(e => e === false);
         if (freeKeyIndex < 0) {
-          // if no signer is free, wait and try again
           if (tried === 10) throw new Error('cannot find free signer');
           await sleep(1 * tried);
           return handleJob(callback, tried + 1);

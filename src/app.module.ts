@@ -1,6 +1,8 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { RouteInfo } from '@nestjs/common/interfaces';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AppController } from 'app.controller';
+import { AppService } from 'app.service';
 import { ConsoleModule } from 'nestjs-console';
 
 import { ConfigurationModule } from '@config/config.module';
@@ -14,8 +16,6 @@ import { CustomAuthorizationHeaderMiddleware } from '@shared/middleware/custom-a
 import { Web3Module } from '@shared/modules/web3/web3.module';
 
 import { LoggerHttpRequestMiddleware } from './shared/middleware/logger-http-request.middleware';
-import { AppController } from 'app.controller';
-import { AppService } from 'app.service';
 
 const modules = [
   ConfigurationModule,

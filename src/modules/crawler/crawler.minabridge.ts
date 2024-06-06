@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-// import { LoggerService } from '@shared/modules/logger/logger.service';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
+import { TokenPairRepository } from 'database/repositories/token-pair.repository';
+import dayjs from 'dayjs';
 import { Field, Mina, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
@@ -11,15 +12,12 @@ import { EEnvKey } from '@constants/env.constant';
 import { CrawlContract, EventLog } from '@modules/crawler/entities';
 
 import { Bridge } from './minaSc/minaBridgeSC';
-import dayjs from 'dayjs';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 
 @Injectable()
 export class SCBridgeMinaCrawler {
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
-    // private loggerService: LoggerService,
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
   ) {}
@@ -28,15 +26,15 @@ export class SCBridgeMinaCrawler {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const { startBlockNumber, toBlock } = await this.getFromToBlock();
+      const { startBlockNumber } = await this.getFromToBlock();
 
       const Network = Mina.Network({
         mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
         archive: 'https://api.minascan.io/archive/devnet/v1/graphql/',
       });
       Mina.setActiveInstance(Network);
-      let zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
-      let zkAppToken = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+      const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
+      const zkAppToken = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
 
       const zkapp = new Bridge(zkappAddress);
       const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
@@ -68,7 +66,7 @@ export class SCBridgeMinaCrawler {
   }
 
   private async handlerUnLockEvent(event, queryRunner: QueryRunner) {
-    let existLockTx = await queryRunner.manager.findOne(EventLog, {
+    const existLockTx = await queryRunner.manager.findOne(EventLog, {
       where: { id: event.event.data.id.toString() },
     });
 
@@ -85,13 +83,9 @@ export class SCBridgeMinaCrawler {
     });
   }
 
-  private async handlerLockEvent(
-    event,
-    queryRunner: QueryRunner,
-  ) {
-
+  private async handlerLockEvent(event, queryRunner: QueryRunner) {
     const field = Field.from(event.event.data.receipt.toString());
-    const receiveAddress = "0x" + field.toBigInt().toString(16);
+    const receiveAddress = '0x' + field.toBigInt().toString(16);
 
     // const timeLock = await this.getDateTimeByBlock(event.blockHeight.toString());
 
@@ -112,25 +106,28 @@ export class SCBridgeMinaCrawler {
       status: EEventStatus.WAITING,
       retry: 0,
       fromTokenDecimal: null,
-      toTokenDecimal: null
-    }
+      toTokenDecimal: null,
+    };
 
-    const tokenPair = await this.tokenPairRepository.getTokenPair(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS), this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS));
-    if(!tokenPair) {
-      eventUnlock.status = EEventStatus.NOTOKENPAIR
+    const tokenPair = await this.tokenPairRepository.getTokenPair(
+      this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
+      this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
+    );
+    if (!tokenPair) {
+      eventUnlock.status = EEventStatus.NOTOKENPAIR;
     } else {
-      eventUnlock.fromTokenDecimal = tokenPair.fromDecimal
-      eventUnlock.toTokenDecimal = tokenPair.toDecimal
+      eventUnlock.fromTokenDecimal = tokenPair.fromDecimal;
+      eventUnlock.toTokenDecimal = tokenPair.toDecimal;
     }
 
-    console.log({eventUnlock});   
+    console.log({ eventUnlock });
 
     await queryRunner.manager.save(EventLog, eventUnlock);
   }
 
   private async getDateTimeByBlock(blockNumber: number) {
     console.log(1111, blockNumber);
-    
+
     const endpoint = 'https://devnet.graphql.minaexplorer.com/'; // Replace with your GraphQL endpoint
     const query = `
       query {
@@ -148,16 +145,16 @@ export class SCBridgeMinaCrawler {
         query,
       }),
     });
-  
+
     const result = await response.json();
 
     console.log('=========', result.data.transaction);
-    
+
     const dateTime = dayjs(result.data.transaction.dateTime);
 
     // Convert DateTime to Unix timestamp in seconds
     const unixTimestampInSeconds = Math.floor(dateTime.valueOf() / 1000);
-    return unixTimestampInSeconds
+    return unixTimestampInSeconds;
   }
 
   private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
@@ -175,7 +172,7 @@ export class SCBridgeMinaCrawler {
 
   private async getFromToBlock(): Promise<{ startBlockNumber; toBlock }> {
     let toBlock;
-    let currentCrawledBlock = await this.crawlContractRepository.findOne({
+    const currentCrawledBlock = await this.crawlContractRepository.findOne({
       where: {
         networkName: ENetworkName.MINA,
         contractAddress: this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS),

@@ -109,7 +109,7 @@ export class SenderMinaBridge {
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
       const MINAURL = 'https://proxy.devnet.minaexplorer.com/graphql';
       const ARCHIVEURL = 'https://api.minascan.io/archive/devnet/v1/graphql/';
-      //
+
       const network = Mina.Network({
         mina: MINAURL,
         archive: ARCHIVEURL,

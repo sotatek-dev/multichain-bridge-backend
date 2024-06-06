@@ -1,13 +1,13 @@
 import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { AuthUserGuard } from '@shared/decorators/http.decorator';
 
-import { GetHistoryOfUserResponseDto, getHistoryDto } from './dto/history-response.dto';
-import { UsersService } from './users.service';
-import { AuthGuard } from '@nestjs/passport';
-import { GetCommonConfigResponseDto } from './dto/common-config-response.dto';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto';
+import { GetCommonConfigResponseDto } from './dto/common-config-response.dto';
+import { getHistoryDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto';
+import { UsersService } from './users.service';
 
 @ApiTags('Admins')
 @Controller('admin')

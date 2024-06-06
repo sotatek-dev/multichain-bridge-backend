@@ -99,8 +99,8 @@ export class AuthService {
     return client.verifyMessage(signer);
   }
 
-  private async validateAdminAccount(address: string, is_evm: boolean) {
-    if (is_evm) {
+  private async validateAdminAccount(address: string, isEvm: boolean) {
+    if (isEvm) {
       address = toChecksumAddress(address);
     }
     const admin = await this.userRepository.findOneBy({ walletAddress: address });
@@ -129,15 +129,4 @@ export class AuthService {
 
     return this.getToken(user);
   }
-
-  // async register(data: SignupDto) {
-  //   const { email, password } = data;
-  //   const hashedPassword = await generateHash(password);
-  //   const newUserData = {
-  //     email,
-  //     password: hashedPassword,
-  //   };
-  //   const newUser = await this.userRepository.save(newUserData);
-  //   return this.getToken(newUser);
-  // }
 }

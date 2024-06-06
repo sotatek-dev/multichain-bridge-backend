@@ -1,15 +1,15 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class GetCommonConfigResponseDto {
-    @ApiProperty()
-    id: number;
-  
-    @ApiProperty()
-    tip: number;
+  @ApiProperty()
+  id: number;
 
-    @ApiProperty()
-    dailyQuota: number;
+  @ApiProperty()
+  tip: number;
 
-    @ApiProperty()
-    asset: string;
+  @ApiProperty()
+  dailyQuota: number;
+
+  @ApiProperty()
+  asset: string;
 }
