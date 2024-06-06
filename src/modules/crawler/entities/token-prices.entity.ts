@@ -1,6 +1,5 @@
 import { Column, Entity } from 'typeorm';
 
-import { ENetworkName } from '@constants/blockchain.constant';
 import { ETableName } from '@constants/entity.constant';
 
 import { BaseEntityIncludeTime } from '@core/base.entity';
