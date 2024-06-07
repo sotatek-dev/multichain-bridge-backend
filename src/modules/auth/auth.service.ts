@@ -30,17 +30,12 @@ export class AuthService {
   ) {}
 
   async login(data: LoginDto) {
-    try {
-      // Validate signature and check for address in database
-      if (!this.validateSignature(data.address, data.signature)) throw new Error('Invalid signature');
-      const admin = await this.validateAdminAccount(data.address, true);
+    // Validate signature and check for address in database
+    if (!(await this.validateSignature(data.address, data.signature))) httpBadRequest(EError.INVALID_SIGNATURE);
+    const admin = await this.validateAdminAccount(data.address, true);
 
-      // Generate access and refresh token
-      return this.getToken(admin);
-    } catch (err) {
-      console.log('[err] auth.service.ts: ---', err);
-      throw new httpBadRequest(EError.USER_NOT_FOUND);
-    }
+    // Generate access and refresh token
+    return this.getToken(admin);
   }
 
   async loginMina(data: LoginMinaDto) {
@@ -75,14 +70,18 @@ export class AuthService {
   }
 
   private async validateSignature(address: string, signature: string) {
-    const recover = await this.ethBridgeContract.recover(
-      signature,
-      this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
-    );
-    const checksumRecover = toChecksumAddress(recover);
-    const checksumAddress = toChecksumAddress(address);
+    try {
+      const recover = await this.ethBridgeContract.recover(
+        signature,
+        this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
+      );
+      const checksumRecover = toChecksumAddress(recover);
+      const checksumAddress = toChecksumAddress(address);
 
-    return checksumRecover === checksumAddress;
+      return checksumRecover === checksumAddress;
+    } catch (error) {
+      httpBadRequest(EError.INVALID_SIGNATURE);
+    }
   }
 
   private async validateSignatureMina(address: string, signature) {

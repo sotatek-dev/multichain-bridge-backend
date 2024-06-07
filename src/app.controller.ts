@@ -10,7 +10,7 @@ export class AppController {
 
   @Get()
   @GuardPublic()
-  getHello(): string {
-    return this.appService.getHello();
+  getHello() {
+    return this.appService.getApiVersion();
   }
 }

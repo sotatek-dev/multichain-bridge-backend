@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
-import { IsEmail, IsEnum, IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString } from 'class-validator';
+import { IsEthereumAddress, IsNotEmpty, IsString } from 'class-validator';
 
 @Exclude()
 export class SignupDto {
@@ -19,7 +19,7 @@ export class SignupDto {
 
 export class LoginDto {
   @ApiProperty()
-  @IsString()
+  @IsEthereumAddress()
   @IsNotEmpty()
   address: string;
 
