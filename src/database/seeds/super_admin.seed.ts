@@ -8,11 +8,23 @@ export default class SuperAdminSeeder implements Seeder {
   public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {
     dotenv.config();
     const repository = dataSource.getRepository(User);
-    await repository.insert(
-      new User({
-        walletAddress: '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0',
-        name: 'admin 1',
-      }),
-    );
+    const listAdmin = [
+      {
+        walletAddress: process.env.ADMIN_ADDRESS_EVM,
+        name: 'admin evm',
+      },
+      {
+        walletAddress: process.env.ADMIN_ADDRESS_MINA,
+        name: 'admin mina',
+      },
+    ];
+
+    for (let i = 0; i < listAdmin.length; i++) {
+      const newUser = new User({
+        walletAddress: listAdmin[i].walletAddress,
+        name: listAdmin[i].name,
+      });
+      await repository.insert(newUser);
+    }
   }
 }

@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 
@@ -5,7 +6,6 @@ import { AppModule } from './app.module';
 import { EEnvKey } from './constants/env.constant';
 import './core/paginate-typeorm';
 import { initSwagger } from './swagger';
-import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

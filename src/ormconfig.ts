@@ -17,7 +17,7 @@ export default {
   migrationsTableName: 'custom_migration_table',
   migrations: [join(migrationDir, '*{.js,.ts}')],
   logging: process.env[EEnvKey.NODE_ENV] === 'local' ? true : false,
-  synchronize: true,
+  // synchronize: true,
   cache: true,
   timezone: 'Z',
   extra: { decimalNumbers: true },

@@ -12,8 +12,8 @@ export class TokenPairRepository extends BaseRepository<TokenPair> {
 
   public async getTokenPair(tokenFromAddress, toAddress) {
     return this.createQueryBuilder(`${this.alias}`)
-    .where(`${this.alias}.fromAddress = :tokenFromAddress`, { tokenFromAddress })
-    .andWhere(`${this.alias}.toAddress = :toAddress`, { toAddress })
-    .getOne()
+      .where(`${this.alias}.fromAddress = :tokenFromAddress`, { tokenFromAddress })
+      .andWhere(`${this.alias}.toAddress = :toAddress`, { toAddress })
+      .getOne();
   }
 }

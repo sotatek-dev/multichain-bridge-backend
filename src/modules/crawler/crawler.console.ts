@@ -1,28 +1,33 @@
 import { ConfigService } from '@nestjs/config';
+import { Logger } from 'log4js';
 import { Command, Console } from 'nestjs-console';
 
 import { EEnvKey } from '@constants/env.constant';
+
+import { LoggerService } from '@shared/modules/logger/logger.service';
+import { sleep } from '@shared/utils/promise';
+
+import { BatchJobGetPriceToken } from './batch.tokenprice';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';
+import { SCBridgeMinaCrawler } from './crawler.minabridge';
 import { SenderEVMBridge } from './sender.evmbridge';
 import { SenderMinaBridge } from './sender.minabridge';
-import { SCBridgeMinaCrawler } from './crawler.minabridge';
-import { SCTokenMinaCrawler } from './crawler.minatoken';
-import { sleep } from '@shared/utils/promise';
 
 @Console()
 export class CrawlerConsole {
   private readonly numberOfBlockPerJob: number;
-
+  private readonly logger: Logger;
   constructor(
     private readonly configService: ConfigService,
     private blockchainEVMCrawler: BlockchainEVMCrawler,
     private scBridgeMinaCrawler: SCBridgeMinaCrawler,
-    private scTokenMinaCrawler: SCTokenMinaCrawler,
     private senderEVMBridge: SenderEVMBridge,
     private senderMinaBridge: SenderMinaBridge,
-
+    private jobGetPrice: BatchJobGetPriceToken,
+    private loggerService: LoggerService,
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
+    this.logger = loggerService.getLogger('CRAWLER_CONSOLE');
   }
 
   @Command({
@@ -36,8 +41,7 @@ export class CrawlerConsole {
         await sleep(15);
       }
     } catch (error) {
-      console.log(error);
-      
+      this.logger.error(error);
     }
   }
 
@@ -52,7 +56,7 @@ export class CrawlerConsole {
         await sleep(15);
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
     }
   }
 
@@ -67,7 +71,7 @@ export class CrawlerConsole {
         await sleep(15);
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
     }
   }
 
@@ -78,11 +82,10 @@ export class CrawlerConsole {
   async handleCrawlMinaToken() {
     try {
       while (true) {
-        this.scTokenMinaCrawler.handleEventCrawlBlock();
         await sleep(15);
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
     }
   }
 
@@ -93,11 +96,26 @@ export class CrawlerConsole {
   async handleSenderMinaBridgeUnlock() {
     try {
       while (true) {
-        this.senderMinaBridge.handleUnlockMina();
-        await sleep(900);
+        await this.senderMinaBridge.handleUnlockMina();
+        await sleep(3);
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
+    }
+  }
+
+  @Command({
+    command: 'get-price-token',
+    description: 'get price of token',
+  })
+  async getPriceCoinMarketCap() {
+    try {
+      while (true) {
+        this.jobGetPrice.handleGetPriceToken();
+        await sleep(43200);
+      }
+    } catch (error) {
+      this.logger.error(error);
     }
   }
 }

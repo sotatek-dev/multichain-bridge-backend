@@ -1,7 +1,3 @@
-import { EError } from '@constants/error.constant';
-
-import { httpBadRequest } from '@shared/exceptions/http-exeption';
-
 export function isNullOrUndefined<T>(obj: T | null | undefined): obj is null | undefined {
   return typeof obj === 'undefined' || obj === null;
 }

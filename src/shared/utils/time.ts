@@ -19,6 +19,6 @@ export const unixZeroMinuteSecond = (value: number) => dayjs.unix(value).minute(
 
 export const unixToDate = (value: number) => dayjs.unix(value).toDate();
 
-export const startOfDayUnix =  dayjs().startOf('day').valueOf() / 1000;
+export const startOfDayUnix = (date: Date) => dayjs(date).startOf('day').valueOf() / 1000;
 
-export const endOfDayUnix = dayjs().endOf('day').valueOf() / 1000;
+export const endOfDayUnix = (date: Date) => dayjs(date).endOf('day').valueOf() / 1000;

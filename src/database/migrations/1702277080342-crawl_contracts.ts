@@ -49,5 +49,7 @@ export class CrawlContracts1702277080342 implements MigrationInterface {
     );
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {}
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    return queryRunner.dropTable('crawl_contracts');
+  }
 }

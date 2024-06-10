@@ -4,4 +4,5 @@ export enum ETableName {
   EVENT_LOGS = 'event_logs',
   TOKEN_PAIRS = 'token_pairs',
   COMMON_CONFIGURATION = 'common_configuration',
+  TOKEN_PRICES = 'token_prices',
 }

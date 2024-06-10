@@ -8,7 +8,6 @@ import { ETH_BRIDGE_ADDRESS_INJECT, RPC_ETH_SERVICE_INJECT, RPC_SERVICE_INJECT }
 import { GuardPublic } from '@guards/guard.decorator';
 
 import { IRpcService } from '@shared/modules/web3/web3.module';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 
 import { AuthService } from './auth.service';
 import { LoginDto, LoginMinaDto, RefreshTokenRequestDto } from './dto/auth-request.dto';
@@ -22,7 +21,6 @@ export class AuthController {
     @Inject(ETH_BRIDGE_ADDRESS_INJECT) private ethBridgeContractAddress: string,
     @Inject(RPC_SERVICE_INJECT) private rpcService: IRpcService,
     @Inject(RPC_ETH_SERVICE_INJECT) private rpcETHService: IRpcService,
-    // private minaBridgeContract: MinaBridgeContract,
     private authService: AuthService,
     private readonly configService: ConfigService,
   ) {
@@ -36,36 +34,22 @@ export class AuthController {
   @GuardPublic()
   @ApiOkResponse({ type: LoginResponseDto })
   loginAdminEVM(@Body() body: LoginDto) {
-      return this.authService.login(body);
+    return this.authService.login(body);
   }
 
   @Post('/login-admin-mina')
   @GuardPublic()
   @ApiOkResponse({ type: LoginResponseDto })
   loginAdminMina(@Body() body: LoginMinaDto) {
-      return this.authService.loginMina(body);
+    return this.authService.loginMina(body);
   }
 
   @Get('/admin/login-message')
   @ApiOkResponse({ type: MessageResponseDto })
   @GuardPublic()
   loginMesage() {
-      return { message : this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN)};
+    return { message: this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN) };
   }
-
-  // @Post('register')
-  // @GuardPublic()
-  // @ApiOkResponse({ type: LoginResponseDto })
-  // register(@Body() body: SignupDto) {
-  //   return this.authService.register(body);
-  // }
-
-  // @Post('login')
-  // @GuardPublic()
-  // @ApiOkResponse({ type: LoginResponseDto })
-  // login(@Body() body: LoginDto) {
-  //   return this.authService.login(body);
-  // }
 
   @Post('refresh-token')
   @GuardPublic()
@@ -73,23 +57,4 @@ export class AuthController {
   refresh(@Body() token: RefreshTokenRequestDto) {
     return this.authService.refreshAccessToken(token.refreshToken);
   }
-
-  //example web3 interact
-  // @Get('web3-interact')
-  // @GuardPublic()
-  // async web3Interact() {
-  //   const testGenerateCollectionAddress = await this.minaBridgeContract.generateCollectionAddress('TUAN1', 'TUAN1');
-  //   this.setETHBridgeAddress(this.configService.get(EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS));
-  //   const ethBridgeContract = new ETHBridgeContract(
-  //     this.rpcETHService,
-  //     this.ethBridgeContractAddress,
-  //     this.ethBridgeStartBlock,
-  //   );
-  //   const getContractAddress = ethBridgeContract.getContractAddress();
-  //   // const mintNftResult = await collectionContract.mintNFT("0xa3de5504750dcadeCC49331E6D2730978397407B");//insert address
-  //   const nftBaseUri = await ethBridgeContract.getBaseURI();
-  //   const latestIndex = await ethBridgeContract.latestIndex();
-  //   const nftToken = await ethBridgeContract.getTokenURI(latestIndex);
-  //   return { testGenerateCollectionAddress, latestIndex, nftToken, nftBaseUri, getContractAddress };
-  // }
 }

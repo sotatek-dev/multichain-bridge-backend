@@ -12,10 +12,9 @@
 This project includes: API, Crawler, Submitter and Jobs of the Mina Bridge backend system
 
 ## Prerequisites
-- Node v16.15
+- Node v18.15
 - pm2
 - docker
-- redis
 
 ## Installation
 ### Install dependencies
@@ -31,7 +30,7 @@ yarn build
 ```
 
 ### Start project
-``Note: If you don't have Postgres or redis installed on your local machine, run:``
+``Note: If you don't have Postgres installed on your local machine, run:``
 ```bash
 docker-compose up -d
 ```
@@ -52,25 +51,29 @@ or start in dev mode:
 ```bash
 yarn start:dev
 ```
-`Start the submitter`
+`Start the crawl evm`
 ```bash
-yarn console product-submitter
+yarn console crawl-eth-bridge-contract
 ```
-`Start the crawler provider`
+`Start the job unlock evm`
 ```bash
-yarn console provider
+yarn console sender-eth-bridge-unlock
 ```
-`Start the crawler consumer`
+`Start the crawler Sc bridge mina`
 ```bash
-yarn console consumer
+yarn console crawl-mina-bridge-contract
 ```
-`Start the submitter`
+`Start the crawl Token Mina`
 ```bash
-yarn console product-submitter
+yarn console crawl-mina-token-contract
 ```
-`Start the clean unused media job`
+`Start the unlock mina job`
 ```bash
-yarn console clean-unused-media
+yarn console sender-mina-bridge-unlock
+
+`Start the get token price job`
+```bash
+yarn console get-price-token
 ```
 
 ### DB Migration commands:

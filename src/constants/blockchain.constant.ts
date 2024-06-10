@@ -15,10 +15,10 @@ export enum EEventStatus {
   PROCESSING = 'processing',
   COMPLETED = 'completed',
   FAILED = 'failed',
-  NOTOKENPAIR = "noTokenPair"
+  NOTOKENPAIR = 'noTokenPair',
 }
 
 export enum ETokenPairStatus {
   ENABLE = 'enable',
-  DISABLE = 'disable'
+  DISABLE = 'disable',
 }

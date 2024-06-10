@@ -1,19 +1,18 @@
 import { Column, Entity } from 'typeorm';
 
-import { ENetworkName } from '@constants/blockchain.constant';
 import { ETableName } from '@constants/entity.constant';
 
 import { BaseEntityIncludeTime } from '@core/base.entity';
 
 @Entity(ETableName.COMMON_CONFIGURATION)
 export class CommonConfig extends BaseEntityIncludeTime {
-  @Column({ 
+  @Column({
     name: 'daily_quota',
     type: 'decimal',
     precision: 78,
     scale: 1,
     default: 0,
-    nullable: false
+    nullable: false,
   })
   dailyQuota: number;
 
@@ -23,7 +22,7 @@ export class CommonConfig extends BaseEntityIncludeTime {
     precision: 4,
     scale: 1,
     default: 0,
-    nullable: false
+    nullable: false,
   })
   tip: number;
 
