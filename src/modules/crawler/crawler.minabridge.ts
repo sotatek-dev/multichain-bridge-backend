@@ -37,7 +37,7 @@ export class SCBridgeMinaCrawler {
 
       const Network = Mina.Network({
         mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
-        archive: 'https://api.minascan.io/archive/devnet/v1/graphql/',
+        archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
       });
       Mina.setActiveInstance(Network);
       const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
@@ -133,7 +133,7 @@ export class SCBridgeMinaCrawler {
   }
 
   private async getDateTimeByBlock(blockNumber: number) {
-    const endpoint = 'https://devnet.graphql.minaexplorer.com/'; // Replace with your GraphQL endpoint
+    const endpoint = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
     const query = `
       query {
           transaction(query: {blockHeight: ${blockNumber}}) {

@@ -19,6 +19,8 @@ import redisConfig from './redis.config';
         [EEnvKey.GLOBAL_PREFIX]: Joi.string(),
         [EEnvKey.SWAGGER_PATH]: Joi.string(),
         [EEnvKey.BCRYPT_SALT_ROUND]: Joi.number(),
+        [EEnvKey.LOG_LEVEL]: Joi.string().valid(),
+        [EEnvKey.IS_WRITE_LOG]: Joi.string().valid('yes', 'no'),
         // database
         [EEnvKey.DB_HOST]: Joi.string().default('localhost'),
         [EEnvKey.DB_PORT]: Joi.number().default(5432),
@@ -34,6 +36,7 @@ import redisConfig from './redis.config';
         [EEnvKey.ETH_BRIDGE_START_BLOCK]: Joi.number().optional().allow(''),
         [EEnvKey.MINA_BRIDGE_START_BLOCK]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_RPC_OPTIONS]: Joi.string().required(),
+        [EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_RPC_OPTIONS]: Joi.string().required(),
         [EEnvKey.SIGNER_PRIVATE_KEY]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
