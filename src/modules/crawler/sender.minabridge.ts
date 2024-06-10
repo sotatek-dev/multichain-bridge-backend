@@ -5,12 +5,14 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
+import { Logger } from 'log4js';
 import { AccountUpdate, fetchAccount, Mina, PrivateKey, PublicKey, UInt64 } from 'o1js';
 
 import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
 
+import { LoggerService } from '@shared/modules/logger/logger.service';
 import { addDecimal, calculateFee } from '@shared/utils/bignumber';
 
 import { FungibleToken } from './minaSc/fungibleToken';
@@ -18,13 +20,17 @@ import { Bridge } from './minaSc/minaBridgeSC';
 
 @Injectable()
 export class SenderMinaBridge {
+  private readonly logger: Logger;
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly tokenPriceRepository: TokenPriceRepository,
-  ) {}
+    private readonly loggerService: LoggerService,
+  ) {
+    this.logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
+  }
 
   public async handleUnlockMina() {
     let dataLock, configTip, rateethmina;
@@ -117,7 +123,7 @@ export class SenderMinaBridge {
       });
       Mina.setActiveInstance(network);
 
-      console.log('compile the contract...');
+      this.logger.info('compile the contract...');
       await Bridge.compile();
       await FungibleToken.compile();
       const fee = 1 * Math.pow(10, 9);
@@ -133,27 +139,27 @@ export class SenderMinaBridge {
       // compile the contract to create prover keys
       try {
         // call update() and send transaction
-        console.log('build transaction and create proof...');
+        this.logger.info('build transaction and create proof...');
         const tx = await Mina.transaction({ sender: feepayerAddress, fee }, async () => {
           if (!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress, 1);
           await zkBridge.unlock(UInt64.from(amount), receiverPublicKey, UInt64.from(txId));
         });
         await tx.prove();
-        console.log('send transaction...');
+        this.logger.info('send transaction...');
         sentTx = await tx.sign([feepayerKey, zkAppKey]).send();
       } catch (err) {
-        console.log(err);
+        this.logger.error(err);
       }
-      console.log('=====================txhash: ', sentTx?.hash);
+      this.logger.info('=====================txhash: ', sentTx?.hash);
       await sentTx?.wait({ maxAttempts: 300 });
-      console.log('=====================done: ', sentTx?.hash);
+      this.logger.info('=====================done: ', sentTx?.hash);
       if (sentTx.hash) {
         return { success: true, error: null, data: sentTx.hash };
       } else {
         return { success: false, error: sentTx, data: null };
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       return { success: false, error, data: null };
     }
   }
@@ -174,7 +180,7 @@ export class SenderMinaBridge {
   }
 
   private async fetchNonce(feepayerAddress) {
-    console.log('nonce=======', feepayerAddress);
+    this.logger.info('nonce=======', feepayerAddress);
     const url = 'https://proxy.berkeley.minaexplorer.com/graphql';
     const query = `
     query {
@@ -189,7 +195,7 @@ export class SenderMinaBridge {
       headers: { 'Content-Type': 'application/json' },
     });
     const json = await response.json();
-    console.log('nonce=======', json);
+    this.logger.info('nonce=======', json);
 
     const inferredNonce = Number(json.data.account.inferredNonce);
     return inferredNonce;

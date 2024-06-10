@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
+import { Logger } from 'log4js';
 import { DataSource, QueryRunner } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
@@ -10,19 +11,23 @@ import { EEnvKey } from '@constants/env.constant';
 
 import { CrawlContract, EventLog } from '@modules/crawler/entities';
 
+import { LoggerService } from '@shared/modules/logger/logger.service';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 
 @Injectable()
 export class BlockchainEVMCrawler {
   private readonly numberOfBlockPerJob: number;
+  private readonly logger: Logger;
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
     private readonly ethBridgeContract: ETHBridgeContract,
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
+    private readonly loggerService: LoggerService,
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
+    this.logger = loggerService.getLogger('BLOCKCHAIN_EVM_CRAWLER');
   }
 
   public async handleEventCrawlBlock() {
@@ -44,7 +49,7 @@ export class BlockchainEVMCrawler {
             continue;
         }
       }
-      console.log(`[handleCrawlETHBridge] Crawled from ${startBlockNumber} to ${toBlock}`);
+      this.logger.info(`[handleCrawlETHBridge] Crawled from ${startBlockNumber} to ${toBlock}`);
       await this.updateLatestBlockCrawl(toBlock, queryRunner);
       return await queryRunner.commitTransaction();
     } catch (error) {

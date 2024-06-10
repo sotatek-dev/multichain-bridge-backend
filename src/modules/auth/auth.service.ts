@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from 'database/repositories/user.repository';
+import { Logger } from 'log4js';
 import Client from 'mina-signer';
 import { DataSource } from 'typeorm';
 import Web3 from 'web3';
@@ -13,6 +14,7 @@ import { EError } from '@constants/error.constant';
 import { User } from '@modules/users/entities/user.entity';
 
 import { httpBadRequest, httpNotFound } from '@shared/exceptions/http-exeption';
+import { LoggerService } from '@shared/modules/logger/logger.service';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 
 import { LoginDto, LoginMinaDto } from './dto/auth-request.dto';
@@ -21,13 +23,16 @@ import { IJwtPayload } from './interfaces/auth.interface';
 @Injectable()
 export class AuthService {
   private web3: Web3;
+  private readonly logger: Logger;
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
     private readonly userRepository: UserRepository,
     private readonly ethBridgeContract: ETHBridgeContract,
-    private dataSource: DataSource,
-  ) {}
+    private readonly loggerService: LoggerService,
+  ) {
+    this.logger = loggerService.getLogger('AUTH_SERVICE');
+  }
 
   async login(data: LoginDto) {
     // Validate signature and check for address in database
@@ -47,7 +52,7 @@ export class AuthService {
       // Generate access and refresh token
       return this.getToken(admin);
     } catch (err) {
-      console.log('[err] auth.service.ts: ---', err);
+      this.logger.error('[err] auth.service.ts: ---', err);
       throw new httpBadRequest(EError.USER_NOT_FOUND);
     }
   }

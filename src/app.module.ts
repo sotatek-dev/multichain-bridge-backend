@@ -13,6 +13,7 @@ import { GuardModule } from '@guards/guard.module';
 import { MODULES } from '@modules/index';
 
 import { CustomAuthorizationHeaderMiddleware } from '@shared/middleware/custom-authorization-header.middleware';
+import { LoggingModule } from '@shared/modules/logger/logger.module';
 import { Web3Module } from '@shared/modules/web3/web3.module';
 
 import { LoggerHttpRequestMiddleware } from './shared/middleware/logger-http-request.middleware';
@@ -21,6 +22,7 @@ const modules = [
   ConfigurationModule,
   DatabaseModule,
   ScheduleModule.forRoot(),
+  LoggingModule,
   GuardModule,
   Web3Module,
   ConsoleModule,

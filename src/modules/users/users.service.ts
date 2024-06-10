@@ -4,6 +4,7 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 import { UserRepository } from 'database/repositories/user.repository';
+import { Logger } from 'log4js';
 import { DataSource } from 'typeorm';
 
 import { ENetworkName } from '@constants/blockchain.constant';
@@ -13,6 +14,7 @@ import { EError } from '@constants/error.constant';
 import { TokenPair } from '@modules/users/entities/tokenpair.entity';
 
 import { httpBadRequest } from '@shared/exceptions/http-exeption';
+import { LoggerService } from '@shared/modules/logger/logger.service';
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 import { addDecimal, calculateFee } from '@shared/utils/bignumber';
 
@@ -20,6 +22,7 @@ import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto';
 
 @Injectable()
 export class UsersService {
+  private readonly logger: Logger;
   constructor(
     private readonly usersRepository: UserRepository,
     private readonly eventLogRepository: EventLogRepository,
@@ -28,7 +31,10 @@ export class UsersService {
     private readonly dataSource: DataSource,
     private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly loggerService: LoggerService,
+  ) {
+    this.logger = this.loggerService.getLogger('USER_SERVICE');
+  }
   async getProfile(userId: number) {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
@@ -60,11 +66,7 @@ export class UsersService {
   }
 
   async updateCommonConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {
-    try {
-      return this.commonConfigRepository.updateCommonConfig(id, updateConfig);
-    } catch (error) {
-      console.log(error);
-    }
+    return this.commonConfigRepository.updateCommonConfig(id, updateConfig);
   }
 
   async getDailyQuotaOfUser(address: string) {
@@ -91,7 +93,7 @@ export class UsersService {
     ]);
 
     if (tokenPair.toChain == ENetworkName.MINA) {
-      const rate = await this.tokenPriceRepository.getRateETHToMina();
+      // const rate = await this.tokenPriceRepository.getRateETHToMina();
 
       gasFee = addDecimal(
         this.configService.get(EEnvKey.GASFEEMINA),

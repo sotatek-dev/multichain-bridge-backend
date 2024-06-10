@@ -15,8 +15,6 @@ export class TokenPriceRepository extends BaseRepository<TokenPrice> {
   }
 
   public async getTokenPriceByListSymbol(symbols) {
-    console.log({ symbols });
-
     return this.createQueryBuilder(`${this.alias}`)
       .where(`${this.alias}.symbol IN (:...symbols)`, { symbols })
       .getMany();

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import dayjs from 'dayjs';
+import { Logger } from 'log4js';
 import { Field, Mina, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
@@ -11,16 +12,22 @@ import { EEnvKey } from '@constants/env.constant';
 
 import { CrawlContract, EventLog } from '@modules/crawler/entities';
 
+import { LoggerService } from '@shared/modules/logger/logger.service';
+
 import { Bridge } from './minaSc/minaBridgeSC';
 
 @Injectable()
 export class SCBridgeMinaCrawler {
+  private readonly logger: Logger;
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
-  ) {}
+    private readonly loggerService: LoggerService,
+  ) {
+    this.logger = this.loggerService.getLogger('SC_BRIDGE_MINA_CRAWLER');
+  }
   public async handleEventCrawlBlock() {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -34,11 +41,11 @@ export class SCBridgeMinaCrawler {
       });
       Mina.setActiveInstance(Network);
       const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
-      const zkAppToken = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+      // const zkAppToken = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
 
       const zkapp = new Bridge(zkappAddress);
       const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
-      console.log({ events });
+      this.logger.info({ events });
 
       for (const event of events) {
         switch (event.type) {
@@ -52,7 +59,7 @@ export class SCBridgeMinaCrawler {
             continue;
         }
       }
-      console.log(`[handleCrawlMinaBridge] Crawled from============================= ${startBlockNumber}`);
+      this.logger.info(`[handleCrawlMinaBridge] Crawled from============================= ${startBlockNumber}`);
       if (events.length > 0) {
         await this.updateLatestBlockCrawl(Number(events.reverse()[0].blockHeight.toString()), queryRunner);
       }
@@ -120,14 +127,12 @@ export class SCBridgeMinaCrawler {
       eventUnlock.toTokenDecimal = tokenPair.toDecimal;
     }
 
-    console.log({ eventUnlock });
+    this.logger.info({ eventUnlock });
 
     await queryRunner.manager.save(EventLog, eventUnlock);
   }
 
   private async getDateTimeByBlock(blockNumber: number) {
-    console.log(1111, blockNumber);
-
     const endpoint = 'https://devnet.graphql.minaexplorer.com/'; // Replace with your GraphQL endpoint
     const query = `
       query {
@@ -148,7 +153,7 @@ export class SCBridgeMinaCrawler {
 
     const result = await response.json();
 
-    console.log('=========', result.data.transaction);
+    this.logger.info('=========', result.data.transaction);
 
     const dateTime = dayjs(result.data.transaction.dateTime);
 

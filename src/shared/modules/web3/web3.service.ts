@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import BigNumber from 'bignumber.js';
 import { TransactionReceipt } from 'web3-core';
 import { Contract, EventData } from 'web3-eth-contract';
@@ -16,6 +16,7 @@ import ETHBridgeAbi from './abis/eth-bridge-contract.json';
 import { IRpcService } from './web3.module';
 
 export class DefaultContract {
+  private readonly logger = new Logger('CONTRACT');
   private contract: Contract;
   private readonly contractAddress: string;
   private readonly abi: any;
@@ -193,11 +194,11 @@ export class DefaultContract {
   public async convertGasPriceToEther(amount: number) {
     try {
       const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-      console.log('Current gas price:', gasPrice, 'wei'); // Gas price is returned in wei
+      this.logger.warn('Current gas price:', gasPrice, 'wei'); // Gas price is returned in wei
       const estimateGasToWei = BigNumber(amount).multipliedBy(BigNumber(gasPrice)).toString();
       return this.rpcService.web3.utils.fromWei(estimateGasToWei, 'ether');
     } catch (error) {
-      console.error('Error getting gas price:', error);
+      this.logger.error('Error getting gas price:', error);
     }
   }
 }

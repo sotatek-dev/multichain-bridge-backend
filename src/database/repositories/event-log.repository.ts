@@ -105,8 +105,6 @@ export class EventLogRepository extends BaseRepository<EventLog> {
   }
 
   public async sumAmountBridgeOfUserInDay(address) {
-    console.log('new====date', startOfDayUnix(new Date()), endOfDayUnix(new Date()));
-
     const qb = this.createQb();
     qb.select([`${this.alias}.sender_address`, `SUM(CAST(${this.alias}.amount_from as DECIMAL(100,2))) as totalamount`])
       .where(`${this.alias}.sender_address = :address`, { address })
