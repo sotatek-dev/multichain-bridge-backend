@@ -114,8 +114,9 @@ export class SenderMinaBridge {
       const feepayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
       const zkAppKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-      const MINAURL = 'https://proxy.devnet.minaexplorer.com/graphql';
-      const ARCHIVEURL = 'https://api.minascan.io/archive/devnet/v1/graphql/';
+      // TODO: move these urls to env
+      const MINAURL = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
+      const ARCHIVEURL = this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS);
 
       const network = Mina.Network({
         mina: MINAURL,
@@ -150,9 +151,8 @@ export class SenderMinaBridge {
       } catch (err) {
         this.logger.error(err);
       }
-      this.logger.info('=====================txhash: ', sentTx?.hash);
+      this.logger.info('Transaction waiting to be applied with txhash: ', sentTx?.hash);
       await sentTx?.wait({ maxAttempts: 300 });
-      this.logger.info('=====================done: ', sentTx?.hash);
       if (sentTx.hash) {
         return { success: true, error: null, data: sentTx.hash };
       } else {
@@ -180,8 +180,7 @@ export class SenderMinaBridge {
   }
 
   private async fetchNonce(feepayerAddress) {
-    this.logger.info('nonce=======', feepayerAddress);
-    const url = 'https://proxy.berkeley.minaexplorer.com/graphql';
+    const url = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
     const query = `
     query {
       account(publicKey: "${feepayerAddress}") {
@@ -195,7 +194,6 @@ export class SenderMinaBridge {
       headers: { 'Content-Type': 'application/json' },
     });
     const json = await response.json();
-    this.logger.info('nonce=======', json);
 
     const inferredNonce = Number(json.data.account.inferredNonce);
     return inferredNonce;

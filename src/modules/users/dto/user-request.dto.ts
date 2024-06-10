@@ -1,13 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
 
 import { UseSwaggerDecorator } from '@shared/decorators/swagger.decorator';
 
 export class CreateUserDto {
   @UseSwaggerDecorator()
   @Expose()
-  @IsString()
+  @IsEmail()
   email: string;
 
   @UseSwaggerDecorator()
@@ -20,7 +20,7 @@ export class CreateUserDto {
 export class UpdateProfileBodyDto {
   @ApiProperty({ example: 'email' })
   @IsOptional()
-  @IsString()
+  @IsEmail()
   @Expose()
   email: string;
 }
