@@ -88,6 +88,7 @@ export class SenderEVMBridge {
           result.error,
         );
       }
+      return result;
     } catch (error) {
       await this.eventLogRepository.updateStatusAndRetryEvenLog(
         dataLock.id,

@@ -92,6 +92,7 @@ export class SenderMinaBridge {
           result.error,
         );
       }
+      return result;
     } catch (error) {
       await this.eventLogRepository.updateStatusAndRetryEvenLog(
         dataLock.id,
@@ -144,7 +145,7 @@ export class SenderMinaBridge {
         console.log(err);
       }
       console.log('=====================txhash: ', sentTx?.hash);
-      await sentTx?.wait({ maxAttempts: 100 });
+      await sentTx?.wait({ maxAttempts: 300 });
       console.log('=====================done: ', sentTx?.hash);
       if (sentTx.hash) {
         return { success: true, error: null, data: sentTx.hash };
