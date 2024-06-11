@@ -7,6 +7,7 @@ import { TokenPriceRepository } from 'database/repositories/token-price.reposito
 
 import { ConfigurationModule } from '@config/config.module';
 
+import { LoggingModule } from '@shared/modules/logger/logger.module';
 import { Web3Module } from '@shared/modules/web3/web3.module';
 
 import { SenderMinaBridge } from '../sender.minabridge';
@@ -37,7 +38,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [Web3Module, ConfigurationModule],
+      imports: [Web3Module, ConfigurationModule, LoggingModule],
       providers: [
         SenderMinaBridge,
         { provide: JwtService, useValue: mockJwtService },
@@ -57,7 +58,7 @@ describe('AuthService', () => {
       id: 333,
       tokenReceivedAddress: 'B62qqki2ZnVzaNsGaTDAP6wJYCth5UAcY6tPX2TQYHdwD8D4uBgrDKC',
       tokenFromAddress: '0x0000000000000000000000000000000000000000',
-      receiveAddress: 'B62qqki2ZnVzaNsGaTDAP6wJYCth5UAcY6tPX2TQYHdwD8D4uBgrDKC',
+      receiveAddress: 'B62qjWwgHupW7k7fcTbb2Kszp4RPYBWYdL4KMmoqfkMH3iRN2FN8u5n',
       amountFrom: '15690000000000000',
       senderAddress: '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0',
     });

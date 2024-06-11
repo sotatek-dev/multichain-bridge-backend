@@ -125,13 +125,15 @@ export class SenderMinaBridge {
       Mina.setActiveInstance(network);
 
       this.logger.info('compile the contract...');
+
       await Bridge.compile();
       await FungibleToken.compile();
-      const fee = 1 * Math.pow(10, 9);
-      // const fee = protocolFeeAmount * rateMINAETH + 5 * Math.pow(10, 8); // in nanomina (1 billion = 1.0 mina)
+
+      const fee = protocolFeeAmount * rateMINAETH + +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
       const feepayerAddress = feepayerKey.toPublicKey();
       const zkAppAddress = zkAppKey.toPublicKey();
       const zkBridge = new Bridge(zkAppAddress);
+
       await fetchAccount({ publicKey: zkAppAddress });
       await fetchAccount({ publicKey: feepayerAddress });
 
