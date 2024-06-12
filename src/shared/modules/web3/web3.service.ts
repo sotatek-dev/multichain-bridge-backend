@@ -81,29 +81,25 @@ export class DefaultContract {
   }
 
   public async estimateGas(method: string, param: Array<any>, specifySignerIndex?: number): Promise<number> {
-    try {
-      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
-        this.rpcService.privateKeys[specifySignerIndex ?? 0],
-      );
+    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
+      this.rpcService.privateKeys[specifySignerIndex ?? 0],
+    );
 
-      const data = this.contract.methods[method](...param).encodeABI();
-      const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-      const nonce = await this.rpcService.getNonce(signer.address);
+    const data = this.contract.methods[method](...param).encodeABI();
+    const gasPrice = await this.rpcService.web3.eth.getGasPrice();
+    const nonce = await this.rpcService.getNonce(signer.address);
 
-      // gas estimation
-      const rawTx = {
-        nonce: nonce,
-        gasPrice: toHex(toBN(gasPrice)),
-        from: signer.address,
-        to: this.contractAddress,
-        data: data,
-      };
+    // gas estimation
+    const rawTx = {
+      nonce: nonce,
+      gasPrice: toHex(toBN(gasPrice)),
+      from: signer.address,
+      to: this.contractAddress,
+      data: data,
+    };
 
-      const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
-      return gasLimit;
-    } catch (error) {
-      return error;
-    }
+    const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
+    return gasLimit;
   }
 
   public async write(
@@ -141,7 +137,7 @@ export class DefaultContract {
         error: null,
         data: await this.rpcService.web3.eth.sendSignedTransaction(signedTx.rawTransaction),
       };
-    } catch (error) {
+    } catch (error: any) {
       return { success: false, error, data: null };
     }
   }
@@ -182,7 +178,7 @@ export class DefaultContract {
         error: null,
         data: response,
       };
-    } catch (error) {
+    } catch (error: any) {
       return { success: false, error, data: null };
     }
   }
