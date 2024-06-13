@@ -11,6 +11,8 @@ import { ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
 
+import { toPageDto } from '@core/paginate-typeorm';
+
 import { TokenPair } from '@modules/users/entities/tokenpair.entity';
 
 import { httpBadRequest } from '@shared/exceptions/http-exeption';
@@ -48,14 +50,14 @@ export class UsersService {
   async getHistoriesOfUser(address: string, options) {
     try {
       const [data, count] = await this.eventLogRepository.getHistoriesOfUser(address, options);
-      return data.toPageDto(options, count);
+      return toPageDto(data, options, count);
     } catch (error) {}
   }
 
   async getHistories(options) {
     try {
       const [data, count] = await this.eventLogRepository.getHistories(options);
-      return data.toPageDto(options, count);
+      return toPageDto(data, options, count);
     } catch (error) {}
   }
 
