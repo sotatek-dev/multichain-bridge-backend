@@ -24,7 +24,7 @@
     "migration:run-dist": "npm run typeorm -- -d dist/database/data-source.js migration:run",
     "migration:run:js": "node ./node_modules/typeorm/cli.js -d dist/database/data-source.js migration:run",
     "migration:revert": "npm run typeorm -- -d src/database/data-source.ts migration:revert",
-    "seed:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm-extension/bin/cli.cjs seed:run -d src/database/data-source.ts",
+    "seed:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm-extension/bin/cli.cjs seed:run -d dist/database/data-source.js",
     "console:dev": "ts-node -r tsconfig-paths/register src/console.ts",
     "console": "node dist/console.js"
   },
