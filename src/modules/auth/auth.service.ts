@@ -4,7 +4,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import Client from 'mina-signer';
-import { DataSource } from 'typeorm';
 import Web3 from 'web3';
 import { toChecksumAddress } from 'web3-utils';
 
@@ -22,7 +21,6 @@ import { IJwtPayload } from './interfaces/auth.interface';
 
 @Injectable()
 export class AuthService {
-  private web3: Web3;
   private readonly logger: Logger;
   constructor(
     private jwtService: JwtService,

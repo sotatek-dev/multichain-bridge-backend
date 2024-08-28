@@ -14,9 +14,5 @@ jobs:
           node-version: 16.15.0
       - run: |
           echo "${{ vars.MINA_BRIDGE_BE_TEST }}" >> .env
-          docker-compose -p mina-bridge-test-env up -d
-          yarn
-          yarn prebuild
-          yarn build
-          yarn migration:run
-          npx pm2 reload ecosystem.config.js
+          docker build . -t mina-bridge:1.0.0
+          docker compose -f docker-compose.dev.yaml up -d
