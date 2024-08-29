@@ -4,7 +4,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import Client from 'mina-signer';
-import Web3 from 'web3';
 import { toChecksumAddress } from 'web3-utils';
 
 import { EEnvKey } from '@constants/env.constant';
