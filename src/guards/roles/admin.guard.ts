@@ -12,7 +12,7 @@ export class AdminGuard implements CanActivate {
       user: IJwtPayload;
     };
 
-    return true;
+    return !!user;
   }
 
   getUser(userId: number) {
