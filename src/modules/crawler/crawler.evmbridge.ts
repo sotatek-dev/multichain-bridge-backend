@@ -21,10 +21,10 @@ export class BlockchainEVMCrawler {
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly loggerService: LoggerService,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
     this.logger = loggerService.getLogger('BLOCKCHAIN_EVM_CRAWLER');
@@ -37,6 +37,7 @@ export class BlockchainEVMCrawler {
     try {
       const { startBlockNumber, toBlock } = await this.getFromToBlock();
       const events = await this.ethBridgeContract.getEvent(startBlockNumber, toBlock);
+
       for (const event of events) {
         switch (event.event) {
           case 'Lock':

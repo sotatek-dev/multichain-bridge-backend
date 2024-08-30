@@ -14,9 +14,9 @@ import { addDecimal, calculateFee } from '@shared/utils/bignumber';
 export class SenderEVMBridge {
   constructor(
     private readonly eventLogRepository: EventLogRepository,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly commonConfigRepository: CommonConfigRepository,
     private readonly tokenPairRepository: TokenPairRepository,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {}
 
   async handleUnlockEVM() {
@@ -60,7 +60,6 @@ export class SenderEVMBridge {
         );
         return;
       }
-
       const gasFee = await this.ethBridgeContract.getEstimateGas(
         tokenReceivedAddress,
         BigNumber(amountReceive),

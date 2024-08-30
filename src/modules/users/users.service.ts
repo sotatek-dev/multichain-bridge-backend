@@ -29,9 +29,9 @@ export class UsersService {
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
     private readonly dataSource: DataSource,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {
     this.logger = this.loggerService.getLogger('USER_SERVICE');
   }

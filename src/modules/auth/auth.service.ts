@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import Client from 'mina-signer';
+import Web3 from 'web3';
 import { toChecksumAddress } from 'web3-utils';
 
 import { EEnvKey } from '@constants/env.constant';
@@ -25,8 +26,8 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private readonly userRepository: UserRepository,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly loggerService: LoggerService,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {
     this.logger = loggerService.getLogger('AUTH_SERVICE');
   }

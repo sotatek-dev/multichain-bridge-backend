@@ -6,6 +6,8 @@ import { PassportModule } from '@nestjs/passport';
 import { UserRepository } from 'database/repositories/user.repository';
 import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
 
+import { initializeEthContract } from '@config/common.config';
+
 import { EEnvKey } from '@constants/env.constant';
 
 import { UsersModule } from '@modules/users/users.module';
@@ -33,7 +35,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
     HttpModule.register({ timeout: 3000 }),
     UsersModule,
-    Web3Module,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
