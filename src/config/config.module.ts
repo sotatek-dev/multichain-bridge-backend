@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { isNumber } from 'class-validator';
 import * as Joi from 'joi';
 
-import { EEnvKey } from '@constants/env.constant';
+import { EEnvironments, EEnvKey } from '@constants/env.constant';
 
 import redisConfig from './redis.config';
 
@@ -13,7 +13,9 @@ import redisConfig from './redis.config';
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-        [EEnvKey.NODE_ENV]: Joi.string().valid('local', 'dev', 'test', 'uat', 'production').default('dev'),
+        [EEnvKey.NODE_ENV]: Joi.string()
+          .valid(...Object.values(EEnvironments))
+          .default(EEnvironments.DEV),
         [EEnvKey.PORT]: Joi.number().default(3000),
         [EEnvKey.TZ]: Joi.string().default('UTC'),
         [EEnvKey.GLOBAL_PREFIX]: Joi.string(),

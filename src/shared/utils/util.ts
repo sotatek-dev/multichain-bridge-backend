@@ -1,5 +1,7 @@
 import { AES, enc } from 'crypto-js';
 
+import { EEnvironments, EEnvKey } from '@constants/env.constant';
+
 export const toLower = (value: string) => value.toLowerCase();
 
 export const compareAddress = (address: string, addressCompare: string) => toLower(address) === toLower(addressCompare);
@@ -34,3 +36,5 @@ export const getVariableName = <TResult>(getVar: () => TResult): string => {
 };
 
 export const nullToZero = (value: string | number) => (value ? value.toString() : '0');
+export const isDevelopmentEnvironment = () =>
+  [EEnvironments.DEV, EEnvironments.LOCAL].includes(process.env[EEnvKey.NODE_ENV] as EEnvironments);
