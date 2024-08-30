@@ -1,4 +1,5 @@
 import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
+import { isNotEmpty } from 'class-validator';
 import { DataSource } from 'typeorm';
 
 import { IJwtPayload } from '@modules/auth/interfaces/auth.interface';
@@ -12,7 +13,7 @@ export class UserGuard implements CanActivate {
     const { user } = context.switchToHttp().getRequest() as {
       user: IJwtPayload;
     };
-    return true;
+    return isNotEmpty(user);
   }
 
   getUser(userId: number) {

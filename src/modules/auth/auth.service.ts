@@ -21,7 +21,6 @@ import { IJwtPayload } from './interfaces/auth.interface';
 
 @Injectable()
 export class AuthService {
-  private web3: Web3;
   private readonly logger: Logger;
   constructor(
     private jwtService: JwtService,

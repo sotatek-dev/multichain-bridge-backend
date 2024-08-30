@@ -1,11 +1,8 @@
 import { CanActivate, ExecutionContext } from '@nestjs/common';
+import { isNotEmpty } from 'class-validator';
 import { Observable } from 'rxjs';
 
-import { EError } from '@constants/error.constant';
-
 import { IJwtPayload } from '@modules/auth/interfaces/auth.interface';
-
-import { httpForbidden } from '@shared/exceptions/http-exeption';
 
 export class SuperAdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
@@ -13,6 +10,6 @@ export class SuperAdminGuard implements CanActivate {
       user: IJwtPayload;
     };
 
-    return true;
+    return isNotEmpty(user);
   }
 }

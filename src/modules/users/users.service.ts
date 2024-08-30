@@ -46,23 +46,17 @@ export class UsersService {
   }
 
   async getHistoriesOfUser(address: string, options) {
-    try {
-      const [data, count] = await this.eventLogRepository.getHistoriesOfUser(address, options);
-      return toPageDto(data, options, count);
-    } catch (error) {}
+    const [data, count] = await this.eventLogRepository.getHistoriesOfUser(address, options);
+    return toPageDto(data, options, count);
   }
 
   async getHistories(options) {
-    try {
-      const [data, count] = await this.eventLogRepository.getHistories(options);
-      return toPageDto(data, options, count);
-    } catch (error) {}
+    const [data, count] = await this.eventLogRepository.getHistories(options);
+    return toPageDto(data, options, count);
   }
 
   async getCommonConfig() {
-    try {
-      return this.commonConfigRepository.getCommonConfig();
-    } catch (error) {}
+    return this.commonConfigRepository.getCommonConfig();
   }
 
   async updateCommonConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {
@@ -93,8 +87,6 @@ export class UsersService {
     ]);
 
     if (tokenPair.toChain == ENetworkName.MINA) {
-      // const rate = await this.tokenPriceRepository.getRateETHToMina();
-
       gasFee = addDecimal(
         this.configService.get(EEnvKey.GASFEEMINA),
         this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
