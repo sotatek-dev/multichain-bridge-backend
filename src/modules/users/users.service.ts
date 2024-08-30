@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
@@ -7,9 +7,12 @@ import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import { DataSource } from 'typeorm';
 
+import { initializeEthContract } from '@config/common.config';
+
 import { ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
+import { ASYNC_CONNECTION } from '@constants/service.constant';
 
 import { toPageDto } from '@core/paginate-typeorm';
 
@@ -29,11 +32,10 @@ export class UsersService {
     private readonly usersRepository: UserRepository,
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
-    private readonly tokenPriceRepository: TokenPriceRepository,
     private readonly dataSource: DataSource,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
+    @Inject(ASYNC_CONNECTION) private readonly initializeEthContract: ETHBridgeContract,
   ) {
     this.logger = this.loggerService.getLogger('USER_SERVICE');
   }
@@ -102,7 +104,7 @@ export class UsersService {
         this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
       );
     } else {
-      gasFee = await this.ethBridgeContract.getEstimateGas(
+      gasFee = await this.initializeEthContract.getEstimateGas(
         tokenPair.toAddress,
         addDecimal(0, tokenPair.toDecimal),
         1,

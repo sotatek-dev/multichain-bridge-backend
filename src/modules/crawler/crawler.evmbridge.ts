@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
@@ -8,6 +8,7 @@ import { EventData } from 'web3-eth-contract';
 
 import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
+import { ASYNC_CONNECTION } from '@constants/service.constant';
 
 import { CrawlContract, EventLog } from '@modules/crawler/entities';
 
@@ -21,10 +22,10 @@ export class BlockchainEVMCrawler {
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly loggerService: LoggerService,
+    @Inject(ASYNC_CONNECTION) private readonly initializeEthContract: ETHBridgeContract,
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
     this.logger = loggerService.getLogger('BLOCKCHAIN_EVM_CRAWLER');
@@ -36,7 +37,8 @@ export class BlockchainEVMCrawler {
     await queryRunner.startTransaction();
     try {
       const { startBlockNumber, toBlock } = await this.getFromToBlock();
-      const events = await this.ethBridgeContract.getEvent(startBlockNumber, toBlock);
+      const events = await this.initializeEthContract.getEvent(startBlockNumber, toBlock);
+
       for (const event of events) {
         switch (event.event) {
           case 'Lock':
@@ -61,7 +63,7 @@ export class BlockchainEVMCrawler {
   }
 
   private async handlerLockEvent(event: EventData, queryRunner: QueryRunner) {
-    const blockTimeOfBlockNumber = await this.ethBridgeContract.getBlockTimeByBlockNumber(event.blockNumber);
+    const blockTimeOfBlockNumber = await this.initializeEthContract.getBlockTimeByBlockNumber(event.blockNumber);
     const eventUnlock = {
       senderAddress: event.returnValues.locker,
       amountFrom: event.returnValues.amount,
@@ -128,15 +130,15 @@ export class BlockchainEVMCrawler {
   }
 
   private async getFromToBlock(): Promise<{ startBlockNumber; toBlock }> {
-    let startBlockNumber = this.ethBridgeContract.getStartBlock();
-    let toBlock = await this.ethBridgeContract.getBlockNumber();
+    let startBlockNumber = this.initializeEthContract.getStartBlock();
+    let toBlock = await this.initializeEthContract.getBlockNumber();
 
     let currentCrawledBlock = await this.crawlContractRepository.findOne({
       where: { networkName: ENetworkName.ETH },
     });
     if (!currentCrawledBlock) {
       const tmpData = this.crawlContractRepository.create({
-        contractAddress: this.ethBridgeContract.getContractAddress(),
+        contractAddress: this.initializeEthContract.getContractAddress(),
         networkName: ENetworkName.ETH,
         latestBlock: startBlockNumber,
       });

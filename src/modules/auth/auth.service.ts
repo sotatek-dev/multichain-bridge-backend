@@ -1,15 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import Client from 'mina-signer';
-import { DataSource } from 'typeorm';
 import Web3 from 'web3';
 import { toChecksumAddress } from 'web3-utils';
 
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
+import { ASYNC_CONNECTION } from '@constants/service.constant';
 
 import { User } from '@modules/users/entities/user.entity';
 
@@ -28,8 +28,8 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private readonly userRepository: UserRepository,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly loggerService: LoggerService,
+    @Inject(ASYNC_CONNECTION) private readonly initializeEthContract: ETHBridgeContract,
   ) {
     this.logger = loggerService.getLogger('AUTH_SERVICE');
   }
@@ -76,7 +76,7 @@ export class AuthService {
 
   private async validateSignature(address: string, signature: string) {
     try {
-      const recover = await this.ethBridgeContract.recover(
+      const recover = await this.initializeEthContract.recover(
         signature,
         this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
       );

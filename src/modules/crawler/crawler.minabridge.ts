@@ -94,8 +94,6 @@ export class SCBridgeMinaCrawler {
     const field = Field.from(event.event.data.receipt.toString());
     const receiveAddress = '0x' + field.toBigInt().toString(16);
 
-    // const timeLock = await this.getDateTimeByBlock(event.blockHeight.toString());
-
     const eventUnlock = {
       senderAddress: event.event.data.locker.toBase58(),
       amountFrom: event.event.data.amount.toString(),
@@ -130,36 +128,6 @@ export class SCBridgeMinaCrawler {
     this.logger.info({ eventUnlock });
 
     await queryRunner.manager.save(EventLog, eventUnlock);
-  }
-
-  private async getDateTimeByBlock(blockNumber: number) {
-    const endpoint = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
-    const query = `
-      query {
-          transaction(query: {blockHeight: ${blockNumber}}) {
-            dateTime
-          }
-        }
-    `;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query,
-      }),
-    });
-
-    const result = await response.json();
-
-    this.logger.info('=========', result.data.transaction);
-
-    const dateTime = dayjs(result.data.transaction.dateTime);
-
-    // Convert DateTime to Unix timestamp in seconds
-    const unixTimestampInSeconds = Math.floor(dateTime.valueOf() / 1000);
-    return unixTimestampInSeconds;
   }
 
   private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {

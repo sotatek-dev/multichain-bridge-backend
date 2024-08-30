@@ -2,51 +2,27 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Web3 from 'web3';
 
+import { initializeEthContract } from '@config/common.config';
+
 import { ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
-import {
-  ETH_BRIDGE_ADDRESS_INJECT,
-  ETH_BRIDGE_START_BLOCK_INJECT,
-  RPC_ETH_SERVICE_INJECT,
-  RPC_SERVICE_INJECT,
-} from '@constants/service.constant';
+import { ASYNC_CONNECTION } from '@constants/service.constant';
 
 import { sleep } from '@shared/utils/promise';
-
-import { ETHBridgeContract } from './web3.service';
 
 @Global()
 @Module({
   providers: [
     {
-      provide: RPC_SERVICE_INJECT,
-      useFactory: async (configService: ConfigService) => await RpcFactory(configService),
+      provide: ASYNC_CONNECTION,
+      useFactory: async (configService: ConfigService) => {
+        const connection = await initializeEthContract(configService);
+        return connection;
+      },
       inject: [ConfigService],
     },
-    {
-      provide: RPC_ETH_SERVICE_INJECT,
-      useFactory: async (configService: ConfigService) => await RpcFactory(configService, ENetworkName.ETH),
-      inject: [ConfigService],
-    },
-    {
-      provide: ETH_BRIDGE_ADDRESS_INJECT,
-      useFactory: (configService: ConfigService) => configService.get<string>(EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS),
-      inject: [ConfigService],
-    },
-    {
-      provide: ETH_BRIDGE_START_BLOCK_INJECT,
-      useFactory: (configService: ConfigService) => +configService.get<number>(EEnvKey.ETH_BRIDGE_START_BLOCK),
-      inject: [ConfigService],
-    },
-    ETHBridgeContract,
   ],
-  exports: [
-    RPC_SERVICE_INJECT,
-    RPC_ETH_SERVICE_INJECT,
-    ETH_BRIDGE_ADDRESS_INJECT,
-    ETH_BRIDGE_START_BLOCK_INJECT,
-    ETHBridgeContract,
-  ],
+  exports: [],
 })
 export class Web3Module {}
 

@@ -4,12 +4,6 @@ import { TransactionReceipt } from 'web3-core';
 import { Contract, EventData } from 'web3-eth-contract';
 import { toBN, toHex } from 'web3-utils';
 
-import {
-  ETH_BRIDGE_ADDRESS_INJECT,
-  ETH_BRIDGE_START_BLOCK_INJECT,
-  RPC_ETH_SERVICE_INJECT,
-} from '@constants/service.constant';
-
 import { sleep } from '@shared/utils/promise';
 
 import ETHBridgeAbi from './abis/eth-bridge-contract.json';
@@ -199,15 +193,11 @@ export class DefaultContract {
   }
 }
 
-@Injectable()
 export class ETHBridgeContract extends DefaultContract {
-  constructor(
-    @Inject(RPC_ETH_SERVICE_INJECT) rpcETHService: IRpcService,
-    @Inject(ETH_BRIDGE_ADDRESS_INJECT) address: string,
-    @Inject(ETH_BRIDGE_START_BLOCK_INJECT) startBlock: number,
-  ) {
-    super(rpcETHService, ETHBridgeAbi, address, startBlock);
+  constructor(rpcETHService: IRpcService, address: string, _startBlock: number) {
+    super(rpcETHService, ETHBridgeAbi, address, _startBlock);
   }
+
   public async getBaseURI() {
     return this.call('getBaseURI', []);
   }
