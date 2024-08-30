@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import { IsOptional, IsString } from 'class-validator';
 
+import { StringField } from '@shared/decorators/field.decorator';
 import { BasePaginationRequestDto } from '@shared/dtos/base-request.dto';
 
 export class GetHistoryOfUserResponseDto {
@@ -54,9 +53,8 @@ export class GetHistoryOfUserResponseDto {
 export class getHistoryOfUserDto extends BasePaginationRequestDto {}
 
 export class getHistoryDto extends BasePaginationRequestDto {
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @Expose()
+  @StringField({
+    required: false,
+  })
   address: string;
 }

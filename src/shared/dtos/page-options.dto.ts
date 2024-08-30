@@ -1,32 +1,31 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-
 import { EDirection } from '@constants/api.constant';
 
+import { NumberField, StringField } from '@shared/decorators/field.decorator';
+
 export class PageOptionsDto {
-  @ApiPropertyOptional({ default: 1 })
-  @Min(1)
-  @IsInt()
-  @Transform(({ value }) => +value)
-  @IsOptional()
+  @NumberField({
+    int: true,
+    minimum: 1,
+    required: false,
+  })
   readonly page?: number;
 
-  @ApiPropertyOptional({ default: 10 })
-  @Max(100)
-  @Min(1)
-  @IsInt()
-  @Transform(({ value }) => +value)
-  @IsOptional()
+  @NumberField({
+    int: true,
+    minimum: 1,
+    maximum: 100,
+    required: false,
+  })
   readonly limit?: number;
 
-  @ApiPropertyOptional()
-  @IsString()
-  @IsOptional()
+  @StringField({
+    required: false,
+  })
   readonly orderBy?: string;
 
-  @ApiPropertyOptional({ enum: EDirection })
-  @IsEnum(EDirection)
-  @IsOptional()
+  @StringField({
+    required: false,
+    enum: EDirection,
+  })
   readonly direction?: EDirection = EDirection.ASC;
 }
