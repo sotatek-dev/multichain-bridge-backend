@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import BigNumber from 'bignumber.js';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
@@ -6,7 +6,6 @@ import { TokenPairRepository } from 'database/repositories/token-pair.repository
 
 import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EError } from '@constants/error.constant';
-import { ASYNC_CONNECTION } from '@constants/service.constant';
 
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
 import { addDecimal, calculateFee } from '@shared/utils/bignumber';
@@ -17,7 +16,7 @@ export class SenderEVMBridge {
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
     private readonly tokenPairRepository: TokenPairRepository,
-    @Inject(ASYNC_CONNECTION) private readonly initializeEthContract: ETHBridgeContract,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {}
 
   async handleUnlockEVM() {
@@ -61,7 +60,7 @@ export class SenderEVMBridge {
         );
         return;
       }
-      const gasFee = await this.initializeEthContract.getEstimateGas(
+      const gasFee = await this.ethBridgeContract.getEstimateGas(
         tokenReceivedAddress,
         BigNumber(amountReceive),
         txHashLock,
@@ -69,7 +68,7 @@ export class SenderEVMBridge {
         0,
       );
       const protocolFee = calculateFee(amountReceive, gasFee, configTip.tip);
-      const result = await this.initializeEthContract.unlock(
+      const result = await this.ethBridgeContract.unlock(
         tokenReceivedAddress,
         BigNumber(amountReceive),
         txHashLock,

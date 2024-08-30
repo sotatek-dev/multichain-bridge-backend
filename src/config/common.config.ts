@@ -24,14 +24,13 @@ function getEthBridgeStartBlock(configService: ConfigService) {
 async function initializeEthContract(configService: ConfigService) {
   const callerName = new Error().stack?.split('\n')[2]?.trim();
   console.log(`initializeEthContract called by: ${callerName || 'unknown'}`);
-  console.log('a');
-  const [rpcEthService, ethBridgeAddress, ethBridgeStartBlock] = await Promise.all([
+  const [rpcEthService, address, _startBlock] = await Promise.all([
     createRpcEthService(configService),
     getEthBridgeAddress(configService),
     getEthBridgeStartBlock(configService),
   ]);
 
   // Instantiate the ETHBridgeContract with the resolved dependencies
-  return new ETHBridgeContract(rpcEthService, ethBridgeAddress, ethBridgeStartBlock);
+  return new ETHBridgeContract(rpcEthService, address, _startBlock);
 }
 export { createRpcService, createRpcEthService, getEthBridgeAddress, getEthBridgeStartBlock, initializeEthContract };

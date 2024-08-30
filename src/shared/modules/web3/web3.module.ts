@@ -10,6 +10,8 @@ import { ASYNC_CONNECTION } from '@constants/service.constant';
 
 import { sleep } from '@shared/utils/promise';
 
+import { ETHBridgeContract } from './web3.service';
+
 @Global()
 @Module({
   providers: [
@@ -19,10 +21,18 @@ import { sleep } from '@shared/utils/promise';
         const connection = await initializeEthContract(configService);
         return connection;
       },
+
       inject: [ConfigService],
     },
+    {
+      provide: ETHBridgeContract,
+      useFactory: (connection: ETHBridgeContract) => {
+        return connection;
+      },
+      inject: [ASYNC_CONNECTION],
+    },
   ],
-  exports: [],
+  exports: [Web3Module, ETHBridgeContract],
 })
 export class Web3Module {}
 

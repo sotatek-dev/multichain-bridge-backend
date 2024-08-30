@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UserRepository } from 'database/repositories/user.repository';
@@ -9,7 +9,6 @@ import { toChecksumAddress } from 'web3-utils';
 
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
-import { ASYNC_CONNECTION } from '@constants/service.constant';
 
 import { User } from '@modules/users/entities/user.entity';
 
@@ -29,7 +28,7 @@ export class AuthService {
     private configService: ConfigService,
     private readonly userRepository: UserRepository,
     private readonly loggerService: LoggerService,
-    @Inject(ASYNC_CONNECTION) private readonly initializeEthContract: ETHBridgeContract,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {
     this.logger = loggerService.getLogger('AUTH_SERVICE');
   }
@@ -76,7 +75,7 @@ export class AuthService {
 
   private async validateSignature(address: string, signature: string) {
     try {
-      const recover = await this.initializeEthContract.recover(
+      const recover = await this.ethBridgeContract.recover(
         signature,
         this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
       );

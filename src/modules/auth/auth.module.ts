@@ -35,20 +35,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
     HttpModule.register({ timeout: 3000 }),
     UsersModule,
-    Web3Module,
   ],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    {
-      provide: 'ASYNC_CONNECTION',
-      useFactory: async (configService: ConfigService) => {
-        const connection = await initializeEthContract(configService);
-        return connection;
-      },
-      inject: [ConfigService],
-    },
-  ],
+  providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })
