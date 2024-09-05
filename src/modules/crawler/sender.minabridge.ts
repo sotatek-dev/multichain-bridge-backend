@@ -21,6 +21,7 @@ import { Bridge } from './minaSc/minaBridgeSC';
 @Injectable()
 export class SenderMinaBridge {
   private readonly logger: Logger;
+  private isContractCompiled = false;
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -31,7 +32,13 @@ export class SenderMinaBridge {
   ) {
     this.logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   }
-
+  private async compileContract() {
+    if (!this.isContractCompiled) {
+      await Bridge.compile();
+      await FungibleToken.compile();
+      this.isContractCompiled = true;
+    }
+  }
   public async handleUnlockMina() {
     let dataLock, configTip, rateethmina;
     try {
@@ -126,7 +133,7 @@ export class SenderMinaBridge {
 
       this.logger.info('compile the contract...');
 
-      await Promise.all([Bridge.compile(), FungibleToken.compile()]);
+      await this.compileContract();
 
       const fee = protocolFeeAmount * rateMINAETH + +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
       const feepayerAddress = feepayerKey.toPublicKey();
