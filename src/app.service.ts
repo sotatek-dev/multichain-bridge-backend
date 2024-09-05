@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 export class AppService {
   getApiVersion() {
     return {
-      version: 'API v1.0.0',
+      version: 'v1.0.0',
     };
   }
 }
