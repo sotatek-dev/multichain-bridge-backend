@@ -36,18 +36,18 @@ export default class TokenPairsSeeder implements Seeder {
         toScAddress: process.env.ETH_BRIDGE_CONTRACT_ADDRESS,
       },
     ];
-    for (let i = 0; i < listToken.length; i++) {
+    for (const token of listToken) {
       const newToken = new TokenPair({
-        fromChain: listToken[i].fromChain,
-        toChain: listToken[i].toChain,
-        fromSymbol: listToken[i].fromSymbol,
-        toSymbol: listToken[i].toSymbol,
-        fromAddress: listToken[i].fromAddress,
-        toAddress: listToken[i].toAddress,
-        fromDecimal: listToken[i].fromDecimal,
-        toDecimal: listToken[i].toDecimal,
-        fromScAddress: listToken[i].fromScAddress,
-        toScAddress: listToken[i].toScAddress,
+        fromChain: token.fromChain,
+        toChain: token.toChain,
+        fromSymbol: token.fromSymbol,
+        toSymbol: token.toSymbol,
+        fromAddress: token.fromAddress,
+        toAddress: token.toAddress,
+        fromDecimal: token.fromDecimal,
+        toDecimal: token.toDecimal,
+        fromScAddress: token.fromScAddress,
+        toScAddress: token.toScAddress,
         status: ETokenPairStatus.ENABLE,
       });
       await repository.insert(newToken);

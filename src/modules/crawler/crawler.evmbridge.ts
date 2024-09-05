@@ -140,7 +140,7 @@ export class BlockchainEVMCrawler {
     let startBlockNumber = this.ethBridgeContract.getStartBlock();
     let toBlock = await this.ethBridgeContract.getBlockNumber();
 
-    let currentCrawledBlock = await this.crawlContractRepository.findOne({
+    const currentCrawledBlock = await this.crawlContractRepository.findOne({
       where: { networkName: ENetworkName.ETH },
     });
     if (!currentCrawledBlock) {

@@ -145,10 +145,10 @@ export class DefaultContract {
       );
 
       const response = [];
-      for (let index = 0; index < writeData.length; index++) {
+      for (const element of writeData) {
         // gas estimation
         const nonce = await this.rpcService.getNonce(signer.address);
-        const { method, param } = writeData[index];
+        const { method, param } = element;
         const data = this.contract.methods[method](...param).encodeABI();
         const gasPrice = await this.rpcService.web3.eth.getGasPrice();
         const rawTx = {

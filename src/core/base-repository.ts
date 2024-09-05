@@ -30,7 +30,7 @@ export abstract class BaseRepository<E> extends Repository<E> {
       queryBuilder.skip((data.page - 1) * data.limit);
     }
     if (data.sortBy) {
-      if (!selections || (selections && selections.includes(`${this.alias}.${data.sortBy}`))) {
+      if (!selections || selections?.includes(`${this.alias}.${data.sortBy}`)) {
         queryBuilder.orderBy(`${this.alias}.${data.sortBy}`, data.direction || 'ASC');
       }
     }
@@ -55,7 +55,7 @@ export abstract class BaseRepository<E> extends Repository<E> {
     }
 
     if (data.sortBy) {
-      if (!selections || (selections && selections.includes(`${this.alias}.${data.sortBy}`))) {
+      if (!selections || selections?.includes(`${this.alias}.${data.sortBy}`)) {
         queryBuilder.orderBy(`${this.alias}.${data.sortBy}`, data.direction || 'ASC');
       }
     }
