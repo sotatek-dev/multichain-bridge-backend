@@ -61,7 +61,7 @@ export class BlockchainEVMCrawler {
     }
   }
 
-  private async handlerLockEvent(event: EventData, queryRunner: QueryRunner) {
+  public async handlerLockEvent(event: EventData, queryRunner: QueryRunner) {
     const blockTimeOfBlockNumber = await this.ethBridgeContract.getBlockTimeByBlockNumber(event.blockNumber);
     const eventUnlock = {
       senderAddress: event.returnValues.locker,
@@ -95,9 +95,13 @@ export class BlockchainEVMCrawler {
     }
 
     await queryRunner.manager.save(EventLog, eventUnlock);
+
+    return {
+      success: true,
+    };
   }
 
-  private async handlerUnLockEvent(event: EventData, queryRunner: QueryRunner) {
+  public async handlerUnLockEvent(event: EventData, queryRunner: QueryRunner) {
     const existLockTx = await queryRunner.manager.findOne(EventLog, {
       where: { txHashLock: event.returnValues.hash },
     });
@@ -113,9 +117,13 @@ export class BlockchainEVMCrawler {
       protocolFee: event.returnValues.fee,
       tokenReceivedName: 'ETH',
     });
+
+    return {
+      success: true,
+    };
   }
 
-  private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
+  public async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
     await queryRunner.manager.update(
       CrawlContract,
       {
