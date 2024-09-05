@@ -6,13 +6,9 @@ import { PassportModule } from '@nestjs/passport';
 import { UserRepository } from 'database/repositories/user.repository';
 import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
 
-import { initializeEthContract } from '@config/common.config';
-
 import { EEnvKey } from '@constants/env.constant';
 
 import { UsersModule } from '@modules/users/users.module';
-
-import { Web3Module } from '@shared/modules/web3/web3.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';

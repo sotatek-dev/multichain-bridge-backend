@@ -2,13 +2,11 @@ import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/com
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { GuardPublic } from '@guards/guard.decorator';
-
 import { AuthUserGuard } from '@shared/decorators/http.decorator';
 
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto';
 import { GetCommonConfigResponseDto } from './dto/common-config-response.dto';
-import { getHistoryDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto';
+import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('Admins')
@@ -17,12 +15,10 @@ export class AdminController {
   constructor(private readonly userService: UsersService) {}
 
   @Get('history')
-  @GuardPublic()
-  // @AuthUserGuard()
-  // @UseGuards(AuthGuard('jwt'))
+  @AuthUserGuard()
+  @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse({ type: [GetHistoryOfUserResponseDto] })
-  getHistoriesOfUser(@Body() query: getHistoryDto) {
-    return query;
+  getHistoriesOfUser(@Query() query: GetHistoryOfUserDto) {
     return this.userService.getHistories(query);
   }
 

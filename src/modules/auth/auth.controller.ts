@@ -1,12 +1,10 @@
-import { Body, Controller, Get, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { EEnvKey } from '@constants/env.constant';
 
 import { GuardPublic } from '@guards/guard.decorator';
-
-import { IRpcService } from '@shared/modules/web3/web3.module';
 
 import { AuthService } from './auth.service';
 import { LoginDto, LoginMinaDto, RefreshTokenRequestDto } from './dto/auth-request.dto';

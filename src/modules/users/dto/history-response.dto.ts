@@ -50,9 +50,9 @@ export class GetHistoryOfUserResponseDto {
   createdAt: Date;
 }
 
-export class getHistoryOfUserDto extends BasePaginationRequestDto {}
+export class GetHistoryOfUserDto extends BasePaginationRequestDto {}
 
-export class getHistoryDto extends BasePaginationRequestDto {
+export class GetHistoryDto extends BasePaginationRequestDto {
   @StringField({
     required: false,
   })

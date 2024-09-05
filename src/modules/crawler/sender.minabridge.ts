@@ -121,7 +121,7 @@ export class SenderMinaBridge {
       const feepayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
       const zkAppKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-      // TODO: move these urls to env
+
       const MINAURL = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
       const ARCHIVEURL = this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS);
 
