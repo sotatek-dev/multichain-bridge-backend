@@ -19,10 +19,10 @@ export default class SuperAdminSeeder implements Seeder {
       },
     ];
 
-    for (let i = 0; i < listAdmin.length; i++) {
+    for (const admin of listAdmin) {
       const newUser = new User({
-        walletAddress: listAdmin[i].walletAddress,
-        name: listAdmin[i].name,
+        walletAddress: admin.walletAddress,
+        name: admin.name,
       });
       await repository.insert(newUser);
     }

@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/com
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { AuthUserGuard } from '@shared/decorators/http.decorator';
+import { AuthAdminGuard } from '@shared/decorators/http.decorator';
 
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto';
 import { GetCommonConfigResponseDto } from './dto/common-config-response.dto';
@@ -15,7 +15,7 @@ export class AdminController {
   constructor(private readonly userService: UsersService) {}
 
   @Get('history')
-  @AuthUserGuard()
+  @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse({ type: [GetHistoryOfUserResponseDto] })
   getHistoriesOfUser(@Query() query: GetHistoryOfUserDto) {
@@ -23,7 +23,7 @@ export class AdminController {
   }
 
   @Get('common-config')
-  @AuthUserGuard()
+  @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse({ type: GetCommonConfigResponseDto })
   getCommonConfig() {
@@ -31,7 +31,7 @@ export class AdminController {
   }
 
   @Put('update-common-config/:id')
-  @AuthUserGuard()
+  @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
   updateCommonConfig(@Param('id') id: number, @Body() updateConfig: UpdateCommonConfigBodyDto) {
     return this.userService.updateCommonConfig(id, updateConfig);

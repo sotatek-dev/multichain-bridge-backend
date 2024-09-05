@@ -2,7 +2,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
-import { Logger } from 'log4js';
 import { DataSource, QueryRunner } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
@@ -23,9 +22,7 @@ import { CrawlContract, EventLog } from '../entities';
 describe('BlockchainEVMCraler', () => {
   let crawler: BlockchainEVMCrawler;
   let dataSource: DataSource;
-  let loggerService: LoggerService;
   let newEthBridgeContract: ETHBridgeContract;
-  let logger: Logger;
   let queryRunner: QueryRunner;
   let configService: ConfigService;
 
@@ -101,10 +98,8 @@ describe('BlockchainEVMCraler', () => {
 
     crawler = module.get<BlockchainEVMCrawler>(BlockchainEVMCrawler);
     dataSource = module.get<DataSource>(DataSource);
-    loggerService = module.get<LoggerService>(LoggerService);
     newEthBridgeContract = module.get<ETHBridgeContract>(ETHBridgeContract);
     configService = module.get<ConfigService>(ConfigService);
-    logger = loggerService.getLogger('BLOCKCHAIN_EVM_CRAWLER');
     queryRunner = dataSource.createQueryRunner();
   });
 
@@ -190,13 +185,13 @@ describe('BlockchainEVMCraler', () => {
         transactionIndex: 33,
       } as EventData;
 
-      let mockTokenPair = {
+      const mockTokenPair = {
         fromAddress: '0xFromAddress',
         toAddress: '0xToAddress',
         fromDecimal: 18,
         toDecimal: 18,
       } as TokenPair;
-      let mockBlockTime = await ethBridgeContract.getBlockTimeByBlockNumber(lockReturnObject.blockNumber);
+      const mockBlockTime = await ethBridgeContract.getBlockTimeByBlockNumber(lockReturnObject.blockNumber);
       (newEthBridgeContract.getBlockTimeByBlockNumber as jest.Mock).mockResolvedValue(mockBlockTime);
       const result = await crawler.handlerLockEvent(lockReturnObject, queryRunner);
       jest.spyOn(crawler as any, 'handlerLockEvent').mockResolvedValue({
