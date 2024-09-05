@@ -72,7 +72,7 @@ export class SCBridgeMinaCrawler {
     }
   }
 
-  private async handlerUnLockEvent(event, queryRunner: QueryRunner) {
+  public async handlerUnLockEvent(event, queryRunner: QueryRunner) {
     const existLockTx = await queryRunner.manager.findOne(EventLog, {
       where: { id: event.event.data.id.toString() },
     });
@@ -85,17 +85,21 @@ export class SCBridgeMinaCrawler {
       status: EEventStatus.COMPLETED,
       txHashUnlock: event.event.transactionInfo.transactionHash,
       amountReceived: event.event.data.amount.toString(),
-      tokenReceivedAddress: event.event.data.tokenAddress.toBase58(),
+      tokenReceivedAddress: event.event.data.tokenAddress,
       tokenReceivedName: 'WETH',
     });
+
+    return {
+      success: true,
+    };
   }
 
-  private async handlerLockEvent(event, queryRunner: QueryRunner) {
+  public async handlerLockEvent(event, queryRunner: QueryRunner) {
     const field = Field.from(event.event.data.receipt.toString());
     const receiveAddress = '0x' + field.toBigInt().toString(16);
 
     const eventUnlock = {
-      senderAddress: event.event.data.locker.toBase58(),
+      senderAddress: event.event.data.locker,
       amountFrom: event.event.data.amount.toString(),
       tokenFromAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
       networkFrom: ENetworkName.MINA,
@@ -128,6 +132,10 @@ export class SCBridgeMinaCrawler {
     this.logger.info({ eventUnlock });
 
     await queryRunner.manager.save(EventLog, eventUnlock);
+
+    return {
+      success: true,
+    };
   }
 
   private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
