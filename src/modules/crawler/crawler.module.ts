@@ -6,8 +6,6 @@ import { TokenPairRepository } from 'database/repositories/token-pair.repository
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
 
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
-
 import { BatchJobGetPriceToken } from './batch.tokenprice';
 import { CrawlerConsole } from './crawler.console';
 import { BlockchainEVMCrawler } from './crawler.evmbridge';

@@ -149,7 +149,7 @@ export class BlockchainEVMCrawler {
         networkName: ENetworkName.ETH,
         latestBlock: startBlockNumber,
       });
-      currentCrawledBlock = await this.crawlContractRepository.save(tmpData);
+      await this.crawlContractRepository.save(tmpData);
     } else {
       startBlockNumber = Number(currentCrawledBlock.latestBlock) + 1;
     }

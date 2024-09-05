@@ -41,7 +41,6 @@ export class SCBridgeMinaCrawler {
       });
       Mina.setActiveInstance(Network);
       const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
-      // const zkAppToken = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
 
       const zkapp = new Bridge(zkappAddress);
       const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
@@ -61,7 +60,8 @@ export class SCBridgeMinaCrawler {
       }
       this.logger.info(`[handleCrawlMinaBridge] Crawled from============================= ${startBlockNumber}`);
       if (events.length > 0) {
-        await this.updateLatestBlockCrawl(Number(events.reverse()[0].blockHeight.toString()), queryRunner);
+        // udpate current latest block
+        await this.updateLatestBlockCrawl(Number(events.pop().blockHeight.toString()), queryRunner);
       }
       return await queryRunner.commitTransaction();
     } catch (error) {

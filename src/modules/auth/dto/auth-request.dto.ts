@@ -1,6 +1,3 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty } from 'class-validator';
-
 import { ObjectField, StringField } from '@shared/decorators/field.decorator';
 
 export class SignupDto {
