@@ -1,5 +1,6 @@
 export const DEFAULT_DECIMAL_PLACES = 6;
-
+export const DEFAULT_ADDRESS_PREFIX = '0x';
+export const DECIMAL_BASE = 10;
 export enum ENetworkName {
   ETH = 'eth',
   MINA = 'mina',
@@ -21,4 +22,9 @@ export enum EEventStatus {
 export enum ETokenPairStatus {
   ENABLE = 'enable',
   DISABLE = 'disable',
+}
+
+export enum EMinaChainEnviroment {
+  TESTNET = 'testnet',
+  MAINNET = 'mainnet',
 }

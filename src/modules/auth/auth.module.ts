@@ -6,6 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { UserRepository } from 'database/repositories/user.repository';
 import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
 
+import { JWT_TOKEN_EXPIRE_DURATION } from '@constants/api.constant';
 import { EEnvKey } from '@constants/env.constant';
 
 import { UsersModule } from '@modules/users/users.module';
@@ -24,7 +25,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         ({
           secret: configService.get(EEnvKey.JWT_SECRET_KEY),
           signOptions: {
-            expiresIn: '1d',
+            expiresIn: JWT_TOKEN_EXPIRE_DURATION,
           },
         }) as JwtModuleOptions,
       inject: [ConfigService],

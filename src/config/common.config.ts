@@ -22,8 +22,6 @@ function getEthBridgeStartBlock(configService: ConfigService) {
 }
 
 async function initializeEthContract(configService: ConfigService) {
-  const callerName = new Error().stack?.split('\n')[2]?.trim();
-  console.log(`initializeEthContract called by: ${callerName || 'unknown'}`);
   const [rpcEthService, address, _startBlock] = await Promise.all([
     createRpcEthService(configService),
     getEthBridgeAddress(configService),

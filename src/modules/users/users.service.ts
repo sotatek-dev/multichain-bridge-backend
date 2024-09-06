@@ -96,7 +96,7 @@ export class UsersService {
         tokenPair.toAddress,
         addDecimal(0, tokenPair.toDecimal),
         1,
-        '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0', // TODO: remove hard code
+        process.env.ADMIN_ADDRESS_EVM,
         0,
       );
     }

@@ -8,7 +8,7 @@ import { TokenPriceRepository } from 'database/repositories/token-price.reposito
 import { Logger } from 'log4js';
 import { AccountUpdate, fetchAccount, Mina, PrivateKey, PublicKey, UInt64 } from 'o1js';
 
-import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
+import { DECIMAL_BASE, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
 
@@ -65,8 +65,8 @@ export class SenderMinaBridge {
       }
 
       const amountReceiveConvert = BigNumber(amountFrom)
-        .dividedBy(BigNumber(10).pow(tokenPair.fromDecimal))
-        .multipliedBy(BigNumber(10).pow(tokenPair.toDecimal))
+        .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
+        .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
         .toString();
       const protocolFeeAmount = calculateFee(
         amountReceiveConvert,

@@ -6,6 +6,7 @@ import { Logger } from 'log4js';
 import { DataSource, QueryRunner } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
+import { EAsset } from '@constants/api.constant';
 import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 
@@ -115,7 +116,7 @@ export class BlockchainEVMCrawler {
       amountReceived: event.returnValues.amount,
       tokenReceivedAddress: event.returnValues.token,
       protocolFee: event.returnValues.fee,
-      tokenReceivedName: 'ETH',
+      tokenReceivedName: EAsset.ETH,
     });
 
     return {
