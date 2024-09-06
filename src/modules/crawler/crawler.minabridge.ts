@@ -7,7 +7,8 @@ import { Logger } from 'log4js';
 import { Field, Mina, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
-import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
+import { EAsset } from '@constants/api.constant';
+import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 
 import { CrawlContract, EventLog } from '@modules/crawler/entities';
@@ -86,7 +87,7 @@ export class SCBridgeMinaCrawler {
       txHashUnlock: event.event.transactionInfo.transactionHash,
       amountReceived: event.event.data.amount.toString(),
       tokenReceivedAddress: event.event.data.tokenAddress,
-      tokenReceivedName: 'WETH',
+      tokenReceivedName: EAsset.WETH,
     });
 
     return {
@@ -96,7 +97,7 @@ export class SCBridgeMinaCrawler {
 
   public async handlerLockEvent(event, queryRunner: QueryRunner) {
     const field = Field.from(event.event.data.receipt.toString());
-    const receiveAddress = '0x' + field.toBigInt().toString(16);
+    const receiveAddress = DEFAULT_ADDRESS_PREFIX + field.toBigInt().toString(16);
 
     const eventUnlock = {
       senderAddress: event.event.data.locker,
@@ -104,7 +105,7 @@ export class SCBridgeMinaCrawler {
       tokenFromAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
       networkFrom: ENetworkName.MINA,
       networkReceived: ENetworkName.ETH,
-      tokenFromName: 'WETH',
+      tokenFromName: EAsset.WETH,
       tokenReceivedAddress: this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
       txHashLock: event.event.transactionInfo.transactionHash,
       receiveAddress: receiveAddress,

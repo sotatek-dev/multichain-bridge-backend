@@ -6,7 +6,8 @@ import { Logger } from 'log4js';
 import Client from 'mina-signer';
 import { toChecksumAddress } from 'web3-utils';
 
-import { EEnvKey } from '@constants/env.constant';
+import { EMinaChainEnviroment } from '@constants/blockchain.constant';
+import { EEnvironments, EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
 
 import { User } from '@modules/users/entities/user.entity';
@@ -87,9 +88,9 @@ export class AuthService {
   }
 
   private async validateSignatureMina(address: string, signature) {
-    let client = new Client({ network: 'mainnet' });
-    if (process.env.NODE_ENV !== 'production') {
-      client = new Client({ network: 'testnet' });
+    let client = new Client({ network: EMinaChainEnviroment.MAINNET });
+    if (process.env.NODE_ENV !== EEnvironments.PRODUCTION) {
+      client = new Client({ network: EMinaChainEnviroment.TESTNET });
     }
 
     const signer = {

@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
+import { EAsset } from '@constants/api.constant';
 import { ENetworkName, ETokenPairStatus } from '@constants/blockchain.constant';
 
 import { TokenPair } from '@modules/users/entities/tokenpair.entity';
@@ -14,8 +15,8 @@ export default class TokenPairsSeeder implements Seeder {
       {
         fromChain: ENetworkName.ETH,
         toChain: ENetworkName.MINA,
-        fromSymbol: 'ETH',
-        toSymbol: 'WETH',
+        fromSymbol: EAsset.ETH,
+        toSymbol: EAsset.WETH,
         fromAddress: process.env.ETH_TOKEN_BRIDGE_ADDRESS,
         toAddress: process.env.MINA_TOKEN_BRIDGE_ADDRESS,
         fromDecimal: 18,
@@ -26,8 +27,8 @@ export default class TokenPairsSeeder implements Seeder {
       {
         fromChain: ENetworkName.MINA,
         toChain: ENetworkName.ETH,
-        fromSymbol: 'WETH',
-        toSymbol: 'ETH',
+        fromSymbol: EAsset.WETH,
+        toSymbol: EAsset.ETH,
         fromAddress: process.env.MINA_TOKEN_BRIDGE_ADDRESS,
         toAddress: process.env.ETH_TOKEN_BRIDGE_ADDRESS,
         fromDecimal: 9,

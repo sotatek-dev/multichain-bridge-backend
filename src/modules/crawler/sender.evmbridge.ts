@@ -4,7 +4,7 @@ import { CommonConfigRepository } from 'database/repositories/common-configurati
 import { EventLogRepository } from 'database/repositories/event-log.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 
-import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
+import { DECIMAL_BASE, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EError } from '@constants/error.constant';
 
 import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
@@ -46,8 +46,8 @@ export class SenderEVMBridge {
       }
 
       const amountReceive = BigNumber(amountFrom)
-        .dividedBy(BigNumber(10).pow(tokenPair.fromDecimal))
-        .multipliedBy(BigNumber(10).pow(tokenPair.toDecimal))
+        .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
+        .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
         .toString();
 
       const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
