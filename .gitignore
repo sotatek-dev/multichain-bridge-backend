@@ -43,3 +43,4 @@ postgresData
 
 #Docker mounted volumes
 /dumpData/*
+.scannerwork/*

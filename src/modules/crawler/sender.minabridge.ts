@@ -8,7 +8,7 @@ import { TokenPriceRepository } from 'database/repositories/token-price.reposito
 import { Logger } from 'log4js';
 import { AccountUpdate, fetchAccount, Mina, PrivateKey, PublicKey, UInt64 } from 'o1js';
 
-import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
+import { DECIMAL_BASE, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
 
@@ -21,6 +21,7 @@ import { Bridge } from './minaSc/minaBridgeSC';
 @Injectable()
 export class SenderMinaBridge {
   private readonly logger: Logger;
+  private isContractCompiled = false;
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -31,7 +32,13 @@ export class SenderMinaBridge {
   ) {
     this.logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   }
-
+  private async compileContract() {
+    if (!this.isContractCompiled) {
+      await Bridge.compile();
+      await FungibleToken.compile();
+      this.isContractCompiled = true;
+    }
+  }
   public async handleUnlockMina() {
     let dataLock, configTip, rateethmina;
     try {
@@ -58,8 +65,8 @@ export class SenderMinaBridge {
       }
 
       const amountReceiveConvert = BigNumber(amountFrom)
-        .dividedBy(BigNumber(10).pow(tokenPair.fromDecimal))
-        .multipliedBy(BigNumber(10).pow(tokenPair.toDecimal))
+        .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
+        .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
         .toString();
       const protocolFeeAmount = calculateFee(
         amountReceiveConvert,
@@ -114,7 +121,7 @@ export class SenderMinaBridge {
       const feepayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
       const zkAppKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-      // TODO: move these urls to env
+
       const MINAURL = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
       const ARCHIVEURL = this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS);
 
@@ -126,8 +133,7 @@ export class SenderMinaBridge {
 
       this.logger.info('compile the contract...');
 
-      await Bridge.compile();
-      await FungibleToken.compile();
+      await this.compileContract();
 
       const fee = protocolFeeAmount * rateMINAETH + +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
       const feepayerAddress = feepayerKey.toPublicKey();
@@ -144,7 +150,7 @@ export class SenderMinaBridge {
         // call update() and send transaction
         this.logger.info('build transaction and create proof...');
         const tx = await Mina.transaction({ sender: feepayerAddress, fee }, async () => {
-          if (!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress, 1);
+          if (!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
           await zkBridge.unlock(UInt64.from(amount), receiverPublicKey, UInt64.from(txId));
         });
         await tx.prove();
@@ -179,31 +185,5 @@ export class SenderMinaBridge {
       return false;
     }
     return true;
-  }
-
-  private async fetchNonce(feepayerAddress) {
-    const url = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
-    const query = `
-    query {
-      account(publicKey: "${feepayerAddress}") {
-        inferredNonce
-      }
-    }
-    `;
-    const response = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify({ operationName: null, query, variables: {} }),
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const json = await response.json();
-
-    const inferredNonce = Number(json.data.account.inferredNonce);
-    return inferredNonce;
-  }
-
-  private tweakMintPrecondition(token: FungibleToken, mempoolMintAmount: number) {
-    // here we take `circulating` variable from state slot with index 3 and increase it by `mempoolMintAmount`
-    const prevPreconditionVal = token.self.body.preconditions.account.state[3]!.value;
-    token.self.body.preconditions.account.state[3]!.value = prevPreconditionVal.add(mempoolMintAmount);
   }
 }

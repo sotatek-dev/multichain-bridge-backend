@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
-import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import { DataSource } from 'typeorm';
@@ -29,11 +28,10 @@ export class UsersService {
     private readonly usersRepository: UserRepository,
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
-    private readonly tokenPriceRepository: TokenPriceRepository,
     private readonly dataSource: DataSource,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {
     this.logger = this.loggerService.getLogger('USER_SERVICE');
   }
@@ -48,23 +46,17 @@ export class UsersService {
   }
 
   async getHistoriesOfUser(address: string, options) {
-    try {
-      const [data, count] = await this.eventLogRepository.getHistoriesOfUser(address, options);
-      return toPageDto(data, options, count);
-    } catch (error) {}
+    const [data, count] = await this.eventLogRepository.getHistoriesOfUser(address, options);
+    return toPageDto(data, options, count);
   }
 
   async getHistories(options) {
-    try {
-      const [data, count] = await this.eventLogRepository.getHistories(options);
-      return toPageDto(data, options, count);
-    } catch (error) {}
+    const [data, count] = await this.eventLogRepository.getHistories(options);
+    return toPageDto(data, options, count);
   }
 
   async getCommonConfig() {
-    try {
-      return this.commonConfigRepository.getCommonConfig();
-    } catch (error) {}
+    return this.commonConfigRepository.getCommonConfig();
   }
 
   async updateCommonConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {
@@ -95,8 +87,6 @@ export class UsersService {
     ]);
 
     if (tokenPair.toChain == ENetworkName.MINA) {
-      // const rate = await this.tokenPriceRepository.getRateETHToMina();
-
       gasFee = addDecimal(
         this.configService.get(EEnvKey.GASFEEMINA),
         this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
@@ -106,7 +96,7 @@ export class UsersService {
         tokenPair.toAddress,
         addDecimal(0, tokenPair.toDecimal),
         1,
-        '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0',
+        process.env.ADMIN_ADDRESS_EVM,
         0,
       );
     }

@@ -1,4 +1,4 @@
-FROM 590183806579.dkr.ecr.eu-north-1.amazonaws.com/node18-alpine:latest as build
+FROM node:18-alpine As build
 WORKDIR /app
 
 COPY package*.json yarn.lock ./
@@ -6,7 +6,7 @@ RUN yarn
 COPY . .
 RUN yarn build
 
-FROM 590183806579.dkr.ecr.eu-north-1.amazonaws.com/node18-alpine:latest
+FROM node:18-alpine
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist

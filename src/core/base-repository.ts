@@ -1,5 +1,6 @@
 import { Repository, SelectQueryBuilder } from 'typeorm';
 
+import { EDirection } from '@constants/api.constant';
 import { ETableName } from '@constants/entity.constant';
 
 import { IPagination } from '@shared/interfaces/pagination.interface';
@@ -30,8 +31,8 @@ export abstract class BaseRepository<E> extends Repository<E> {
       queryBuilder.skip((data.page - 1) * data.limit);
     }
     if (data.sortBy) {
-      if (!selections || (selections && selections.includes(`${this.alias}.${data.sortBy}`))) {
-        queryBuilder.orderBy(`${this.alias}.${data.sortBy}`, data.direction || 'ASC');
+      if (!selections || selections?.includes(`${this.alias}.${data.sortBy}`)) {
+        queryBuilder.orderBy(`${this.alias}.${data.sortBy}`, data.direction || EDirection.ASC);
       }
     }
     return queryBuilder;
@@ -55,8 +56,8 @@ export abstract class BaseRepository<E> extends Repository<E> {
     }
 
     if (data.sortBy) {
-      if (!selections || (selections && selections.includes(`${this.alias}.${data.sortBy}`))) {
-        queryBuilder.orderBy(`${this.alias}.${data.sortBy}`, data.direction || 'ASC');
+      if (!selections || selections?.includes(`${this.alias}.${data.sortBy}`)) {
+        queryBuilder.orderBy(`${this.alias}.${data.sortBy}`, data.direction || EDirection.ASC);
       }
     }
 

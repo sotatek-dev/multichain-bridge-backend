@@ -40,3 +40,11 @@ export enum EEnvKey {
   COINMARKET_URL = 'COINMARKET_URL',
   BASE_MINA_BRIDGE_FEE = 'BASE_MINA_BRIDGE_FEE',
 }
+
+export enum EEnvironments {
+  LOCAL = 'local',
+  DEV = 'dev',
+  TEST = 'test',
+  UAT = 'uat',
+  PRODUCTION = 'production',
+}

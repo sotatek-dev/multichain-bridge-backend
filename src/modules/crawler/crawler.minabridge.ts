@@ -7,7 +7,8 @@ import { Logger } from 'log4js';
 import { Field, Mina, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
-import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
+import { EAsset } from '@constants/api.constant';
+import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 
 import { CrawlContract, EventLog } from '@modules/crawler/entities';
@@ -41,7 +42,6 @@ export class SCBridgeMinaCrawler {
       });
       Mina.setActiveInstance(Network);
       const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
-      // const zkAppToken = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
 
       const zkapp = new Bridge(zkappAddress);
       const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
@@ -61,7 +61,8 @@ export class SCBridgeMinaCrawler {
       }
       this.logger.info(`[handleCrawlMinaBridge] Crawled from============================= ${startBlockNumber}`);
       if (events.length > 0) {
-        await this.updateLatestBlockCrawl(Number(events.reverse()[0].blockHeight.toString()), queryRunner);
+        // udpate current latest block
+        await this.updateLatestBlockCrawl(Number(events.pop().blockHeight.toString()), queryRunner);
       }
       return await queryRunner.commitTransaction();
     } catch (error) {
@@ -72,7 +73,7 @@ export class SCBridgeMinaCrawler {
     }
   }
 
-  private async handlerUnLockEvent(event, queryRunner: QueryRunner) {
+  public async handlerUnLockEvent(event, queryRunner: QueryRunner) {
     const existLockTx = await queryRunner.manager.findOne(EventLog, {
       where: { id: event.event.data.id.toString() },
     });
@@ -85,24 +86,26 @@ export class SCBridgeMinaCrawler {
       status: EEventStatus.COMPLETED,
       txHashUnlock: event.event.transactionInfo.transactionHash,
       amountReceived: event.event.data.amount.toString(),
-      tokenReceivedAddress: event.event.data.tokenAddress.toBase58(),
-      tokenReceivedName: 'WETH',
+      tokenReceivedAddress: event.event.data.tokenAddress,
+      tokenReceivedName: EAsset.WETH,
     });
+
+    return {
+      success: true,
+    };
   }
 
-  private async handlerLockEvent(event, queryRunner: QueryRunner) {
+  public async handlerLockEvent(event, queryRunner: QueryRunner) {
     const field = Field.from(event.event.data.receipt.toString());
-    const receiveAddress = '0x' + field.toBigInt().toString(16);
-
-    // const timeLock = await this.getDateTimeByBlock(event.blockHeight.toString());
+    const receiveAddress = DEFAULT_ADDRESS_PREFIX + field.toBigInt().toString(16);
 
     const eventUnlock = {
-      senderAddress: event.event.data.locker.toBase58(),
+      senderAddress: event.event.data.locker,
       amountFrom: event.event.data.amount.toString(),
       tokenFromAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
       networkFrom: ENetworkName.MINA,
       networkReceived: ENetworkName.ETH,
-      tokenFromName: 'WETH',
+      tokenFromName: EAsset.WETH,
       tokenReceivedAddress: this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
       txHashLock: event.event.transactionInfo.transactionHash,
       receiveAddress: receiveAddress,
@@ -130,36 +133,10 @@ export class SCBridgeMinaCrawler {
     this.logger.info({ eventUnlock });
 
     await queryRunner.manager.save(EventLog, eventUnlock);
-  }
 
-  private async getDateTimeByBlock(blockNumber: number) {
-    const endpoint = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
-    const query = `
-      query {
-          transaction(query: {blockHeight: ${blockNumber}}) {
-            dateTime
-          }
-        }
-    `;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query,
-      }),
-    });
-
-    const result = await response.json();
-
-    this.logger.info('=========', result.data.transaction);
-
-    const dateTime = dayjs(result.data.transaction.dateTime);
-
-    // Convert DateTime to Unix timestamp in seconds
-    const unixTimestampInSeconds = Math.floor(dateTime.valueOf() / 1000);
-    return unixTimestampInSeconds;
+    return {
+      success: true,
+    };
   }
 
   private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {

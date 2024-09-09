@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
+import { EAsset } from '@constants/api.constant';
 import { ENetworkName, ETokenPairStatus } from '@constants/blockchain.constant';
 
 import { TokenPair } from '@modules/users/entities/tokenpair.entity';
@@ -14,8 +15,8 @@ export default class TokenPairsSeeder implements Seeder {
       {
         fromChain: ENetworkName.ETH,
         toChain: ENetworkName.MINA,
-        fromSymbol: 'ETH',
-        toSymbol: 'WETH',
+        fromSymbol: EAsset.ETH,
+        toSymbol: EAsset.WETH,
         fromAddress: process.env.ETH_TOKEN_BRIDGE_ADDRESS,
         toAddress: process.env.MINA_TOKEN_BRIDGE_ADDRESS,
         fromDecimal: 18,
@@ -26,8 +27,8 @@ export default class TokenPairsSeeder implements Seeder {
       {
         fromChain: ENetworkName.MINA,
         toChain: ENetworkName.ETH,
-        fromSymbol: 'WETH',
-        toSymbol: 'ETH',
+        fromSymbol: EAsset.WETH,
+        toSymbol: EAsset.ETH,
         fromAddress: process.env.MINA_TOKEN_BRIDGE_ADDRESS,
         toAddress: process.env.ETH_TOKEN_BRIDGE_ADDRESS,
         fromDecimal: 9,
@@ -36,18 +37,18 @@ export default class TokenPairsSeeder implements Seeder {
         toScAddress: process.env.ETH_BRIDGE_CONTRACT_ADDRESS,
       },
     ];
-    for (let i = 0; i < listToken.length; i++) {
+    for (const token of listToken) {
       const newToken = new TokenPair({
-        fromChain: listToken[i].fromChain,
-        toChain: listToken[i].toChain,
-        fromSymbol: listToken[i].fromSymbol,
-        toSymbol: listToken[i].toSymbol,
-        fromAddress: listToken[i].fromAddress,
-        toAddress: listToken[i].toAddress,
-        fromDecimal: listToken[i].fromDecimal,
-        toDecimal: listToken[i].toDecimal,
-        fromScAddress: listToken[i].fromScAddress,
-        toScAddress: listToken[i].toScAddress,
+        fromChain: token.fromChain,
+        toChain: token.toChain,
+        fromSymbol: token.fromSymbol,
+        toSymbol: token.toSymbol,
+        fromAddress: token.fromAddress,
+        toAddress: token.toAddress,
+        fromDecimal: token.fromDecimal,
+        toDecimal: token.toDecimal,
+        fromScAddress: token.fromScAddress,
+        toScAddress: token.toScAddress,
         status: ETokenPairStatus.ENABLE,
       });
       await repository.insert(newToken);

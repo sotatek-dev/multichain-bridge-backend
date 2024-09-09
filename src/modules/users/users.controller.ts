@@ -5,7 +5,7 @@ import { ETableName } from '@constants/entity.constant';
 
 import { GuardPublic } from '@guards/guard.decorator';
 
-import { getHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto';
+import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto';
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto';
 import { GetListTokenPairResponseDto, GetProtocolFeeResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
@@ -18,7 +18,7 @@ export class UsersController {
   @Get('history/:address')
   @GuardPublic()
   @ApiOkResponse({ type: [GetHistoryOfUserResponseDto] })
-  getHistoriesOfUser(@Param('address') address: string, @Query() query: getHistoryOfUserDto) {
+  getHistoriesOfUser(@Param('address') address: string, @Query() query: GetHistoryOfUserDto) {
     return this.userService.getHistoriesOfUser(address, query);
   }
 
