@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} is deploying test branch [test] 🌏 🚀 🛰️ 
 on:
   push:
     branches:
-      - "test"
+      - "testing"
 jobs:
   DeployTest:
     runs-on: [self-hosted, mina-bridge-test]
