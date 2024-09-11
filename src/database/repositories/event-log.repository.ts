@@ -14,15 +14,27 @@ import { endOfDayUnix, startOfDayUnix } from '@shared/utils/time';
 export class EventLogRepository extends BaseRepository<EventLog> {
   protected alias: ETableName = ETableName.EVENT_LOGS;
 
-  public async getEventLockWithNetwork(network: ENetworkName): Promise<EventLog> {
-    return this.createQueryBuilder(`${this.alias}`)
-      .where(`${this.alias}.networkReceived = :network`, { network })
-      .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.WAITING, EEventStatus.FAILED] })
+  public async getEventLockWithNetwork(network: ENetworkName, threshold?: number): Promise<EventLog> {
+    const qb = this.createQueryBuilder(`${this.alias}`);
+    qb.innerJoinAndSelect(`${this.alias}.validator`, 'signature');
+
+    qb.where(`${this.alias}.networkReceived = :network`, { network });
+
+    if (threshold) {
+      qb.andWhere(
+        `(SELECT COUNT(${ETableName.MULTI_SIGNATURE}.id) FROM ${ETableName.MULTI_SIGNATURE} WHERE ${ETableName.MULTI_SIGNATURE}.tx_id = ${this.alias}.id) >= :threshold`,
+        {
+          threshold,
+        },
+      );
+    }
+    qb.andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.WAITING, EEventStatus.FAILED] })
       .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: 3 })
       .orderBy(`${this.alias}.status`, EDirection.DESC)
       .addOrderBy(`${this.alias}.id`, EDirection.ASC)
-      .addOrderBy(`${this.alias}.retry`, EDirection.ASC)
-      .getOne();
+      .addOrderBy(`${this.alias}.retry`, EDirection.ASC);
+
+    return qb.getOne();
   }
 
   public async updateStatusAndRetryEvenLog(
@@ -111,5 +123,17 @@ export class EventLogRepository extends BaseRepository<EventLog> {
       .andWhere(`${this.alias}.block_time_lock BETWEEN ${startOfDayUnix(new Date())} AND ${endOfDayUnix(new Date())}`)
       .groupBy(`${this.alias}.sender_address`);
     return qb.getRawOne();
+  }
+
+  async getValidatorPendingSignature(validator: string, network: ENetworkName) {
+    const qb = this.createQueryBuilder(`${this.alias}`);
+    qb.leftJoinAndSelect(`${this.alias}.validator`, 'signature');
+    qb.where(`${this.alias}.networkReceived = :network`, { network });
+    qb.andWhere(`(signature.validator IS NULL OR signature.validator != :validator)`, { validator })
+      .andWhere(`${this.alias}.status = :status`, { status: EEventStatus.WAITING })
+      .addOrderBy(`${this.alias}.id`, EDirection.ASC)
+      .addOrderBy(`${this.alias}.retry`, EDirection.ASC);
+
+    return qb.getOne();
   }
 }
