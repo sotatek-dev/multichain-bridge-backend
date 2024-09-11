@@ -1,4 +1,4 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToMany } from 'typeorm';
 
 import { EEventName, ENetworkName } from '@constants/blockchain.constant';
 import { ETableName } from '@constants/entity.constant';
@@ -6,6 +6,7 @@ import { ETableName } from '@constants/entity.constant';
 import { BaseEntityIncludeTime } from '@core/base.entity';
 
 import { EEventStatus } from '../../../constants/blockchain.constant';
+import { MultiSignature } from './multi-signature.entity';
 
 @Entity(ETableName.EVENT_LOGS)
 export class EventLog extends BaseEntityIncludeTime {
@@ -74,6 +75,10 @@ export class EventLog extends BaseEntityIncludeTime {
 
   @Column({ name: 'retry', type: 'int', nullable: false, default: 0 })
   retry: number;
+
+  @OneToMany<MultiSignature>(() => MultiSignature, multiSignature => multiSignature.transaction)
+  @JoinColumn({ name: 'id' })
+  validator: MultiSignature[];
 
   constructor(value: Partial<EventLog>) {
     super();
