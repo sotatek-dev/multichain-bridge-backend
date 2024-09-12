@@ -46,6 +46,21 @@ export class CrawlerConsole {
   }
 
   @Command({
+    command: 'validate-eth-bridge-unlock',
+    description: 'validate ETH Bridge unlock',
+  })
+  async handleValidateMinaLockTx() {
+    try {
+      while (true) {
+        this.senderEVMBridge.handleValidateUnlockTxEVM();
+        await sleep(15);
+      }
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  @Command({
     command: 'sender-eth-bridge-unlock',
     description: 'sender ETH Bridge unlock',
   })

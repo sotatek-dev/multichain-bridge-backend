@@ -1,6 +1,7 @@
 export const DEFAULT_DECIMAL_PLACES = 6;
 export const DEFAULT_ADDRESS_PREFIX = '0x';
 export const DECIMAL_BASE = 10;
+export const FIXED_ESTIMATE_GAS = 100000;
 export enum ENetworkName {
   ETH = 'eth',
   MINA = 'mina',

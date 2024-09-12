@@ -95,12 +95,11 @@ export class SCBridgeMinaCrawler {
     };
   }
 
-  public async handlerLockEvent(event, queryRunner: QueryRunner) {
+  public async handlerLockEvent(event: any, queryRunner: QueryRunner) {
     const field = Field.from(event.event.data.receipt.toString());
     const receiveAddress = DEFAULT_ADDRESS_PREFIX + field.toBigInt().toString(16);
-
     const eventUnlock = {
-      senderAddress: event.event.data.locker,
+      senderAddress: JSON.parse(JSON.stringify(event.event.data.locker)),
       amountFrom: event.event.data.amount.toString(),
       tokenFromAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
       networkFrom: ENetworkName.MINA,
