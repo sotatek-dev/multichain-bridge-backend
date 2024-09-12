@@ -40,14 +40,14 @@ export interface IRpcService {
   web3: Web3;
   resetApi: () => Promise<any>;
   maxTries: number;
-  privateKeys: string[];
+  privateKeys: string;
   getNonce: (walletAddress: string) => Promise<number>;
 }
 
 export const RpcFactory = async (configService: ConfigService, network?: ENetworkName): Promise<IRpcService> => {
   let rpcRound = 0;
   const rpc = configService.get<string[]>(EEnvKey.ETH_BRIDGE_RPC_OPTIONS);
-  const privateKeys = configService.get<string[]>(EEnvKey.SIGNER_PRIVATE_KEY);
+  const privateKeys = configService.get<string>(EEnvKey.SIGNER_PRIVATE_KEY);
 
   const getNextRPcRound = (): Web3 => {
     return new Web3(rpc[rpcRound++ % rpc.length]);

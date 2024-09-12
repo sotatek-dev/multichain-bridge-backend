@@ -15,8 +15,14 @@ export class MultiSignature extends BaseEntityIncludeTime {
   @Column({ name: 'tx_id', type: 'bigint', nullable: true })
   txId: number;
 
+  @Column({ name: 'retry', type: 'bigint', nullable: true })
+  retry: number;
+
   @Column({ name: 'signature', type: 'text', nullable: true })
   signature: string;
+
+  @Column({ name: 'error_code', type: 'text', nullable: true })
+  errorCode: string | unknown;
 
   @Column({ name: 'chain', type: 'varchar', enum: ENetworkName, nullable: true })
   chain: ENetworkName;

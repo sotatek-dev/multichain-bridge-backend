@@ -75,10 +75,7 @@ export class DefaultContract {
   }
 
   public async estimateGas(method: string, param: Array<any>, specifySignerIndex?: number): Promise<number> {
-    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
-      this.rpcService.privateKeys[specifySignerIndex ?? 0],
-    );
-
+    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
     const data = this.contract.methods[method](...param).encodeABI();
     const gasPrice = await this.rpcService.web3.eth.getGasPrice();
     const nonce = await this.rpcService.getNonce(signer.address);
@@ -102,9 +99,7 @@ export class DefaultContract {
     specifySignerIndex?: number,
   ): Promise<{ success: boolean; error: Error; data: TransactionReceipt }> {
     try {
-      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
-        this.rpcService.privateKeys[specifySignerIndex ?? 0],
-      );
+      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
 
       const data = this.contract.methods[method](...param).encodeABI();
       const gasPrice = await this.rpcService.web3.eth.getGasPrice();
@@ -181,6 +176,10 @@ export class DefaultContract {
     return this.rpcService.web3.eth.getBlock(blockNumber);
   }
 
+  public async getChainId() {
+    return this.rpcService.web3.eth.getChainId();
+  }
+
   public async convertGasPriceToEther(amount: number) {
     try {
       const gasPrice = await this.rpcService.web3.eth.getGasPrice();
@@ -204,11 +203,23 @@ export class ETHBridgeContract extends DefaultContract {
   public async latestIndex() {
     return this.call('latestIndex', []);
   }
+  public async getValidatorThreshold() {
+    return this.call('threshold', []);
+  }
   public async mintNFT(toAddress: string) {
     return this.write('mint', [toAddress]);
   }
-  public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
-    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, fee]);
+  public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress, fee?, _signatures?) {
+    console.log(
+      '🚀 ~ ETHBridgeContract ~ unlock ~ tokenFromAddress, amount, txHashLock, receiveAddress, fee?, _signatures?:',
+      tokenFromAddress,
+      amount,
+      txHashLock,
+      receiveAddress,
+      fee,
+      _signatures,
+    );
+    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, fee, _signatures]);
   }
   public async getEstimateGas(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
     const estimateGas = await this.estimateGas('unlock', [
@@ -217,6 +228,7 @@ export class ETHBridgeContract extends DefaultContract {
       receiveAddress,
       txHashLock,
       Number(fee),
+      [],
     ]);
     const getGasPrice = await this.convertGasPriceToEther(estimateGas);
     return getGasPrice;

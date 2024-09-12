@@ -1,4 +1,5 @@
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
+import { Brackets } from 'typeorm';
 
 import { EDirection } from '@constants/api.constant';
 import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
@@ -22,7 +23,10 @@ export class EventLogRepository extends BaseRepository<EventLog> {
 
     if (threshold) {
       qb.andWhere(
-        `(SELECT COUNT(${ETableName.MULTI_SIGNATURE}.id) FROM ${ETableName.MULTI_SIGNATURE} WHERE ${ETableName.MULTI_SIGNATURE}.tx_id = ${this.alias}.id) >= :threshold`,
+        `(SELECT COUNT(${ETableName.MULTI_SIGNATURE}.id) 
+          FROM  ${ETableName.MULTI_SIGNATURE} 
+          WHERE ${ETableName.MULTI_SIGNATURE}.tx_id = ${this.alias}.id 
+          AND   ${ETableName.MULTI_SIGNATURE}.signature IS NOT NULL)  >= :threshold  `,
         {
           threshold,
         },
@@ -129,8 +133,18 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     const qb = this.createQueryBuilder(`${this.alias}`);
     qb.leftJoinAndSelect(`${this.alias}.validator`, 'signature');
     qb.where(`${this.alias}.networkReceived = :network`, { network });
-    qb.andWhere(`(signature.validator IS NULL OR signature.validator != :validator)`, { validator })
-      .andWhere(`${this.alias}.status = :status`, { status: EEventStatus.WAITING })
+    qb.andWhere(
+      new Brackets(qb => {
+        qb.where(`signature.validator IS NULL`)
+          .orWhere(`signature.validator != :validator`, { validator })
+          .orWhere(
+            new Brackets(qb => {
+              qb.where(`signature.signature IS NULL`).andWhere(`signature.retry < 3`);
+            }),
+          );
+      }),
+    );
+    qb.andWhere(`${this.alias}.status = :status`, { status: EEventStatus.WAITING })
       .addOrderBy(`${this.alias}.id`, EDirection.ASC)
       .addOrderBy(`${this.alias}.retry`, EDirection.ASC);
 
