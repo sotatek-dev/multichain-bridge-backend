@@ -49,10 +49,25 @@ export class CrawlerConsole {
     command: 'validate-eth-bridge-unlock',
     description: 'validate ETH Bridge unlock',
   })
-  async handleValidateMinaLockTx() {
+  async handleValidateEthLockTx() {
     try {
       while (true) {
         this.senderEVMBridge.handleValidateUnlockTxEVM();
+        await sleep(15);
+      }
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  @Command({
+    command: 'validate-mina-bridge-unlock',
+    description: 'validate MINA Bridge unlock',
+  })
+  async handleValidateMinaLockTx() {
+    try {
+      while (true) {
+        this.senderMinaBridge.handleValidateUnlockTxMina();
         await sleep(15);
       }
     } catch (error) {
@@ -74,6 +89,7 @@ export class CrawlerConsole {
       this.logger.error(error);
     }
   }
+  
 
   @Command({
     command: 'crawl-mina-bridge-contract',

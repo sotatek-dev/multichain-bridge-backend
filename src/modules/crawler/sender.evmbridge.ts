@@ -208,7 +208,8 @@ export class SenderEVMBridge {
       );
     } catch (error) {
       this.logger.log(EError.INVALID_SIGNATURE, error);
-      await this.upsertErrorAndRetryMultiSignature(wallet.address, dataLock.id, error);
+      await this.multiSignatureRepository.upsertErrorAndRetryMultiSignature(wallet.address, dataLock.id, error);
+
     }
   }
 
@@ -238,21 +239,4 @@ export class SenderEVMBridge {
     return { signature, payload: { domain, type: types, data: value } };
   }
 
-  public async upsertErrorAndRetryMultiSignature(validator: string, txId: number, errorCode: unknown) {
-    const validatorSignature = await this.multiSignatureRepository.findOne({
-      where: { txId, validator },
-    });
-    if (!validatorSignature) {
-      await this.multiSignatureRepository.save(
-        new MultiSignature({
-          txId,
-          validator,
-          retry: 1,
-          errorCode,
-        }),
-      );
-    } else {
-      await this.multiSignatureRepository.update({ txId, validator }, { retry: ++validatorSignature.retry, errorCode });
-    }
-  }
 }
