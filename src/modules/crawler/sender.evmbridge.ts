@@ -10,7 +10,7 @@ import { Logger } from 'log4js';
 
 import { getEthBridgeAddress } from '@config/common.config';
 
-import { DECIMAL_BASE, EEventStatus, ENetworkName, FIXED_ESTIMATE_GAS } from '@constants/blockchain.constant';
+import { DECIMAL_BASE, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
 
@@ -68,7 +68,11 @@ export class SenderEVMBridge {
       //   receiveAddress,
       //   0,
       // );
-      const protocolFee = calculateFee(amountReceive, FIXED_ESTIMATE_GAS, configTip.tip);
+      const protocolFee = calculateFee(
+        amountReceive,
+        addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM)),
+        configTip.tip,
+      );
       const result = await this.ethBridgeContract.unlock(
         tokenReceivedAddress,
         BigNumber(amountReceive),
@@ -115,7 +119,11 @@ export class SenderEVMBridge {
       //   receiveAddress,
       //   0,
       // );
-      const protocolFee = calculateFee(amountReceive, FIXED_ESTIMATE_GAS, configTip.tip);
+      const protocolFee = calculateFee(
+        amountReceive,
+        addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM)),
+        configTip.tip,
+      );
 
       const signTx = await this.getSignature(wallet, {
         token: tokenReceivedAddress,
