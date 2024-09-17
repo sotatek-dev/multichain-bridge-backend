@@ -6,7 +6,7 @@ import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import { DataSource } from 'typeorm';
 
-import { ENetworkName } from '@constants/blockchain.constant';
+import { ENetworkName, FIXED_ESTIMATE_GAS } from '@constants/blockchain.constant';
 import { EEnvKey } from '@constants/env.constant';
 import { EError } from '@constants/error.constant';
 
@@ -92,13 +92,14 @@ export class UsersService {
         this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
       );
     } else {
-      gasFee = await this.ethBridgeContract.getEstimateGas(
-        tokenPair.toAddress,
-        addDecimal(0, tokenPair.toDecimal),
-        1,
-        process.env.ADMIN_ADDRESS_EVM,
-        0,
-      );
+      // gasFee = await this.ethBridgeContract.getEstimateGas(
+      //   tokenPair.toAddress,
+      //   addDecimal(0, tokenPair.toDecimal),
+      //   1,
+      //   process.env.ADMIN_ADDRESS_EVM,
+      //   0,
+      // );
+      gasFee = FIXED_ESTIMATE_GAS;
     }
 
     return { amount: calculateFee(amount, gasFee, configTip.tip) };
