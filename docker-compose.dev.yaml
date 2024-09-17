@@ -82,6 +82,17 @@ services:
     networks:
       - myNetwork
     user: node
+  validate-evm-signature-1:
+    image: mina-bridge:1.0.0
+    command: >
+      sh -c "npm run console validate-eth-bridge-unlock"
+    tty: true
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - myNetwork
+    user: node
   postgres:
     container_name: mina-bridge-${NODE_ENV}-postgres
     image: postgres:15.3-alpine3.18

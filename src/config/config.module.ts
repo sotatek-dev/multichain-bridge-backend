@@ -47,6 +47,8 @@ import redisConfig from './redis.config';
         [EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
         [EEnvKey.ADMIN_MESSAGE_FOR_SIGN]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY]: Joi.string().required(),
+        [EEnvKey.ETH_BRIDGE_DOMAIN_NAME]: Joi.string().required(),
+        [EEnvKey.ETH_BRIDGE_DOMAIN_VERSION]: Joi.string().required(),
         // coinmarketcap
         [EEnvKey.COINMARKET_KEY]: Joi.string().required(),
         [EEnvKey.COINMARKET_URL]: Joi.string().required(),
@@ -60,7 +62,6 @@ import redisConfig from './redis.config';
         value[EEnvKey.MINA_BRIDGE_START_BLOCK] = Number(value[EEnvKey.MINA_BRIDGE_START_BLOCK]).valueOf();
         value[EEnvKey.MINA_BRIDGE_RPC_OPTIONS] = value[EEnvKey.MINA_BRIDGE_RPC_OPTIONS].split(',');
         value[EEnvKey.ETH_BRIDGE_RPC_OPTIONS] = value[EEnvKey.ETH_BRIDGE_RPC_OPTIONS].split(',');
-        value[EEnvKey.SIGNER_PRIVATE_KEY] = value[EEnvKey.SIGNER_PRIVATE_KEY].split(',');
 
         return value;
       }),
