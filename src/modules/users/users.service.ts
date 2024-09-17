@@ -92,12 +92,9 @@ export class UsersService {
         this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
       );
     } else {
-      gasFee = await this.ethBridgeContract.getEstimateGas(
-        tokenPair.toAddress,
-        addDecimal(0, tokenPair.toDecimal),
-        1,
-        process.env.ADMIN_ADDRESS_EVM,
-        0,
+      gasFee = addDecimal(
+        this.configService.get(EEnvKey.GAS_FEE_EVM),
+        this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
       );
     }
 
