@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 import { PublicKey, SmartContract, State, UInt64, method, state, Struct, Bool, Provable, Field, MerkleMap } from 'o1js';
 import { FungibleToken } from "./FungibleToken";
-import { Secp256k1, Ecdsa, keccakAndEcdsa, Bytes256 } from './ecdsa.js';
+import { Secp256k1, Ecdsa, keccakAndEcdsa, Bytes256 } from './ecdsa/ecdsa.js';
 class UnlockEvent extends Struct({
     receiver: PublicKey,
     tokenAddress: PublicKey,
@@ -141,8 +141,6 @@ export class Bridge extends SmartContract {
         const token = new FungibleToken(tokenAddr);
         await token.mint(receiver, amount);
         this.emitEvent("Unlock", new UnlockEvent(receiver, tokenAddr, amount, id));
-        console.log('unlock ok 11111111111111');
-        
     }
     // @method.returns(Bool)
     async checkProof(message, signature, publicKey) {

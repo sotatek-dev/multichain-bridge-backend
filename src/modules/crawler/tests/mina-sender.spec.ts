@@ -2,6 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
+import { MultiSignatureRepository } from 'database/repositories/multi-signature.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 
@@ -11,7 +12,6 @@ import { LoggingModule } from '@shared/modules/logger/logger.module';
 import { Web3Module } from '@shared/modules/web3/web3.module';
 
 import { SenderMinaBridge } from '../sender.minabridge';
-import { MultiSignatureRepository } from 'database/repositories/multi-signature.repository';
 
 // Mock objects
 const mockJwtService = {
@@ -61,11 +61,10 @@ describe('AuthService', () => {
     mockJwtService.sign.mockResolvedValue('true');
     mockEventLogRepository.getEventLockWithNetwork.mockResolvedValue({
       id: 333,
-      tokenReceivedAddress: 'B62qisgt5S7LwrBKEc8wvWNjW7SGTQjMZJTDL2N6FmZSVGrWiNkV21H',
+      tokenReceivedAddress: 'B62qkSirQSX61kjxndoGeKBg2m1RPD9PMwrVkgqKpH6UvPGMTUAC5xE',
       tokenFromAddress: '0x0000000000000000000000000000000000000000',
       receiveAddress: 'B62qjWwgHupW7k7fcTbb2Kszp4RPYBWYdL4KMmoqfkMH3iRN2FN8u5n',
       amountFrom: '15690000000000000',
-        //         15610555
       senderAddress: '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0',
     });
     mockEventLogRepository.sumAmountBridgeOfUserInDay.mockResolvedValue(0);
@@ -84,11 +83,11 @@ describe('AuthService', () => {
       fromSymbol: 'ETH',
       toSymbol: 'WETH',
       fromAddress: '0x0000000000000000000000000000000000000000',
-      toAddress: 'B62qisgt5S7LwrBKEc8wvWNjW7SGTQjMZJTDL2N6FmZSVGrWiNkV21H',
+      toAddress: 'B62qkSirQSX61kjxndoGeKBg2m1RPD9PMwrVkgqKpH6UvPGMTUAC5xE',
       fromDecimal: 18,
       toDecimal: 9,
       fromScAddress: '0x83e21AccD43Bb7C23C51e68fFa345fab3983FfeC',
-      toScAddress: 'B62qjv5RdC63eidxMofZBtMJdFCnuM9bAoxok1jE7xD2ZXE17WKuT9V',
+      toScAddress: 'B62qrVxNbp1NEJaoRjPuGRTPqkidys5u77Q25RwP7EhEessNRKL7hsT',
       status: 'enable',
     });
     const result = await minaCrawlerService.handleUnlockMina();

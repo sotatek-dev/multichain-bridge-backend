@@ -51,7 +51,7 @@
     "ioredis": "^5.3.2",
     "joi": "^17.11.0",
     "log4js": "^6.9.1",
-    "mina-fungible-token": "0.1.0",
+    "mina-fungible-token": "1.0.0",
     "mina-signer": "^2.1.1",
     "nestjs-console": "^9.0.0",
     "nestjs-typeorm-custom-repository": "^1.1.1",

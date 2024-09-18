@@ -4,6 +4,7 @@ import assert from 'assert';
 import BigNumber from 'bignumber.js';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
+import { MultiSignatureRepository } from 'database/repositories/multi-signature.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 import { Logger } from 'log4js';
@@ -16,17 +17,19 @@ import { EError } from '@constants/error.constant';
 import { LoggerService } from '@shared/modules/logger/logger.service';
 import { addDecimal, calculateFee } from '@shared/utils/bignumber';
 
-import { Bridge } from './minaSc/Bridge';
-import { Bytes256, Ecdsa, Secp256k1 } from './minaSc/ecdsa';
-import { FungibleToken } from './minaSc/FungibleToken';
-import { FungibleTokenAdmin } from './minaSc/FungibleTokenAdmin';
 import { MultiSignature } from './entities/multi-signature.entity';
-import { MultiSignatureRepository } from 'database/repositories/multi-signature.repository';
+import { Bridge } from './minaSc/Bridge.js';
+import { Bytes256, Ecdsa, Secp256k1 } from './minaSc/ecdsa.js';
+import { FungibleToken } from './minaSc/FungibleToken.js';
+import { FungibleTokenAdmin } from './minaSc/FungibleTokenAdmin.js';
 
 @Injectable()
 export class SenderMinaBridge {
   private readonly logger: Logger;
   private isContractCompiled = false;
+  private readonly feePayerKey: PrivateKey;
+  private readonly bridgeKey: PrivateKey;
+  private readonly tokenPublicKey: PublicKey;
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -37,12 +40,23 @@ export class SenderMinaBridge {
     private readonly loggerService: LoggerService,
   ) {
     this.logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
+    this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
+    this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
+    this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+    const network = Mina.Network({
+      mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
+      archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
+    });
+    Mina.setActiveInstance(network);
   }
+
   private async compileContract() {
     if (!this.isContractCompiled) {
-      await Bridge.compile();
-      await FungibleTokenAdmin.compile();
       await FungibleToken.compile();
+      await FungibleTokenAdmin.compile();
+      await Bridge.compile();
+      // await Manager.compile();
+      // await ValidatorManager.compile();
       this.isContractCompiled = true;
     }
   }
@@ -125,52 +139,47 @@ export class SenderMinaBridge {
 
   private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount, rateMINAETH) {
     try {
-      const feepayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
-      const zkAppKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
-      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-      const tokenAddressPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
-
-      const MINAURL = this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS);
-      const ARCHIVEURL = this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS);
-      const network = Mina.Network({
-        mina: MINAURL,
-        archive: ARCHIVEURL,
-      });
-      Mina.setActiveInstance(network);
-
       this.logger.info('compile the contract...');
-
       await this.compileContract();
 
       const fee = protocolFeeAmount * rateMINAETH + +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
-      const feepayerAddress = feepayerKey.toPublicKey();
-      const zkAppAddress = zkAppKey.toPublicKey();
-      const zkBridge = new Bridge(zkAppAddress);
+      const feePayerPublicKey = this.feePayerKey.toPublicKey();
+      const bridgePublicKey = this.bridgeKey.toPublicKey();
+      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
 
-      console.log(zkAppAddress.toBase58(), feepayerAddress.toBase58(), tokenAddressPublicKey.toBase58());
+      const zkBridge = new Bridge(bridgePublicKey);
 
-      await fetchAccount({ publicKey: zkAppAddress });
-      await fetchAccount({ publicKey: feepayerAddress });
-      await fetchAccount({ publicKey: receiverPublicKey });
+      console.log(bridgePublicKey.toBase58(), feePayerPublicKey.toBase58(), this.tokenPublicKey.toBase58());
+
+      await Promise.all([
+        fetchAccount({ publicKey: bridgePublicKey }),
+        fetchAccount({ publicKey: feePayerPublicKey }),
+        fetchAccount({ publicKey: receiverPublicKey }),
+        fetchAccount({ publicKey: this.tokenPublicKey }),
+      ]);
 
       const hasAccount = Mina.hasAccount(receiverPublicKey);
       // compile the contract to create prover keys
       // call update() and send transaction
-      let privateKey = Secp256k1.Scalar.random();
-      let publicKey = Secp256k1.generator.scale(privateKey);
+      const privateKey = Secp256k1.Scalar.from('123456789012345678901234567890123456787');
+      const publicKey = Secp256k1.generator.scale(privateKey);
 
-      let msg = Bytes256.fromString(`unlock receiver = ${receiverPublicKey.toFields} amount = ${UInt64.from(amount).toFields} tokenAddr = ${tokenAddressPublicKey.toFields}`);
+      const typedAmount = UInt64.from(amount);
 
-      let signature = Ecdsa.sign(msg.toBytes(), privateKey.toBigInt());
+      const msg = Bytes256.fromString(
+        `unlock receiver = ${receiverPublicKey.toFields} amount = ${typedAmount.toFields} tokenAddr = ${this.tokenPublicKey.toFields}`,
+      );
+
+      const signature = Ecdsa.sign(msg.toBytes(), privateKey.toBigInt());
 
       this.logger.info('build transaction and create proof...');
-      const tx = await Mina.transaction({ sender: feepayerAddress, fee }, async () => {
-        if (!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress);
+      const tx = await Mina.transaction({ sender: feePayerPublicKey, fee }, async () => {
+        if (!hasAccount) AccountUpdate.fundNewAccount(feePayerPublicKey);
         await zkBridge.unlock(
-          amount,
+          typedAmount,
           receiverPublicKey,
           UInt64.from(txId),
-          tokenAddressPublicKey,
+          this.tokenPublicKey,
           signature,
           publicKey,
           signature,
@@ -182,17 +191,11 @@ export class SenderMinaBridge {
           signature,
           publicKey,
         );
-        console.log('done tx');
-        
-        
       });
-      console.log('sign start');
-      await tx.sign([feepayerKey, zkAppKey])
 
-      console.log("prove start");
       await tx.prove();
-
-      const sentTx = await tx.send()
+      console.log('send transaction...');
+      const sentTx = await tx.sign([this.feePayerKey, this.bridgeKey]).send();
 
       this.logger.info('Transaction waiting to be applied with txhash: ', sentTx);
       await sentTx?.wait({ maxAttempts: 300 });
@@ -220,11 +223,11 @@ export class SenderMinaBridge {
     return true;
   }
   async handleValidateUnlockTxMina() {
-    let dataLock, configTip;
+    let dataLock;
     const signerPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
-    const signerPublicKey = PublicKey.fromPrivateKey(signerPrivateKey)
+    const signerPublicKey = PublicKey.fromPrivateKey(signerPrivateKey);
     try {
-      [dataLock, configTip] = await Promise.all([
+      [dataLock] = await Promise.all([
         this.eventLogRepository.getValidatorPendingSignature(signerPublicKey.toBase58(), ENetworkName.MINA),
         this.commonConfigRepository.getCommonConfig(),
       ]);
@@ -233,8 +236,7 @@ export class SenderMinaBridge {
         return;
       }
 
-      const { tokenReceivedAddress, tokenFromAddress, txHashLock, receiveAddress, senderAddress, amountFrom } =
-        dataLock;
+      const { tokenReceivedAddress, tokenFromAddress, receiveAddress, amountFrom } = dataLock;
 
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
 
@@ -247,16 +249,15 @@ export class SenderMinaBridge {
         return;
       }
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-      const tokenAddressPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+      const tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
 
       const amountReceive = BigNumber(amountFrom)
         .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
         .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
         .toString();
 
-
       const msg = Bytes256.fromString(
-        `unlock receiver = ${receiverPublicKey.toFields} amount = ${UInt64.from(amountReceive).toFields} tokenAddr = ${tokenAddressPublicKey.toFields}`,
+        `unlock receiver = ${receiverPublicKey.toFields} amount = ${UInt64.from(amountReceive).toFields} tokenAddr = ${tokenPublicKey.toFields}`,
       );
 
       const signature = Ecdsa.sign(msg.toBytes(), signerPrivateKey.toBigInt());
@@ -271,7 +272,11 @@ export class SenderMinaBridge {
       );
     } catch (error) {
       this.logger.log(EError.INVALID_SIGNATURE, error);
-      await this.multiSignatureRepository.upsertErrorAndRetryMultiSignature(signerPublicKey.toBase58(), dataLock.id, error);
+      await this.multiSignatureRepository.upsertErrorAndRetryMultiSignature(
+        signerPublicKey.toBase58(),
+        dataLock.id,
+        error,
+      );
     }
   }
 }

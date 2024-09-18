@@ -5705,10 +5705,10 @@ min-document@^2.19.0:
   dependencies:
     dom-walk "^0.1.0"
 
-mina-fungible-token@0.1.0:
-  version "0.1.0"
-  resolved "https://registry.npmjs.org/mina-fungible-token/-/mina-fungible-token-0.1.0.tgz"
-  integrity sha512-AyoG/SXfK1WkKNWJ1lDzSTBvqYTWlK0zZTrNvCkVmdcGxjR2cMfYgNLegUayIgAqNekA4z7ng9/lCdMaKmk1Zw==
+mina-fungible-token@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/mina-fungible-token/-/mina-fungible-token-1.0.0.tgz#41cdfa2de1732f046b1ab4ba1c3dadbfe25e7187"
+  integrity sha512-2LfoBIuwQO5qk3H1JjRLKsCdZsSu+B/lannjMBdujdoHnoj6aWEcLQOY4jAz4BnhVCgAmJ/uUrTqVZ86J63iTg==
 
 mina-signer@^2.1.1:
   version "2.1.2"
@@ -6089,10 +6089,10 @@ number-to-bn@1.7.0:
     bn.js "4.11.6"
     strip-hex-prefix "1.0.0"
 
-o1js@1.7.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/o1js/-/o1js-1.7.0.tgz#d8f551b8eba15d7747b0da7e30d80bbdfc5b9f8f"
-  integrity sha512-/gQKJLRuqDrArdU/QkaU0F1lQl/K6/170U01JeU2xIpryN6vBwENfEHWpHt1FXOmGwyTsQHmrJLWfyFLjQOkeA==
+o1js@1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/o1js/-/o1js-1.6.0.tgz#93e1c29edf45d42c5938ba1311cd7befeeeb4504"
+  integrity sha512-5pHCM0qIHG+MhLlcRJZRK8YFC7MOCjlxwSYbmrLDKER267eUip7JRDtWATytIRxtCPqOBvqKeJb0hR/mvjWxqg==
   dependencies:
     blakejs "1.2.1"
     cachedir "^2.4.0"
