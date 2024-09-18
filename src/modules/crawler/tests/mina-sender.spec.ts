@@ -2,6 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
 import { EventLogRepository } from 'database/repositories/event-log.repository';
+import { MultiSignatureRepository } from 'database/repositories/multi-signature.repository';
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 
@@ -33,6 +34,9 @@ const mockTokenPairRepository = {
 const mockTokenPriceRepository = {
   getRateETHToMina: jest.fn(),
 };
+const mockMultiSignatureRepository = {
+  getRateETHToMina: jest.fn(),
+};
 describe('AuthService', () => {
   let minaCrawlerService: SenderMinaBridge;
 
@@ -46,6 +50,7 @@ describe('AuthService', () => {
         { provide: CommonConfigRepository, useValue: mockCommonConfigRepository },
         { provide: TokenPairRepository, useValue: mockTokenPairRepository },
         { provide: TokenPriceRepository, useValue: mockTokenPriceRepository },
+        { provide: MultiSignatureRepository, useValue: mockMultiSignatureRepository },
       ],
     }).compile();
 
@@ -56,7 +61,7 @@ describe('AuthService', () => {
     mockJwtService.sign.mockResolvedValue('true');
     mockEventLogRepository.getEventLockWithNetwork.mockResolvedValue({
       id: 333,
-      tokenReceivedAddress: 'B62qqki2ZnVzaNsGaTDAP6wJYCth5UAcY6tPX2TQYHdwD8D4uBgrDKC',
+      tokenReceivedAddress: 'B62qkSirQSX61kjxndoGeKBg2m1RPD9PMwrVkgqKpH6UvPGMTUAC5xE',
       tokenFromAddress: '0x0000000000000000000000000000000000000000',
       receiveAddress: 'B62qjWwgHupW7k7fcTbb2Kszp4RPYBWYdL4KMmoqfkMH3iRN2FN8u5n',
       amountFrom: '15690000000000000',
@@ -78,11 +83,11 @@ describe('AuthService', () => {
       fromSymbol: 'ETH',
       toSymbol: 'WETH',
       fromAddress: '0x0000000000000000000000000000000000000000',
-      toAddress: 'B62qqki2ZnVzaNsGaTDAP6wJYCth5UAcY6tPX2TQYHdwD8D4uBgrDKC',
+      toAddress: 'B62qkSirQSX61kjxndoGeKBg2m1RPD9PMwrVkgqKpH6UvPGMTUAC5xE',
       fromDecimal: 18,
       toDecimal: 9,
       fromScAddress: '0x83e21AccD43Bb7C23C51e68fFa345fab3983FfeC',
-      toScAddress: 'B62qoArtCz52mtxKxtGR3sPdS9yq6DucRW53nAerndwg9oEhUvJvpRy',
+      toScAddress: 'B62qrVxNbp1NEJaoRjPuGRTPqkidys5u77Q25RwP7EhEessNRKL7hsT',
       status: 'enable',
     });
     const result = await minaCrawlerService.handleUnlockMina();
