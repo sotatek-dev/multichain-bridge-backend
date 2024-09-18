@@ -15,7 +15,7 @@ import { CrawlContract, EventLog } from '@modules/crawler/entities';
 
 import { LoggerService } from '@shared/modules/logger/logger.service';
 
-import { Bridge } from './minaSc/minaBridgeSC';
+import { Bridge } from './minaSc/Bridge.js';
 
 @Injectable()
 export class SCBridgeMinaCrawler {
