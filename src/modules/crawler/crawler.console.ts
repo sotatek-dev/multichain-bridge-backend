@@ -52,7 +52,7 @@ export class CrawlerConsole {
   async handleValidateEthLockTx() {
     try {
       while (true) {
-        this.senderEVMBridge.handleValidateUnlockTxEVM();
+        this.senderEVMBridge.unlockEVMTransaction();
         await sleep(15);
       }
     } catch (error) {
