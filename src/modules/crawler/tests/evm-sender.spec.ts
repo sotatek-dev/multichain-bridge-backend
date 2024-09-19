@@ -8,16 +8,16 @@ import { MultiSignatureRepository } from 'database/repositories/multi-signature.
 import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import { DataSource, QueryRunner } from 'typeorm';
 
-import { ConfigurationModule } from '@config/config.module';
+import { ConfigurationModule } from 'config/config.module.js';
 
-import { EAsset } from '@constants/api.constant';
-import { EEventName, EEventStatus, ENetworkName, ETokenPairStatus } from '@constants/blockchain.constant';
+import { EAsset } from 'constants/api.constant.js';
+import { EEventName, EEventStatus, ENetworkName, ETokenPairStatus } from 'constants/blockchain.constant.js';
 
-import { TokenPair } from '@modules/users/entities/tokenpair.entity';
+import { TokenPair } from 'modules/users/entities/tokenpair.entity.js';
 
-import { LoggerService } from '@shared/modules/logger/logger.service';
-import { Web3Module } from '@shared/modules/web3/web3.module';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
+import { LoggerService } from 'shared/modules/logger/logger.service.js';
+import { Web3Module } from 'shared/modules/web3/web3.module.js';
+import { ETHBridgeContract } from 'shared/modules/web3/web3.service.js';
 
 import { EventLog } from '../entities';
 import { CommonConfig } from '../entities/common-config.entity';

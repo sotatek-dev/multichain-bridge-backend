@@ -1,12 +1,10 @@
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 
-import { EDirection } from '@constants/api.constant';
-import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
-import { ETableName } from '@constants/entity.constant';
+import { ETableName } from '../../constants/entity.constant.js';
 
-import { BaseRepository } from '@core/base-repository';
+import { BaseRepository } from '../../core/base-repository.js';
 
-import { MultiSignature } from '@modules/crawler/entities/multi-signature.entity';
+import { MultiSignature } from '../../modules/crawler/entities/multi-signature.entity.js';
 
 @EntityRepository(MultiSignature)
 export class MultiSignatureRepository extends BaseRepository<MultiSignature> {

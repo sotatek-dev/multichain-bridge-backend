@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-import { ENetworkName } from '@constants/blockchain.constant';
+import { ENetworkName } from '../../constants/blockchain.constant.js';
 
 export class AddMultiSignatureTable1725867149224 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

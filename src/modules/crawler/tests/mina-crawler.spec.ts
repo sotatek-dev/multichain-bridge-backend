@@ -7,13 +7,13 @@ import dayjs from 'dayjs';
 import { Field, Mina, provablePure, ProvablePure, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
-import { ConfigurationModule } from '@config/config.module';
+import { ConfigurationModule } from 'config/config.module.js';
 
-import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
+import { EEventName, EEventStatus, ENetworkName } from 'constants/blockchain.constant.js';
+import { EEnvKey } from 'constants/env.constant.js';
 
-import { LoggerService } from '@shared/modules/logger/logger.service';
-import { Web3Module } from '@shared/modules/web3/web3.module';
+import { LoggerService } from 'shared/modules/logger/logger.service.js';
+import { Web3Module } from 'shared/modules/web3/web3.module.js';
 
 import { UserRepository } from '../../../database/repositories/user.repository';
 import { SCBridgeMinaCrawler } from '../crawler.minabridge';

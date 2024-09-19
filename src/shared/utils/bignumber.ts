@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import BigNumber from 'bignumber.js/bignumber.mjs';
 import { isNumber, isNumberString } from 'class-validator';
 
 export const addDecimal = (value: string | number, decimal: number) => {

@@ -5,16 +5,16 @@ import { TokenPairRepository } from 'database/repositories/token-pair.repository
 import { DataSource, QueryRunner } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
-import { initializeEthContract } from '@config/common.config';
-import { ConfigurationModule } from '@config/config.module';
+import { initializeEthContract } from 'config/common.config.js';
+import { ConfigurationModule } from 'config/config.module.js';
 
-import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
+import { EEventName, EEventStatus, ENetworkName } from 'constants/blockchain.constant.js';
+import { EEnvKey } from 'constants/env.constant.js';
 
-import { TokenPair } from '@modules/users/entities/tokenpair.entity';
+import { TokenPair } from 'modules/users/entities/tokenpair.entity.js';
 
-import { LoggerService } from '@shared/modules/logger/logger.service';
-import { DefaultContract, ETHBridgeContract } from '@shared/modules/web3/web3.service';
+import { LoggerService } from 'shared/modules/logger/logger.service.js';
+import { DefaultContract, ETHBridgeContract } from 'shared/modules/web3/web3.service.js';
 
 import { BlockchainEVMCrawler } from '../crawler.evmbridge';
 import { CrawlContract, EventLog } from '../entities';

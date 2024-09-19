@@ -1,11 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, Relation } from 'typeorm';
 
-import { ENetworkName } from '@constants/blockchain.constant';
-import { ETableName } from '@constants/entity.constant';
+import { ENetworkName } from '../../../constants/blockchain.constant.js';
+import { ETableName } from '../../../constants/entity.constant.js';
 
-import { BaseEntityIncludeTime } from '@core/base.entity';
+import { BaseEntityIncludeTime } from '../../../core/base.entity.js';
 
-import { EventLog } from './event-logs.entity';
+import { EventLog } from './event-logs.entity.js';
 
 @Entity(ETableName.MULTI_SIGNATURE)
 export class MultiSignature extends BaseEntityIncludeTime {
@@ -31,7 +31,7 @@ export class MultiSignature extends BaseEntityIncludeTime {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'tx_id' })
-  transaction: EventLog;
+  transaction: Relation<EventLog>;
 
   constructor(value: Partial<MultiSignature>) {
     super();

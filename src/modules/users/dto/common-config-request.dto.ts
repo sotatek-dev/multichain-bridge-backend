@@ -1,4 +1,4 @@
-import { NumberField } from '@shared/decorators/field.decorator';
+import { NumberField } from '../../../shared/decorators/field.decorator.js';
 
 export class UpdateCommonConfigBodyDto {
   @NumberField({

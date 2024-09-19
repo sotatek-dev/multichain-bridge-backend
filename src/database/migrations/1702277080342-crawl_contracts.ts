@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-import { ENetworkName } from '@constants/blockchain.constant';
+import { ENetworkName } from '../../constants/blockchain.constant.js';
 
 export class CrawlContracts1702277080342 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

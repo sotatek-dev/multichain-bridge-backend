@@ -2,8 +2,8 @@ import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/commo
 import { isNotEmpty } from 'class-validator';
 import { DataSource } from 'typeorm';
 
-import { IJwtPayload } from '@modules/auth/interfaces/auth.interface';
-import { User } from '@modules/users/entities/user.entity';
+import { IJwtPayload } from '../../modules/auth/interfaces/auth.interface.js';
+import { User } from '../../modules/users/entities/user.entity.js';
 
 @Injectable()
 export class AdminGuard implements CanActivate {

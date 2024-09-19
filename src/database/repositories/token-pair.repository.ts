@@ -1,10 +1,10 @@
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 
-import { ETableName } from '@constants/entity.constant';
+import { ETableName } from '../../constants/entity.constant.js';
 
-import { BaseRepository } from '@core/base-repository';
+import { BaseRepository } from '../../core/base-repository.js';
 
-import { TokenPair } from '@modules/users/entities/tokenpair.entity';
+import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
 
 @EntityRepository(TokenPair)
 export class TokenPairRepository extends BaseRepository<TokenPair> {

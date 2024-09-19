@@ -1,7 +1,8 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Transform } from 'class-transformer';
-import { castArray, isArray, isNil, map, trim } from 'lodash';
+import pkg from 'lodash';
 
+const { castArray, isArray, isNil, map, trim } = pkg;
 export function Trim(): PropertyDecorator {
   return Transform(params => {
     const value = params.value as string[] | string;

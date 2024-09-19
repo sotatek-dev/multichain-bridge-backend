@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { EDirection } from '@constants/api.constant';
+import { EDirection } from '../../constants/api.constant.js';
 
-import { NumberField, StringField } from '@shared/decorators/field.decorator';
+import { NumberField, StringField } from '../decorators/field.decorator.js';
 
 export class BasePaginationRequestDto {
   @NumberField({

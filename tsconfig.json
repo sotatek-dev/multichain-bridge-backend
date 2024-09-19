@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
     "declaration": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -12,17 +14,6 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./src",
-    "paths": {
-      "@abis/*": ["abis/*"],
-      "@constants/*": ["constants/*"],
-      "@common/*": ["common/*"],
-      "@config/*": ["config/*"],
-      "@core/*": ["core/*"],
-      "@guards/*": ["guards/*"],
-      "@shared/*": ["shared/*"],
-      "@modules/*": ["modules/*"],
-      "@repositories/*": ["database/repositories"]
-    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
@@ -32,8 +23,12 @@
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "allowJs": true,
+    "allowJs": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist"],
+  "ts-node": {
+        "esm": true,
+        "experimentalSpecifierResolution": "node"
+    }
 }

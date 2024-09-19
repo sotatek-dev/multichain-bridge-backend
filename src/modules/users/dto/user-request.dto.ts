@@ -1,4 +1,4 @@
-import { NumberField, StringField } from '@shared/decorators/field.decorator';
+import { NumberField, StringField } from '../../../shared/decorators/field.decorator.js';
 
 export class CreateUserDto {
   @StringField({
