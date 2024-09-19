@@ -195,7 +195,7 @@ export class SenderMinaBridge {
       console.log('send transaction...');
       const sentTx = await tx.sign([this.feePayerKey, this.bridgeKey]).send();
 
-      this.logger.info('Transaction waiting to be applied with txhash: ', sentTx);
+      this.logger.info('Transaction waiting to be applied with txhash: ', sentTx.hash);
       await sentTx?.wait({ maxAttempts: 300 });
 
       assert(sentTx?.hash, 'transaction failed');
