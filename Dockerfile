@@ -1,7 +1,7 @@
 FROM node:18-alpine As build
 WORKDIR /app
 
-COPY package*.json yarn.lock ./
+COPY package*.json ./
 RUN npm i 
 COPY . .
 RUN npm run build
