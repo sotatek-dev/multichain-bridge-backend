@@ -1,8 +1,7 @@
 // console.ts - example of entrypoint
 import { BootstrapConsole } from 'nestjs-console';
 
-import { AppModule } from './app.module';
-import './core/paginate-typeorm';
+import { AppModule } from './app.module.js';
 
 const bootstrap = new BootstrapConsole({
   module: AppModule,

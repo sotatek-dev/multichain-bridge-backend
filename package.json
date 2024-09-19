@@ -4,6 +4,8 @@
   "description": "",
   "author": "",
   "private": true,
+  "type": "module",
+  "main": "main.js",
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
@@ -13,19 +15,19 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --verbose --coverage --config jest.config.cjs",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "migration:create": "ts-node -r tsconfig-paths/register src/database/migration-runner.ts",
-    "migration:run": "npm run typeorm -- -d src/database/data-source.ts migration:run",
+    "typeorm": "node --loader ts-node/esm ./node_modules/typeorm/cli.js",
+    "migration:create": "node --loader ts-node/esm src/database/migration-runner.ts",
+    "migration:run": "npm run typeorm -- -d dist/database/data-source.js migration:run",
     "migration:run-dist": "npm run typeorm -- -d dist/database/data-source.js migration:run",
     "migration:run:js": "node ./node_modules/typeorm/cli.js -d dist/database/data-source.js migration:run",
     "migration:revert": "npm run typeorm -- -d src/database/data-source.ts migration:revert",
-    "seed:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm-extension/bin/cli.cjs seed:run -d dist/database/data-source.js",
-    "console:dev": "ts-node -r tsconfig-paths/register src/console.ts",
+    "seed:run": "node ./node_modules/typeorm-extension/bin/cli.cjs seed:run -d dist/database/data-source.js",
+    "console:dev": "node --loader ts-node/esm src/console.ts",
     "console": "node dist/console.js"
   },
   "dependencies": {
@@ -89,4 +91,5 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   }
+  
 }

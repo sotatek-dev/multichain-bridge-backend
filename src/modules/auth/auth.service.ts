@@ -1,24 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import Client from 'mina-signer';
-import { toChecksumAddress } from 'web3-utils';
+import pkg from 'web3-utils';
 
-import { EMinaChainEnviroment } from '@constants/blockchain.constant';
-import { EEnvironments, EEnvKey } from '@constants/env.constant';
-import { EError } from '@constants/error.constant';
+import { EMinaChainEnviroment } from '../../constants/blockchain.constant.js';
+import { EEnvironments, EEnvKey } from '../../constants/env.constant.js';
+import { EError } from '../../constants/error.constant.js';
+import { UserRepository } from '../../database/repositories/user.repository.js';
+import { User } from '../../modules/users/entities/user.entity.js';
+import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exeption.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
+import { LoginDto, LoginMinaDto } from './dto/auth-request.dto.js';
+import { IJwtPayload } from './interfaces/auth.interface.js';
 
-import { User } from '@modules/users/entities/user.entity';
-
-import { httpBadRequest, httpNotFound } from '@shared/exceptions/http-exeption';
-import { LoggerService } from '@shared/modules/logger/logger.service';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
-
-import { LoginDto, LoginMinaDto } from './dto/auth-request.dto';
-import { IJwtPayload } from './interfaces/auth.interface';
-
+const { toChecksumAddress } = pkg;
 @Injectable()
 export class AuthService {
   private readonly logger: Logger;

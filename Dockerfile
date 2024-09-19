@@ -1,10 +1,10 @@
 FROM node:18-alpine As build
 WORKDIR /app
 
-COPY package*.json yarn.lock ./
-RUN yarn
+COPY package*.json ./
+RUN npm i 
 COPY . .
-RUN yarn build
+RUN npm run build
 
 FROM node:18-alpine
 WORKDIR /app

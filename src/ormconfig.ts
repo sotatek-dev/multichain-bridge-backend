@@ -1,10 +1,12 @@
 import * as dotenv from 'dotenv';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import type { DataSourceOptions } from 'typeorm';
+import { fileURLToPath } from 'url';
 
-import { EEnvKey } from '@constants/env.constant';
+import { EEnvKey } from './constants/env.constant.js';
+import { isDevelopmentEnvironment } from './shared/utils/util.js';
 
-import { isDevelopmentEnvironment } from '@shared/utils/util';
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 export const migrationDir = join(__dirname, 'database/migrations');

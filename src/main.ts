@@ -2,12 +2,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 
-import { isDevelopmentEnvironment } from '@shared/utils/util';
-
-import { AppModule } from './app.module';
-import { EEnvKey } from './constants/env.constant';
-import './core/paginate-typeorm';
-import { initSwagger } from './swagger';
+import { AppModule } from './app.module.js';
+import { EEnvKey } from './constants/env.constant.js';
+import './core/paginate-typeorm.js';
+import { isDevelopmentEnvironment } from './shared/utils/util.js';
+import { initSwagger } from './swagger.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

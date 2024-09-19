@@ -44,3 +44,5 @@ postgresData
 #Docker mounted volumes
 /dumpData/*
 .scannerwork/*
+src/coverage/*
+yarn.lock

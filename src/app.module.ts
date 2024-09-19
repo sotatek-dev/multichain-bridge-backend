@@ -1,22 +1,18 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { RouteInfo } from '@nestjs/common/interfaces';
 import { ScheduleModule } from '@nestjs/schedule';
-import { AppController } from 'app.controller';
-import { AppService } from 'app.service';
 import { ConsoleModule } from 'nestjs-console';
 
-import { ConfigurationModule } from '@config/config.module';
-import { DatabaseModule } from '@config/database.module';
-
-import { GuardModule } from '@guards/guard.module';
-
-import { MODULES } from '@modules/index';
-
-import { CustomAuthorizationHeaderMiddleware } from '@shared/middleware/custom-authorization-header.middleware';
-import { LoggingModule } from '@shared/modules/logger/logger.module';
-import { Web3Module } from '@shared/modules/web3/web3.module';
-
-import { LoggerHttpRequestMiddleware } from './shared/middleware/logger-http-request.middleware';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
+import { ConfigurationModule } from './config/config.module.js';
+import { DatabaseModule } from './config/database.module.js';
+import { GuardModule } from './guards/guard.module.js';
+import { MODULES } from './modules/index.js';
+import { CustomAuthorizationHeaderMiddleware } from './shared/middleware/custom-authorization-header.middleware.js';
+import { LoggerHttpRequestMiddleware } from './shared/middleware/logger-http-request.middleware.js';
+import { LoggingModule } from './shared/modules/logger/logger.module.js';
+import { Web3Module } from './shared/modules/web3/web3.module.js';
 
 const modules = [
   ConfigurationModule,

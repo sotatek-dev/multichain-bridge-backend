@@ -1,25 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
-import { EventLogRepository } from 'database/repositories/event-log.repository';
-import { UserRepository } from 'database/repositories/user.repository';
 import { Logger } from 'log4js';
 import { DataSource } from 'typeorm';
 
-import { ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
-import { EError } from '@constants/error.constant';
-
-import { toPageDto } from '@core/paginate-typeorm';
-
-import { TokenPair } from '@modules/users/entities/tokenpair.entity';
-
-import { httpBadRequest } from '@shared/exceptions/http-exeption';
-import { LoggerService } from '@shared/modules/logger/logger.service';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
-import { addDecimal, calculateFee } from '@shared/utils/bignumber';
-
-import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto';
+import { ENetworkName } from '../../constants/blockchain.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
+import { EError } from '../../constants/error.constant.js';
+import { toPageDto } from '../../core/paginate-typeorm.js';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
+import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
+import { UserRepository } from '../../database/repositories/user.repository.js';
+import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
+import { httpBadRequest } from '../../shared/exceptions/http-exeption.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
+import { addDecimal, calculateFee } from '../../shared/utils/bignumber.js';
+import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 
 @Injectable()
 export class UsersService {
@@ -88,13 +84,13 @@ export class UsersService {
 
     if (tokenPair.toChain == ENetworkName.MINA) {
       gasFee = addDecimal(
-        this.configService.get(EEnvKey.GASFEEMINA),
-        this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
+        this.configService.get(EEnvKey.GAS_FEE_EVM),
+        this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
       );
     } else {
       gasFee = addDecimal(
-        this.configService.get(EEnvKey.GAS_FEE_EVM),
-        this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
+        this.configService.get(EEnvKey.GASFEEMINA),
+        this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
       );
     }
 

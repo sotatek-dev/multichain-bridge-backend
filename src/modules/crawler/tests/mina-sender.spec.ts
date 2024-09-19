@@ -1,17 +1,15 @@
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
-import { EventLogRepository } from 'database/repositories/event-log.repository';
-import { MultiSignatureRepository } from 'database/repositories/multi-signature.repository';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
-import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 
-import { ConfigurationModule } from '@config/config.module';
-
-import { LoggingModule } from '@shared/modules/logger/logger.module';
-import { Web3Module } from '@shared/modules/web3/web3.module';
-
-import { SenderMinaBridge } from '../sender.minabridge';
+import { ConfigurationModule } from '../../../config/config.module.js';
+import { CommonConfigRepository } from '../../../database/repositories/common-configuration.repository.js';
+import { EventLogRepository } from '../../../database/repositories/event-log.repository.js';
+import { MultiSignatureRepository } from '../../../database/repositories/multi-signature.repository.js';
+import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
+import { TokenPriceRepository } from '../../../database/repositories/token-price.repository.js';
+import { LoggingModule } from '../../../shared/modules/logger/logger.module.js';
+import { Web3Module } from '../../../shared/modules/web3/web3.module.js';
+import { SenderMinaBridge } from '../sender.minabridge.js';
 
 // Mock objects
 const mockJwtService = {

@@ -1,6 +1,8 @@
-import { AES, enc } from 'crypto-js';
+import * as cryptoJs from 'crypto-js';
 
-import { EEnvironments, EEnvKey } from '@constants/env.constant';
+import { EEnvironments, EEnvKey } from '../../constants/env.constant.js';
+
+const { AES, enc } = cryptoJs;
 
 export const toLower = (value: string) => value.toLowerCase();
 

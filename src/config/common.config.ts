@@ -1,10 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 
-import { ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
-
-import { RpcFactory } from '@shared/modules/web3/web3.module';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
+import { ENetworkName } from '../constants/blockchain.constant.js';
+import { EEnvKey } from '../constants/env.constant.js';
+import { RpcFactory } from '../shared/modules/web3/web3.module.js';
+import { ETHBridgeContract } from '../shared/modules/web3/web3.service.js';
 
 async function createRpcService(configService: ConfigService) {
   return await RpcFactory(configService);

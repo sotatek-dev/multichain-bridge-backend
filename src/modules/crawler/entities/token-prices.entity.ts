@@ -1,8 +1,7 @@
 import { Column, Entity } from 'typeorm';
 
-import { ETableName } from '@constants/entity.constant';
-
-import { BaseEntityIncludeTime } from '@core/base.entity';
+import { ETableName } from '../../../constants/entity.constant.js';
+import { BaseEntityIncludeTime } from '../../../core/base.entity.js';
 
 @Entity(ETableName.TOKEN_PRICES)
 export class TokenPrice extends BaseEntityIncludeTime {

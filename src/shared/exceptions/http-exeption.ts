@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { EError } from '@constants/error.constant';
+import { EError } from '../../constants/error.constant.js';
 
 // 400
 export function httpBadRequest(errorCode: EError, metaData?: object) {

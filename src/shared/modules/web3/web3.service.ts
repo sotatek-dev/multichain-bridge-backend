@@ -1,14 +1,14 @@
 import { Logger } from '@nestjs/common';
-import BigNumber from 'bignumber.js';
+import BigNumber from 'bignumber.js/bignumber.mjs';
 import { TransactionReceipt } from 'web3-core';
 import { Contract, EventData } from 'web3-eth-contract';
-import { toBN, toHex } from 'web3-utils';
+import pkg from 'web3-utils';
 
-import { sleep } from '@shared/utils/promise';
+import { sleep } from '../../utils/promise.js';
+import { EthBridgeAbi } from './abis/eth-bridge-contract.js';
+import { IRpcService } from './web3.module.js';
 
-import ETHBridgeAbi from './abis/eth-bridge-contract.json';
-import { IRpcService } from './web3.module';
-
+const { toBN, toHex } = pkg;
 export class DefaultContract {
   private readonly logger = new Logger('CONTRACT');
   private contract: Contract;
@@ -28,7 +28,7 @@ export class DefaultContract {
   }
 
   private initContract() {
-    this.contract = new this.rpcService.web3.eth.Contract(this.abi, this.contractAddress);
+    this.contract = new this.rpcService.web3.eth.Contract(JSON.parse(this.abi), this.contractAddress);
   }
   public getContractAddress() {
     return this.contractAddress;
@@ -194,7 +194,7 @@ export class DefaultContract {
 
 export class ETHBridgeContract extends DefaultContract {
   constructor(rpcETHService: IRpcService, address: string, _startBlock: number) {
-    super(rpcETHService, ETHBridgeAbi, address, _startBlock);
+    super(rpcETHService, EthBridgeAbi, address, _startBlock);
   }
 
   public async getBaseURI() {

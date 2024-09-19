@@ -22,9 +22,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { isDevelopmentEnvironment } from '@shared/utils/util';
-
-import { ToBoolean, ToBooleanArray, ToLowerCase, ToUpperCase, Trim } from './transform.decorator';
+import { isDevelopmentEnvironment } from '../../shared/utils/util.js';
+import { ToBoolean, ToBooleanArray, ToLowerCase, ToUpperCase, Trim } from './transform.decorator.js';
 
 interface IStringFieldOptions {
   minLength?: number;

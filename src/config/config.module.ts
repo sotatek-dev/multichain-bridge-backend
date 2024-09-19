@@ -1,11 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { isNumber } from 'class-validator';
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { EEnvironments, EEnvKey } from '@constants/env.constant';
-
-import redisConfig from './redis.config';
+import { EEnvironments, EEnvKey } from '../constants/env.constant.js';
+import redisConfig from './redis.config.js';
 
 @Global()
 @Module({

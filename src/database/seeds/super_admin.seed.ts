@@ -2,9 +2,8 @@ import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
-import { ERole } from '@constants/api.constant';
-
-import { User } from '@modules/users/entities/user.entity';
+import { ERole } from '../../constants/api.constant.js';
+import { User } from '../../modules/users/entities/user.entity.js';
 
 export default class SuperAdminSeeder implements Seeder {
   public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {

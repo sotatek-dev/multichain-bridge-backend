@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
-import { User } from '@modules/users/entities/user.entity';
+import { User } from '../../modules/users/entities/user.entity.js';
 
 @Injectable()
 export class AuthGuardOptional implements CanActivate {

@@ -1,4 +1,4 @@
-[
+export const EthBridgeAbi = `[
   {
     "anonymous": false,
     "inputs": [
@@ -577,4 +577,4 @@
     "stateMutability": "view",
     "type": "function"
   }
-]
+]`;
