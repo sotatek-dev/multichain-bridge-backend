@@ -5,10 +5,9 @@ import { Contract, EventData } from 'web3-eth-contract';
 import pkg from 'web3-utils';
 
 import { sleep } from '../../utils/promise.js';
+import { EthBridgeAbi } from './abis/eth-bridge-contract.js';
 import { IRpcService } from './web3.module.js';
-import { readFileSync } from 'fs';
-// import * as EthBridgeAbi from './abis/eth-bridge-contract.json' with { type: "json" };
-const EthBridgeAbi=readFileSync('./src/shared/modules/web3/abis/eth-bridge-contract.json','utf-8')
+
 const { toBN, toHex } = pkg;
 export class DefaultContract {
   private readonly logger = new Logger('CONTRACT');
@@ -22,8 +21,6 @@ export class DefaultContract {
     _contractAddress: any,
     _startBlock: number,
   ) {
-    console.log(_abi);
-    
     this.abi = _abi;
     this.contractAddress = _contractAddress;
     this.startBlock = _startBlock;
