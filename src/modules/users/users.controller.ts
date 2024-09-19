@@ -1,14 +1,14 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { ETableName } from '@constants/entity.constant';
+import { ETableName } from '../../constants/entity.constant.js';
 
-import { GuardPublic } from '@guards/guard.decorator';
+import { GuardPublic } from '../../guards/guard.decorator.js';
 
-import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto';
-import { GetProtocolFeeBodyDto } from './dto/user-request.dto';
-import { GetListTokenPairResponseDto, GetProtocolFeeResponseDto } from './dto/user-response.dto';
-import { UsersService } from './users.service';
+import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';
+import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
+import { GetListTokenPairResponseDto, GetProtocolFeeResponseDto } from './dto/user-response.dto.js';
+import { UsersService } from './users.service.js';
 
 @ApiTags('Users')
 @Controller(ETableName.USERS)

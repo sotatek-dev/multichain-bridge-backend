@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { StringField } from '@shared/decorators/field.decorator';
-import { BasePaginationRequestDto } from '@shared/dtos/base-request.dto';
+import { StringField } from '../../../shared/decorators/field.decorator.js';
+import { BasePaginationRequestDto } from '../../../shared/dtos/base-request.dto.js';
 
 export class GetHistoryOfUserResponseDto {
   @ApiProperty()

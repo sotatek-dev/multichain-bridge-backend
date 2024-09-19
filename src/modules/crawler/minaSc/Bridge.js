@@ -8,7 +8,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { PublicKey, SmartContract, State, UInt64, method, state, Struct, Bool, Provable, Field, MerkleMap } from 'o1js';
-import { FungibleToken } from "./FungibleToken";
+import { FungibleToken } from "./FungibleToken.js";
 import { Secp256k1, Ecdsa, keccakAndEcdsa, Bytes256 } from './ecdsa/ecdsa.js';
 class UnlockEvent extends Struct({
     receiver: PublicKey,

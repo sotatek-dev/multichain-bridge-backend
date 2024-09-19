@@ -2,16 +2,16 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from 'log4js';
 import { Command, Console } from 'nestjs-console';
 
-import { EEnvKey } from '@constants/env.constant';
+import { EEnvKey } from '../../constants/env.constant.js';
 
-import { LoggerService } from '@shared/modules/logger/logger.service';
-import { sleep } from '@shared/utils/promise';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { sleep } from '../../shared/utils/promise.js';
 
-import { BatchJobGetPriceToken } from './batch.tokenprice';
-import { BlockchainEVMCrawler } from './crawler.evmbridge';
-import { SCBridgeMinaCrawler } from './crawler.minabridge';
-import { SenderEVMBridge } from './sender.evmbridge';
-import { SenderMinaBridge } from './sender.minabridge';
+import { BatchJobGetPriceToken } from './batch.tokenprice.js';
+import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
+import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
+import { SenderEVMBridge } from './sender.evmbridge.js';
+import { SenderMinaBridge } from './sender.minabridge.js';
 
 @Console()
 export class CrawlerConsole {

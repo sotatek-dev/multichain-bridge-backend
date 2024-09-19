@@ -2,13 +2,13 @@ import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { EEnvKey } from '@constants/env.constant';
+import { EEnvKey } from '../../constants/env.constant.js';
 
-import { GuardPublic } from '@guards/guard.decorator';
+import { GuardPublic } from '../../guards/guard.decorator.js';
 
-import { AuthService } from './auth.service';
-import { LoginDto, LoginMinaDto, RefreshTokenRequestDto } from './dto/auth-request.dto';
-import { LoginResponseDto, MessageResponseDto, RefreshTokenResponseDto } from './dto/auth-response.dto';
+import { AuthService } from './auth.service.js';
+import { LoginDto, LoginMinaDto, RefreshTokenRequestDto } from './dto/auth-request.dto.js';
+import { LoginResponseDto, MessageResponseDto, RefreshTokenResponseDto } from './dto/auth-response.dto.js';
 
 @ApiTags('Auth')
 @Controller('auth')

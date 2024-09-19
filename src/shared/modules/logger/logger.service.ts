@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Appender, configure, getLogger, Layout } from 'log4js';
-
-import { EEnvKey } from '@constants/env.constant';
+import { Appender, Layout } from 'log4js';
+import pkg from 'log4js';
+const { configure, getLogger, } = pkg;
+import { EEnvKey } from '../../../constants/env.constant.js';
 
 const layouts: Record<string, Layout> = {
   console: {

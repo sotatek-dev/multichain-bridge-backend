@@ -2,10 +2,10 @@ import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
-import { EAsset } from '@constants/api.constant';
-import { ENetworkName, ETokenPairStatus } from '@constants/blockchain.constant';
+import { EAsset } from '../../constants/api.constant.js';
+import { ENetworkName, ETokenPairStatus } from '../../constants/blockchain.constant.js';
 
-import { TokenPair } from '@modules/users/entities/tokenpair.entity';
+import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
 
 export default class TokenPairsSeeder implements Seeder {
   public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {

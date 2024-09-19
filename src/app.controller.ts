@@ -1,8 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 
-import { GuardPublic } from '@guards/guard.decorator';
+import { GuardPublic } from './guards/guard.decorator.js';
 
-import { AppService } from './app.service';
+import { AppService } from './app.service.js';
 
 @Controller()
 export class AppController {

@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
+import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
+import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import dayjs from 'dayjs';
 import { Logger } from 'log4js';
 import { Field, Mina, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
-import { EAsset } from '@constants/api.constant';
-import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
+import { EAsset } from '../../constants/api.constant.js';
+import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
 
-import { CrawlContract, EventLog } from '@modules/crawler/entities';
+import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 
-import { LoggerService } from '@shared/modules/logger/logger.service';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 
 import { Bridge } from './minaSc/Bridge.js';
 

@@ -1,16 +1,16 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Web3 from 'web3';
+import Web3 from 'web3/lib/index.js';
 
-import { initializeEthContract } from '@config/common.config';
+import { initializeEthContract } from '../../../config/common.config.js';
 
-import { ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
-import { ASYNC_CONNECTION } from '@constants/service.constant';
+import { ENetworkName } from '../../../constants/blockchain.constant.js';
+import { ASYNC_CONNECTION } from '../../../constants/service.constant.js';
 
-import { sleep } from '@shared/utils/promise';
+import { sleep } from '../../utils/promise.js';
 
-import { ETHBridgeContract } from './web3.service';
+import { ETHBridgeContract } from './web3.service.js';
+import { EEnvKey } from '../../../constants/env.constant.js';
 
 @Global()
 @Module({

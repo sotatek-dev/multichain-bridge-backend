@@ -3,17 +3,17 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { UserRepository } from 'database/repositories/user.repository';
+import { UserRepository } from '../../database/repositories/user.repository.js';
 import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
 
-import { JWT_TOKEN_EXPIRE_DURATION } from '@constants/api.constant';
-import { EEnvKey } from '@constants/env.constant';
+import { JWT_TOKEN_EXPIRE_DURATION } from '../../constants/api.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
 
-import { UsersModule } from '@modules/users/users.module';
+import { UsersModule } from '../../modules/users/users.module.js';
 
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { AuthController } from './auth.controller.js';
+import { AuthService } from './auth.service.js';
+import { JwtStrategy } from './strategies/jwt.strategy.js';
 
 @Module({
   imports: [

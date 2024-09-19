@@ -1,9 +1,9 @@
 import { Column, Entity } from 'typeorm';
 
-import { ENetworkName } from '@constants/blockchain.constant';
-import { ETableName } from '@constants/entity.constant';
+import { ENetworkName } from '../../../constants/blockchain.constant.js';
+import { ETableName } from '../../../constants/entity.constant.js';
 
-import { BaseEntityIncludeTime } from '@core/base.entity';
+import { BaseEntityIncludeTime } from '../../../core/base.entity.js';
 
 @Entity(ETableName.CRAWL_CONTRACTS)
 export class CrawlContract extends BaseEntityIncludeTime {

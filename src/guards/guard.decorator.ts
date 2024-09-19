@@ -1,6 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 
-import { EGuardDecoratorKey } from '@constants/guards.constant';
+import { EGuardDecoratorKey } from '../constants/guards.constant.js';
 
 export const GuardPublic = () => SetMetadata(EGuardDecoratorKey.IS_PUBLIC_KEY, true);
 

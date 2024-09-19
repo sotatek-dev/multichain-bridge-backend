@@ -1,4 +1,4 @@
-import { ObjectField, StringField } from '@shared/decorators/field.decorator';
+import { ObjectField, StringField } from '../../../shared/decorators/field.decorator.js';
 
 export class SignupDto {
   @StringField({
