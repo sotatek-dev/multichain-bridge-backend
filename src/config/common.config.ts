@@ -2,7 +2,6 @@ import { ConfigService } from '@nestjs/config';
 
 import { ENetworkName } from '../constants/blockchain.constant.js';
 import { EEnvKey } from '../constants/env.constant.js';
-
 import { RpcFactory } from '../shared/modules/web3/web3.module.js';
 import { ETHBridgeContract } from '../shared/modules/web3/web3.service.js';
 

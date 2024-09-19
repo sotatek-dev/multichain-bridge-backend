@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
-
+import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 import { TokenPrice } from './entities/index.js';
 
 @Injectable()

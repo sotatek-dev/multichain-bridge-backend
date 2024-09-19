@@ -3,7 +3,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { AuthAdminGuard } from '../../shared/decorators/http.decorator.js';
-
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetCommonConfigResponseDto } from './dto/common-config-response.dto.js';
 import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';

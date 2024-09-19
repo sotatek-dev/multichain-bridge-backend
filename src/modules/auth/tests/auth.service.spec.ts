@@ -1,10 +1,8 @@
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { DataSource } from 'typeorm';
-
 import { ConfigurationModule } from 'config/config.module.js';
-
 import { Web3Module } from 'shared/modules/web3/web3.module.js';
+import { DataSource } from 'typeorm';
 
 import { UserRepository } from '../../../database/repositories/user.repository.js';
 import { AuthService } from '../auth.service.js';

@@ -2,7 +2,6 @@ import { Column, Entity } from 'typeorm';
 
 import { ENetworkName, ETokenPairStatus } from '../../../constants/blockchain.constant.js';
 import { ETableName } from '../../../constants/entity.constant.js';
-
 import { BaseEntityIncludeTime } from '../../../core/base.entity.js';
 
 @Entity(ETableName.TOKEN_PAIRS)

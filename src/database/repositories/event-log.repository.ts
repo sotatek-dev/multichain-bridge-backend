@@ -4,11 +4,8 @@ import { Brackets } from 'typeorm';
 import { EDirection } from '../../constants/api.constant.js';
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { ETableName } from '../../constants/entity.constant.js';
-
 import { BaseRepository } from '../../core/base-repository.js';
-
 import { EventLog } from '../../modules/crawler/entities/event-logs.entity.js';
-
 import { endOfDayUnix, startOfDayUnix } from '../../shared/utils/time.js';
 
 @EntityRepository(EventLog)

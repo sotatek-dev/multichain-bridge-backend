@@ -1,9 +1,7 @@
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 
 import { ETableName } from '../../constants/entity.constant.js';
-
 import { BaseRepository } from '../../core/base-repository.js';
-
 import { CommonConfig } from '../../modules/crawler/entities/common-config.entity.js';
 
 @EntityRepository(CommonConfig)

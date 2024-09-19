@@ -3,7 +3,6 @@ import { DataSource } from 'typeorm';
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
 import { ERole } from '../../constants/api.constant.js';
-
 import { User } from '../../modules/users/entities/user.entity.js';
 
 export default class SuperAdminSeeder implements Seeder {

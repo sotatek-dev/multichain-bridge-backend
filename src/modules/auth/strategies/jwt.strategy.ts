@@ -4,7 +4,6 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { EEnvKey } from '../../../constants/env.constant.js';
-
 import { IJwtPayload } from '../interfaces/auth.interface.js';
 
 @Injectable()

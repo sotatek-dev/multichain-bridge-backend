@@ -1,11 +1,11 @@
 import * as dotenv from 'dotenv';
 import { dirname, join } from 'path';
 import type { DataSourceOptions } from 'typeorm';
+import { fileURLToPath } from 'url';
 
 import { EEnvKey } from './constants/env.constant.js';
-
 import { isDevelopmentEnvironment } from './shared/utils/util.js';
-import { fileURLToPath } from 'url';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();

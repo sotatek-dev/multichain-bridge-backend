@@ -4,7 +4,6 @@ import { isNumber } from 'class-validator';
 import Joi from 'joi';
 
 import { EEnvironments, EEnvKey } from '../constants/env.constant.js';
-
 import redisConfig from './redis.config.js';
 
 @Global()
