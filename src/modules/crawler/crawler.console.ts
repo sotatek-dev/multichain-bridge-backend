@@ -3,10 +3,8 @@ import { Logger } from 'log4js';
 import { Command, Console } from 'nestjs-console';
 
 import { EEnvKey } from '../../constants/env.constant.js';
-
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { sleep } from '../../shared/utils/promise.js';
-
 import { BatchJobGetPriceToken } from './batch.tokenprice.js';
 import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
 import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
@@ -89,7 +87,6 @@ export class CrawlerConsole {
       this.logger.error(error);
     }
   }
-  
 
   @Command({
     command: 'crawl-mina-bridge-contract',

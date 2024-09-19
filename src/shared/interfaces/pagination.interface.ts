@@ -1,4 +1,4 @@
-import { EDirection } from "../../constants/api.constant.js";
+import { EDirection } from '../../constants/api.constant.js';
 
 export interface IPagination {
   useLimit?: boolean;

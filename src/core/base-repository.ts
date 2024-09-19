@@ -2,7 +2,6 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 
 import { EDirection } from '../constants/api.constant.js';
 import { ETableName } from '../constants/entity.constant.js';
-
 import { IPagination } from '../shared/interfaces/pagination.interface.js';
 
 export abstract class BaseRepository<E> extends Repository<E> {

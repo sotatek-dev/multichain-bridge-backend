@@ -23,7 +23,6 @@ import {
 } from 'class-validator';
 
 import { isDevelopmentEnvironment } from '../../shared/utils/util.js';
-
 import { ToBoolean, ToBooleanArray, ToLowerCase, ToUpperCase, Trim } from './transform.decorator.js';
 
 interface IStringFieldOptions {

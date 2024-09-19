@@ -4,7 +4,6 @@ import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { ENetworkName, ETokenPairStatus } from '../../constants/blockchain.constant.js';
-
 import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
 
 export default class TokenPairsSeeder implements Seeder {

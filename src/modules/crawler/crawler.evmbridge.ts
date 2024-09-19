@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
-import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { Logger } from 'log4js';
 import { DataSource, QueryRunner } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
@@ -9,9 +7,9 @@ import { EventData } from 'web3-eth-contract';
 import { EAsset } from '../../constants/api.constant.js';
 import { EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
-
+import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
+import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
-
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
 

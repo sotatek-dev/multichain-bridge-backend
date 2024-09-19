@@ -1,11 +1,9 @@
 import { Column, Entity, JoinColumn, OneToMany, Relation } from 'typeorm';
 
 import { EEventName, ENetworkName } from '../../../constants/blockchain.constant.js';
-import { ETableName } from '../../../constants/entity.constant.js';
-
-import { BaseEntityIncludeTime } from '../../../core/base.entity.js';
-
 import { EEventStatus } from '../../../constants/blockchain.constant.js';
+import { ETableName } from '../../../constants/entity.constant.js';
+import { BaseEntityIncludeTime } from '../../../core/base.entity.js';
 import { MultiSignature } from './multi-signature.entity.js';
 
 @Entity(ETableName.EVENT_LOGS)

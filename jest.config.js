@@ -4,9 +4,7 @@ export default {
   rootDir: './src',
   modulePaths: ['<rootDir>'],
   testRegex: 'spec.ts$',
-  transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
-  },
+  transform: {},
   coverageDirectory: './coverage',
   testEnvironment: 'node',
   testTimeout: 60 * 60 * 1000,

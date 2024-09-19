@@ -2,9 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne, Relation } from 'typeorm';
 
 import { ENetworkName } from '../../../constants/blockchain.constant.js';
 import { ETableName } from '../../../constants/entity.constant.js';
-
 import { BaseEntityIncludeTime } from '../../../core/base.entity.js';
-
 import { EventLog } from './event-logs.entity.js';
 
 @Entity(ETableName.MULTI_SIGNATURE)

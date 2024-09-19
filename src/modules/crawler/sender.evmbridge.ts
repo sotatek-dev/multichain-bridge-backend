@@ -1,23 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import BigNumber from 'bignumber.js/bignumber.mjs';
-import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
-import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
-import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
-import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { ethers } from 'ethers';
 import { Logger } from 'log4js';
 
 import { getEthBridgeAddress } from '../../config/common.config.js';
-
 import { DECIMAL_BASE, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
-
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
+import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
+import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
+import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
 import { addDecimal, calculateFee } from '../../shared/utils/bignumber.js';
-
 import { EventLog } from './entities/event-logs.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 
