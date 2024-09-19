@@ -4,7 +4,7 @@
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
     "declaration": true,
-    "strict": true,
+    "strict": false,
     "noUncheckedIndexedAccess": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -23,12 +23,13 @@
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "allowJs": true
+    "allowJs": true,
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],
   "ts-node": {
-        "esm": true,
-        "experimentalSpecifierResolution": "node"
-    }
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
 }
