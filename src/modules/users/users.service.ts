@@ -84,13 +84,13 @@ export class UsersService {
 
     if (tokenPair.toChain == ENetworkName.MINA) {
       gasFee = addDecimal(
-        this.configService.get(EEnvKey.GASFEEMINA),
-        this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
+        this.configService.get(EEnvKey.GAS_FEE_EVM),
+        this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
       );
     } else {
       gasFee = addDecimal(
-        this.configService.get(EEnvKey.GAS_FEE_EVM),
-        this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
+        this.configService.get(EEnvKey.GASFEEMINA),
+        this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
       );
     }
 
