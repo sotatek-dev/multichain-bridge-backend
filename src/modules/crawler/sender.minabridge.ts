@@ -29,8 +29,6 @@ export class SenderMinaBridge {
   private readonly feePayerKey: PrivateKey;
   private readonly bridgeKey: PrivateKey;
   private readonly tokenPublicKey: PublicKey;
-  private readonly validatorPrivateKey: PrivateKey;
-  private readonly validatorManagerPrivateKey: PrivateKey;
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -44,10 +42,7 @@ export class SenderMinaBridge {
     this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
     this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
     this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
-    this.validatorManagerPrivateKey = PrivateKey.fromBase58(
-      this.configService.get(EEnvKey.MINA_VALIDATOR_MANAGER_PRIVATE_KEY),
-    );
-    this.validatorPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
+
     const network = Mina.Network({
       mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
       archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
@@ -255,23 +250,24 @@ export class SenderMinaBridge {
         return;
       }
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-      const tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
 
       const amountReceive = BigNumber(amountFrom)
         .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
         .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
         .toString();
+      const validator1Privkey = PrivateKey.fromBase58('EKE8MzLKBQQn3v53v6JSCXHRPvrTwAB6xytnxYfpATgYnX17bMeM');
+      // const validator2Privkey = PrivateKey.fromBase58('EKF3PE1286RVzZNgieYeDw96LrMKc6V2szhvV2zyj2Z9qLwzc1SG');
+      // const validator3Privkey = PrivateKey.fromBase58('EKEqLGiiuaZwAV5XZeWGWBsQUmBCXAWR5zzq2vZtyCXou7ZYwryi');
 
-      const msg = Bytes256.fromString(
-        `unlock receiver = ${receiverPublicKey.toFields} amount = ${UInt64.from(amountReceive).toFields} tokenAddr = ${tokenPublicKey.toFields}`,
-      );
+      const typedAmount = UInt64.from(amountReceive);
 
-      const signature = Ecdsa.sign(msg.toBytes(), signerPrivateKey.toBigInt());
+      const msg = [...receiverPublicKey.toFields(), ...typedAmount.toFields(), ...this.tokenPublicKey.toFields()];
+      const signature = await Signature.create(validator1Privkey, msg);
 
       await this.multiSignatureRepository.save(
         new MultiSignature({
           chain: ENetworkName.MINA,
-          signature: JSON.stringify(signature.toBigInt()),
+          signature: signature.toBase58(),
           validator: signerPublicKey.toBase58(),
           txId: dataLock.id,
         }),
