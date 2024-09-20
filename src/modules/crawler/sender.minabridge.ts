@@ -53,8 +53,6 @@ export class SenderMinaBridge {
       await FungibleToken.compile();
       await FungibleTokenAdmin.compile();
       await Bridge.compile();
-      // await Manager.compile();
-      // await ValidatorManager.compile();
       this.isContractCompiled = true;
     }
   }
@@ -67,6 +65,7 @@ export class SenderMinaBridge {
         this.tokenPriceRepository.getRateETHToMina(),
       ]);
       if (!dataLock) {
+        this.logger.warn('No pending lock transaction!');
         return;
       }
       await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
@@ -75,6 +74,7 @@ export class SenderMinaBridge {
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
 
       if (!tokenPair) {
+        this.logger.warn('Token pair not found.');
         await this.eventLogRepository.updateStatusAndRetryEvenLog(
           dataLock.id,
           dataLock.retry,
@@ -95,6 +95,7 @@ export class SenderMinaBridge {
       const amountReceive = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toString();
       const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
       if (!isPassDailyQuota) {
+        this.logger.warn('Passed daily quota.');
         await this.eventLogRepository.updateStatusAndRetryEvenLog(
           dataLock.id,
           dataLock.retry,
@@ -121,7 +122,7 @@ export class SenderMinaBridge {
           dataLock.id,
           Number(dataLock.retry + 1),
           EEventStatus.FAILED,
-          result.error,
+          JSON.stringify(result.error),
         );
       }
       return result;
@@ -130,7 +131,7 @@ export class SenderMinaBridge {
         dataLock.id,
         Number(dataLock.retry + 1),
         EEventStatus.FAILED,
-        error,
+        JSON.stringify(error),
       );
     }
   }
@@ -146,8 +147,6 @@ export class SenderMinaBridge {
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
 
       const zkBridge = new Bridge(bridgePublicKey);
-
-      console.log(bridgePublicKey.toBase58(), feePayerPublicKey.toBase58(), this.tokenPublicKey.toBase58());
 
       await Promise.all([
         fetchAccount({ publicKey: bridgePublicKey }),
@@ -192,7 +191,7 @@ export class SenderMinaBridge {
       });
 
       await tx.prove();
-      console.log('send transaction...');
+      this.logger.info('send transaction...');
       const sentTx = await tx.sign([this.feePayerKey, this.bridgeKey]).send();
 
       this.logger.info('Transaction waiting to be applied with txhash: ', sentTx.hash);
