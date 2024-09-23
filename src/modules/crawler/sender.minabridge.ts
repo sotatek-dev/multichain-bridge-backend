@@ -18,7 +18,6 @@ import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { addDecimal, calculateFee } from '../../shared/utils/bignumber.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
-import { Bytes256, Ecdsa } from './minaSc/ecdsa.js';
 import { Manager } from './minaSc/Manager.js';
 import { ValidatorManager } from './minaSc/ValidatorManager.js';
 
@@ -151,15 +150,21 @@ export class SenderMinaBridge {
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
 
       const zkBridge = new Bridge(bridgePublicKey);
+      const token = new FungibleToken(this.tokenPublicKey);
 
       await Promise.all([
         fetchAccount({ publicKey: bridgePublicKey }),
         fetchAccount({ publicKey: feePayerPublicKey }),
-        fetchAccount({ publicKey: receiverPublicKey }),
-        fetchAccount({ publicKey: this.tokenPublicKey }),
+        fetchAccount({ publicKey: receiverPublicKey, tokenId: token.deriveTokenId() }),
+        fetchAccount({
+          publicKey: this.tokenPublicKey,
+          tokenId: token.deriveTokenId(),
+        }),
       ]);
 
-      const hasAccount = Mina.hasAccount(receiverPublicKey);
+      const hasAccount = Mina.hasAccount(receiverPublicKey, token.deriveTokenId());
+
+      this.logger.info('Receivier token account status = ', hasAccount);
       // compile the contract to create prover keys
       // call update() and send transaction
       const validator1Privkey = PrivateKey.fromBase58('EKE8MzLKBQQn3v53v6JSCXHRPvrTwAB6xytnxYfpATgYnX17bMeM');
