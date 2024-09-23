@@ -38,23 +38,21 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     return qb.getOne();
   }
 
-  public async updateStatusAndRetryEvenLog(
-    id: number,
-    retry: number,
-    status: EEventStatus,
-    errorDetail?,
-    txHashUnlock?,
-    protocolFee?,
-  ) {
+  public async updateStatusAndRetryEvenLog({
+    id,
+    ...updateData
+  }: {
+    id: number;
+    retry: number;
+    status: EEventStatus;
+    amountReceived?: string;
+    protocolFee?: string;
+    errorDetail?: string;
+    txHashUnlock?: string;
+  }) {
     return this.createQueryBuilder(`${this.alias}`)
       .update(EventLog)
-      .set({
-        status,
-        retry,
-        errorDetail,
-        txHashUnlock,
-        protocolFee,
-      })
+      .set(updateData)
       .where(`${this.alias}.id = :id`, { id })
       .execute();
   }

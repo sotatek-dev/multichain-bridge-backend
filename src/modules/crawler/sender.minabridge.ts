@@ -78,11 +78,11 @@ export class SenderMinaBridge {
 
       if (!tokenPair) {
         this.logger.warn('Token pair not found.');
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          dataLock.retry,
-          EEventStatus.NOTOKENPAIR,
-        );
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: dataLock.retry,
+          status: EEventStatus.NOTOKENPAIR,
+        });
         return;
       }
 
@@ -95,47 +95,48 @@ export class SenderMinaBridge {
         addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)),
         configTip.tip,
       );
-      const amountReceive = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toString();
+      const amountReceived = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toString();
       const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
       if (!isPassDailyQuota) {
         this.logger.warn('Passed daily quota.');
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          dataLock.retry,
-          EEventStatus.FAILED,
-          EError.OVER_DAILY_QUOTA,
-        );
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: dataLock.retry,
+          status: EEventStatus.FAILED,
+          errorDetail: EError.OVER_DAILY_QUOTA,
+        });
         return;
       }
 
       const rateMINAETH = Number(rateethmina.toFixed(0)) || 2000;
-      const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount, rateMINAETH);
+      const result = await this.callUnlockFunction(amountReceived, id, receiveAddress, protocolFeeAmount, rateMINAETH);
       // Update status eventLog when call function unlock
       if (result.success) {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          dataLock.retry,
-          EEventStatus.PROCESSING,
-          result.error,
-          result.data,
-          protocolFeeAmount,
-        );
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: dataLock.retry,
+          status: EEventStatus.PROCESSING,
+          errorDetail: result.error,
+          amountReceived,
+          txHashUnlock: result.data,
+          protocolFee: protocolFeeAmount,
+        });
       } else {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          Number(dataLock.retry + 1),
-          EEventStatus.FAILED,
-          JSON.stringify(result.error),
-        );
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: Number(dataLock.retry + 1),
+          status: EEventStatus.FAILED,
+          errorDetail: JSON.stringify(result.error),
+        });
       }
       return result;
     } catch (error) {
-      await this.eventLogRepository.updateStatusAndRetryEvenLog(
-        dataLock.id,
-        Number(dataLock.retry + 1),
-        EEventStatus.FAILED,
-        JSON.stringify(error),
-      );
+      await this.eventLogRepository.updateStatusAndRetryEvenLog({
+        id: dataLock.id,
+        retry: Number(dataLock.retry + 1),
+        status: EEventStatus.FAILED,
+        errorDetail: JSON.stringify(error),
+      });
     }
   }
 
@@ -247,11 +248,11 @@ export class SenderMinaBridge {
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
 
       if (!tokenPair) {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          dataLock.retry,
-          EEventStatus.NOTOKENPAIR,
-        );
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: dataLock.retry,
+          status: EEventStatus.NOTOKENPAIR,
+        });
         return;
       }
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
