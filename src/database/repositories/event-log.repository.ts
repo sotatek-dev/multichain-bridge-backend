@@ -4,6 +4,7 @@ import { Brackets } from 'typeorm';
 import { EDirection } from '../../constants/api.constant.js';
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { ETableName } from '../../constants/entity.constant.js';
+import { MAX_RETRIES } from '../../constants/service.constant.js';
 import { BaseRepository } from '../../core/base-repository.js';
 import { EventLog } from '../../modules/crawler/entities/event-logs.entity.js';
 import { endOfDayUnix, startOfDayUnix } from '../../shared/utils/time.js';
@@ -30,7 +31,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
       );
     }
     qb.andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.WAITING, EEventStatus.FAILED] })
-      .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: 3 })
+      .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: MAX_RETRIES })
       .orderBy(`${this.alias}.status`, EDirection.DESC)
       .addOrderBy(`${this.alias}.id`, EDirection.ASC)
       .addOrderBy(`${this.alias}.retry`, EDirection.ASC);
@@ -38,23 +39,21 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     return qb.getOne();
   }
 
-  public async updateStatusAndRetryEvenLog(
-    id: number,
-    retry: number,
-    status: EEventStatus,
-    errorDetail?,
-    txHashUnlock?,
-    protocolFee?,
-  ) {
+  public async updateStatusAndRetryEvenLog({
+    id,
+    ...updateData
+  }: {
+    id: number;
+    retry: number;
+    status: EEventStatus;
+    amountReceived?: string;
+    protocolFee?: string;
+    errorDetail?: string;
+    txHashUnlock?: string;
+  }) {
     return this.createQueryBuilder(`${this.alias}`)
       .update(EventLog)
-      .set({
-        status,
-        retry,
-        errorDetail,
-        txHashUnlock,
-        protocolFee,
-      })
+      .set(updateData)
       .where(`${this.alias}.id = :id`, { id })
       .execute();
   }
@@ -136,7 +135,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
           .orWhere(`signature.validator != :validator`, { validator })
           .orWhere(
             new Brackets(qb => {
-              qb.where(`signature.signature IS NULL`).andWhere(`signature.retry < 3`);
+              qb.where(`signature.signature IS NULL`).andWhere(`signature.retry < ${MAX_RETRIES}`);
             }),
           );
       }),

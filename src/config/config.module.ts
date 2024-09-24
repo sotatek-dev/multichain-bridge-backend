@@ -51,7 +51,9 @@ import redisConfig from './redis.config.js';
         // coinmarketcap
         [EEnvKey.COINMARKET_KEY]: Joi.string().required(),
         [EEnvKey.COINMARKET_URL]: Joi.string().required(),
-
+        // mina validator
+        [EEnvKey.MINA_VALIDATOR_PRIVATE_KEY]: Joi.string().required(),
+        [EEnvKey.MINA_VALIDATOR_THRESHHOLD]: Joi.number().required(),
         // fee
         [EEnvKey.BASE_MINA_BRIDGE_FEE]: Joi.number().default(1 * Math.pow(10, 8)),
       }).custom(value => {

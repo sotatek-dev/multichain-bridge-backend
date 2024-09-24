@@ -59,9 +59,9 @@ describe('AuthService', () => {
     mockJwtService.sign.mockResolvedValue('true');
     mockEventLogRepository.getEventLockWithNetwork.mockResolvedValue({
       id: 333,
-      tokenReceivedAddress: 'B62qkSirQSX61kjxndoGeKBg2m1RPD9PMwrVkgqKpH6UvPGMTUAC5xE',
+      tokenReceivedAddress: 'B62qkuPGhLfrD12buqho48hSnc3DMGQ1d4ugzNjtYuRmSi5vvAjoZRz',
       tokenFromAddress: '0x0000000000000000000000000000000000000000',
-      receiveAddress: 'B62qjWwgHupW7k7fcTbb2Kszp4RPYBWYdL4KMmoqfkMH3iRN2FN8u5n',
+      receiveAddress: 'B62qrh7E5nXnauXFd9AKcJbicdJsQe2xBA6brG3dNCwW2owtYHm5tLb',
       amountFrom: '15690000000000000',
       senderAddress: '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0',
     });
@@ -81,11 +81,11 @@ describe('AuthService', () => {
       fromSymbol: 'ETH',
       toSymbol: 'WETH',
       fromAddress: '0x0000000000000000000000000000000000000000',
-      toAddress: 'B62qkSirQSX61kjxndoGeKBg2m1RPD9PMwrVkgqKpH6UvPGMTUAC5xE',
+      toAddress: 'B62qkuPGhLfrD12buqho48hSnc3DMGQ1d4ugzNjtYuRmSi5vvAjoZRz',
       fromDecimal: 18,
       toDecimal: 9,
       fromScAddress: '0x83e21AccD43Bb7C23C51e68fFa345fab3983FfeC',
-      toScAddress: 'B62qrVxNbp1NEJaoRjPuGRTPqkidys5u77Q25RwP7EhEessNRKL7hsT',
+      toScAddress: 'B62qqKFZav5StzHmRkaU21Mw34CgGu5fWCsdGcCuxdgjZb3MSrxo67Q',
       status: 'enable',
     });
     const result = await minaCrawlerService.handleUnlockMina();
