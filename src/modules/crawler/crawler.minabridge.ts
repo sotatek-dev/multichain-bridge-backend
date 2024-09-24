@@ -62,7 +62,7 @@ export class SCBridgeMinaCrawler {
       }
       // udpate current latest block
       await this.updateLatestBlockCrawl(Number(toBlock.toString()), queryRunner);
-      return queryRunner.commitTransaction();
+      await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
