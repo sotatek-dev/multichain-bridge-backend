@@ -16,6 +16,8 @@ import { TokenPairRepository } from '../../database/repositories/token-pair.repo
 import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { addDecimal, calculateFee } from '../../shared/utils/bignumber.js';
+import { TokenPair } from '../users/entities/tokenpair.entity.js';
+import { CommonConfig } from './entities/common-config.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
 import { Manager } from './minaSc/Manager.js';
@@ -28,6 +30,7 @@ export class SenderMinaBridge {
   private readonly feePayerKey: PrivateKey;
   private readonly bridgeKey: PrivateKey;
   private readonly tokenPublicKey: PublicKey;
+  private readonly validatorThreshhold;
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -41,6 +44,7 @@ export class SenderMinaBridge {
     this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
     this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
     this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+    this.validatorThreshhold = this.configService.get(EEnvKey.MINA_VALIDATOR_THRESHHOLD);
 
     const network = Mina.Network({
       mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
@@ -59,11 +63,32 @@ export class SenderMinaBridge {
       this.isContractCompiled = true;
     }
   }
+  private getAmountReceivedAndFee(
+    tokenPair: TokenPair,
+    config: CommonConfig,
+    amountFrom: string,
+  ): { amountReceived: string; protocolFeeAmount: string } {
+    const amountReceiveConvert = BigNumber(amountFrom)
+      .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
+      .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
+      .toString();
+    const protocolFeeAmount = BigNumber(
+      calculateFee(
+        amountReceiveConvert,
+        addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)),
+        config.tip,
+      ),
+    )
+      .toFixed(0)
+      .toString();
+    const amountReceived = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toFixed(0).toString();
+    return { amountReceived, protocolFeeAmount };
+  }
   public async handleUnlockMina() {
     let dataLock, configTip, rateethmina;
     try {
       [dataLock, configTip, { rateethmina }] = await Promise.all([
-        this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA),
+        this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA, this.validatorThreshhold),
         this.commonConfigRepository.getCommonConfig(),
         this.tokenPriceRepository.getRateETHToMina(),
       ]);
@@ -75,7 +100,6 @@ export class SenderMinaBridge {
 
       const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock;
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
-
       if (!tokenPair) {
         this.logger.warn('Token pair not found.');
         await this.eventLogRepository.updateStatusAndRetryEvenLog({
@@ -86,16 +110,6 @@ export class SenderMinaBridge {
         return;
       }
 
-      const amountReceiveConvert = BigNumber(amountFrom)
-        .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
-        .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
-        .toString();
-      const protocolFeeAmount = calculateFee(
-        amountReceiveConvert,
-        addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)),
-        configTip.tip,
-      );
-      const amountReceived = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toString();
       const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
       if (!isPassDailyQuota) {
         this.logger.warn('Passed daily quota.');
@@ -107,6 +121,7 @@ export class SenderMinaBridge {
         });
         return;
       }
+      const { amountReceived, protocolFeeAmount } = this.getAmountReceivedAndFee(tokenPair, configTip, amountFrom);
 
       const rateMINAETH = Number(rateethmina.toFixed(0)) || 2000;
       const result = await this.callUnlockFunction(amountReceived, id, receiveAddress, protocolFeeAmount, rateMINAETH);
@@ -143,6 +158,14 @@ export class SenderMinaBridge {
   private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount, rateMINAETH) {
     try {
       this.logger.info('compile the contract...');
+      const generatedSignatures = await this.multiSignatureRepository.findBy({
+        txId,
+      });
+      const [signatureData] = generatedSignatures.map(e => ({
+        signature: Signature.fromJSON(JSON.parse(e.signature)),
+        validator: PublicKey.fromBase58(e.validator),
+      }));
+
       await this.compileContract();
 
       const fee = protocolFeeAmount * rateMINAETH + +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
@@ -165,20 +188,19 @@ export class SenderMinaBridge {
 
       const hasAccount = Mina.hasAccount(receiverPublicKey, token.deriveTokenId());
 
+      const typedAmount = UInt64.from(amount);
+
+      const signerPrivateKey = PrivateKey.fromBase58('EKE8MzLKBQQn3v53v6JSCXHRPvrTwAB6xytnxYfpATgYnX17bMeM');
+
+      const msg = [...receiverPublicKey.toFields(), ...typedAmount.toFields(), ...this.tokenPublicKey.toFields()];
+      const signature = Signature.create(signerPrivateKey, msg);
       this.logger.info('Receivier token account status = ', hasAccount);
       // compile the contract to create prover keys
       // call update() and send transaction
-      const validator1Privkey = PrivateKey.fromBase58('EKE8MzLKBQQn3v53v6JSCXHRPvrTwAB6xytnxYfpATgYnX17bMeM');
       const validator2Privkey = PrivateKey.fromBase58('EKF3PE1286RVzZNgieYeDw96LrMKc6V2szhvV2zyj2Z9qLwzc1SG');
       const validator3Privkey = PrivateKey.fromBase58('EKEqLGiiuaZwAV5XZeWGWBsQUmBCXAWR5zzq2vZtyCXou7ZYwryi');
-      const validator1 = validator1Privkey.toPublicKey();
       const validator2 = validator2Privkey.toPublicKey();
       const validator3 = validator3Privkey.toPublicKey();
-
-      const typedAmount = UInt64.from(amount);
-
-      const msg = [...receiverPublicKey.toFields(), ...typedAmount.toFields(), ...this.tokenPublicKey.toFields()];
-      const signature = await Signature.create(validator1Privkey, msg);
 
       this.logger.info('build transaction and create proof...');
       const tx = await Mina.transaction({ sender: feePayerPublicKey, fee }, async () => {
@@ -189,14 +211,14 @@ export class SenderMinaBridge {
           UInt64.from(txId),
           this.tokenPublicKey,
           Bool(true),
-          validator1,
+          signerPrivateKey.toPublicKey(),
           signature,
           Bool(false),
-          validator2,
-          signature,
+          validator2, // hardcoded
+          signatureData.signature,
           Bool(false),
-          validator3,
-          signature,
+          validator3, // hardcoded
+          signatureData.signature,
         );
       });
       this.logger.info('Proving tx.');
@@ -230,12 +252,12 @@ export class SenderMinaBridge {
     return true;
   }
   async handleValidateUnlockTxMina() {
-    let dataLock;
-    const signerPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
-    const signerPublicKey = PublicKey.fromPrivateKey(signerPrivateKey);
+    let dataLock, config;
+    const signerPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
+    const signerPublicKey = PublicKey.fromPrivateKey(signerPrivateKey).toBase58();
     try {
-      [dataLock] = await Promise.all([
-        this.eventLogRepository.getValidatorPendingSignature(signerPublicKey.toBase58(), ENetworkName.MINA),
+      [dataLock, config] = await Promise.all([
+        this.eventLogRepository.getValidatorPendingSignature(signerPublicKey, ENetworkName.MINA),
         this.commonConfigRepository.getCommonConfig(),
       ]);
 
@@ -255,36 +277,34 @@ export class SenderMinaBridge {
         });
         return;
       }
-      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-
-      const amountReceive = BigNumber(amountFrom)
-        .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
-        .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
-        .toString();
-      const validator1Privkey = PrivateKey.fromBase58('EKE8MzLKBQQn3v53v6JSCXHRPvrTwAB6xytnxYfpATgYnX17bMeM');
-      // const validator2Privkey = PrivateKey.fromBase58('EKF3PE1286RVzZNgieYeDw96LrMKc6V2szhvV2zyj2Z9qLwzc1SG');
-      // const validator3Privkey = PrivateKey.fromBase58('EKEqLGiiuaZwAV5XZeWGWBsQUmBCXAWR5zzq2vZtyCXou7ZYwryi');
-
-      const typedAmount = UInt64.from(amountReceive);
-
-      const msg = [...receiverPublicKey.toFields(), ...typedAmount.toFields(), ...this.tokenPublicKey.toFields()];
-      const signature = await Signature.create(validator1Privkey, msg);
-
-      await this.multiSignatureRepository.save(
-        new MultiSignature({
+      // check if this signature has been tried before.
+      let multiSignature = await this.multiSignatureRepository.findOneBy({
+        txId: dataLock.id,
+        validator: signerPublicKey,
+      });
+      if (!multiSignature) {
+        multiSignature = new MultiSignature({
           chain: ENetworkName.MINA,
-          signature: signature.toBase58(),
-          validator: signerPublicKey.toBase58(),
+          validator: signerPublicKey,
           txId: dataLock.id,
-        }),
-      );
+        });
+      }
+
+      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
+      const { amountReceived } = this.getAmountReceivedAndFee(tokenPair, config, amountFrom);
+
+      const msg = [
+        ...receiverPublicKey.toFields(),
+        ...UInt64.from(amountReceived).toFields(),
+        ...this.tokenPublicKey.toFields(),
+      ];
+      const signature = Signature.create(signerPrivateKey, msg);
+
+      multiSignature.signature = signature.toJSON();
+      await this.multiSignatureRepository.save(multiSignature);
     } catch (error) {
       this.logger.log(EError.INVALID_SIGNATURE, error);
-      await this.multiSignatureRepository.upsertErrorAndRetryMultiSignature(
-        signerPublicKey.toBase58(),
-        dataLock.id,
-        error,
-      );
+      await this.multiSignatureRepository.upsertErrorAndRetryMultiSignature(signerPublicKey, dataLock.id, error);
     }
   }
 }
