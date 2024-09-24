@@ -65,7 +65,6 @@ export class CrawlerConsole {
   async handleValidateMinaLockTx() {
     try {
       while (true) {
-        this.logger.info('Start generating mina signatures.');
         this.senderMinaBridge.handleValidateUnlockTxMina();
         await sleep(1);
       }

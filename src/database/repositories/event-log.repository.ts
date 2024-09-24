@@ -105,9 +105,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
 
   public async getHistories(options) {
     const queryBuilder = this.createQb();
-    queryBuilder
-      .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.PROCESSING, EEventStatus.WAITING] })
-      .orderBy(`${this.alias}.id`, EDirection.DESC);
+    queryBuilder.orderBy(`${this.alias}.id`, EDirection.DESC);
     if (options.address) {
       queryBuilder.andWhere(`${this.alias}.sender_address = :address`, { address: options.address });
     }
