@@ -52,7 +52,11 @@ export class SenderMinaBridge {
     });
     Mina.setActiveInstance(network);
   }
-
+  private getContractsInfo() {
+    this.logger.log('Bridge', this.bridgeKey.toPublicKey().toBase58());
+    this.logger.log('FeePayer', this.feePayerKey.toPublicKey().toBase58());
+    this.logger.log('Token', this.tokenPublicKey.toBase58());
+  }
   private async compileContract() {
     if (!this.isContractCompiled) {
       await FungibleToken.compile();
@@ -158,15 +162,14 @@ export class SenderMinaBridge {
 
   private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount, rateMINAETH) {
     try {
-      this.logger.info('compile the contract...');
       const generatedSignatures = await this.multiSignatureRepository.findBy({
         txId,
       });
-      const [signatureData] = generatedSignatures.map(e => ({
-        signature: Signature.fromJSON(JSON.parse(e.signature)),
-        validator: PublicKey.fromBase58(e.validator),
-      }));
-
+      const signatureData = generatedSignatures
+        .map(e => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
+        .flat(1);
+      this.logger.info(`Found ${generatedSignatures.length} signatures.`);
+      this.logger.info('compile the contract...');
       await this.compileContract();
 
       const fee = protocolFeeAmount * rateMINAETH + +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
@@ -176,51 +179,27 @@ export class SenderMinaBridge {
 
       const zkBridge = new Bridge(bridgePublicKey);
       const token = new FungibleToken(this.tokenPublicKey);
-
+      const tokenId = token.deriveTokenId();
       await Promise.all([
         fetchAccount({ publicKey: bridgePublicKey }),
         fetchAccount({ publicKey: feePayerPublicKey }),
-        fetchAccount({ publicKey: receiverPublicKey, tokenId: token.deriveTokenId() }),
+        fetchAccount({ publicKey: receiverPublicKey, tokenId }),
         fetchAccount({
           publicKey: this.tokenPublicKey,
-          tokenId: token.deriveTokenId(),
+          tokenId,
         }),
       ]);
-
-      const hasAccount = Mina.hasAccount(receiverPublicKey, token.deriveTokenId());
+      const hasAccount = Mina.hasAccount(receiverPublicKey, tokenId);
 
       const typedAmount = UInt64.from(amount);
 
-      const signerPrivateKey = PrivateKey.fromBase58('EKE8MzLKBQQn3v53v6JSCXHRPvrTwAB6xytnxYfpATgYnX17bMeM');
-
-      const msg = [...receiverPublicKey.toFields(), ...typedAmount.toFields(), ...this.tokenPublicKey.toFields()];
-      const signature = Signature.create(signerPrivateKey, msg);
       this.logger.info('Receivier token account status = ', hasAccount);
       // compile the contract to create prover keys
-      // call update() and send transaction
-      const validator2Privkey = PrivateKey.fromBase58('EKF3PE1286RVzZNgieYeDw96LrMKc6V2szhvV2zyj2Z9qLwzc1SG');
-      const validator3Privkey = PrivateKey.fromBase58('EKEqLGiiuaZwAV5XZeWGWBsQUmBCXAWR5zzq2vZtyCXou7ZYwryi');
-      const validator2 = validator2Privkey.toPublicKey();
-      const validator3 = validator3Privkey.toPublicKey();
 
       this.logger.info('build transaction and create proof...');
       const tx = await Mina.transaction({ sender: feePayerPublicKey, fee }, async () => {
         if (!hasAccount) AccountUpdate.fundNewAccount(feePayerPublicKey);
-        await zkBridge.unlock(
-          typedAmount,
-          receiverPublicKey,
-          UInt64.from(txId),
-          this.tokenPublicKey,
-          Bool(true),
-          signerPrivateKey.toPublicKey(),
-          signature,
-          Bool(false),
-          validator2, // hardcoded
-          signatureData.signature,
-          Bool(false),
-          validator3, // hardcoded
-          signatureData.signature,
-        );
+        await zkBridge.unlock(typedAmount, receiverPublicKey, UInt64.from(txId), this.tokenPublicKey, ...signatureData);
       });
       this.logger.info('Proving tx.');
       await tx.prove();
@@ -254,6 +233,7 @@ export class SenderMinaBridge {
   }
   async handleValidateUnlockTxMina() {
     let dataLock, config;
+    assert(!!this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
     const signerPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
     const signerPublicKey = PublicKey.fromPrivateKey(signerPrivateKey).toBase58();
     try {
