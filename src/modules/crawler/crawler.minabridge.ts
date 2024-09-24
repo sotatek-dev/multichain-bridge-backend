@@ -102,6 +102,7 @@ export class SCBridgeMinaCrawler {
     const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock });
     if (isExist) {
       this.logger.warn('Duplicated event', txHashLock);
+      return;
     }
     const eventUnlock = {
       senderAddress: JSON.parse(JSON.stringify(event.event.data.locker)),

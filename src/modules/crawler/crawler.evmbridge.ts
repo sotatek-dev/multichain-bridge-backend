@@ -70,6 +70,7 @@ export class BlockchainEVMCrawler {
     const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock: event.transactionHash });
     if (isExist) {
       this.logger.warn('Duplicated event', event.transactionHash);
+      return;
     }
     const blockTimeOfBlockNumber = await this.ethBridgeContract.getBlockTimeByBlockNumber(event.blockNumber);
     const eventUnlock = {
