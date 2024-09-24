@@ -7,7 +7,6 @@ import { DataSource, QueryRunner } from 'typeorm';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
-import { MINA_CRAWL_SAFE_BLOCK } from '../../constants/entity.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
@@ -178,7 +177,12 @@ export class SCBridgeMinaCrawler {
     }
     const latestBlock = await fetchLastBlock(this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS));
 
-    const toBlock = UInt32.from(latestBlock.blockchainLength.toUInt64().sub(MINA_CRAWL_SAFE_BLOCK).toString());
+    const toBlock = UInt32.from(
+      latestBlock.blockchainLength
+        .toUInt64()
+        .sub(this.configService.get<number>(EEnvKey.MINA_CRAWL_SAFE_BLOCK))
+        .toString(),
+    );
 
     return { startBlockNumber: UInt32.from(startBlockNumber), toBlock };
   }
