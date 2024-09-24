@@ -35,6 +35,12 @@ export class BlockchainEVMCrawler {
     await queryRunner.startTransaction();
     try {
       const { startBlockNumber, toBlock } = await this.getFromToBlock();
+      if (startBlockNumber > toBlock) {
+        this.logger.info(
+          `Block <${startBlockNumber}> is the newest block can be processed (on network: ${toBlock}). Wait for the next tick...`,
+        );
+        return;
+      }
       const events = await this.ethBridgeContract.getEvent(startBlockNumber, toBlock);
 
       for (const event of events) {
