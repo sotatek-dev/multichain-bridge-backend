@@ -35,7 +35,7 @@ export class CrawlerConsole {
   async handleCrawlETHBridge() {
     try {
       while (true) {
-        this.blockchainEVMCrawler.handleEventCrawlBlock();
+        await this.blockchainEVMCrawler.handleEventCrawlBlock();
         await sleep(15);
       }
     } catch (error) {
@@ -50,7 +50,7 @@ export class CrawlerConsole {
   async handleValidateEthLockTx() {
     try {
       while (true) {
-        this.senderEVMBridge.unlockEVMTransaction();
+        await this.senderEVMBridge.unlockEVMTransaction();
         await sleep(15);
       }
     } catch (error) {
@@ -65,7 +65,7 @@ export class CrawlerConsole {
   async handleValidateMinaLockTx() {
     try {
       while (true) {
-        this.senderMinaBridge.handleValidateUnlockTxMina();
+        await this.senderMinaBridge.handleValidateUnlockTxMina();
         await sleep(1);
       }
     } catch (error) {
@@ -80,7 +80,7 @@ export class CrawlerConsole {
   async handleSenderETHBridgeUnlock() {
     try {
       while (true) {
-        this.senderEVMBridge.handleUnlockEVM();
+        await this.senderEVMBridge.handleUnlockEVM();
         await sleep(15);
       }
     } catch (error) {
@@ -95,7 +95,7 @@ export class CrawlerConsole {
   async handleCrawlMinaBridge() {
     try {
       while (true) {
-        this.scBridgeMinaCrawler.handleEventCrawlBlock();
+        await this.scBridgeMinaCrawler.handleEventCrawlBlock();
         await sleep(15);
       }
     } catch (error) {
@@ -139,7 +139,7 @@ export class CrawlerConsole {
   async getPriceCoinMarketCap() {
     try {
       while (true) {
-        this.jobGetPrice.handleGetPriceToken();
+        await this.jobGetPrice.handleGetPriceToken();
         await sleep(43200);
       }
     } catch (error) {
