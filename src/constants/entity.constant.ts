@@ -8,4 +8,4 @@ export enum ETableName {
   MULTI_SIGNATURE = 'multi_signature',
 }
 
-export const MINA_CRAWL_SAFE_BLOCK = 10;
+export const MINA_CRAWL_SAFE_BLOCK = 3;

@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { isNumber } from 'class-validator';
+import { MINA_CRAWL_SAFE_BLOCK } from 'constants/entity.constant.js';
 import Joi from 'joi';
 
 import { EEnvironments, EEnvKey } from '../constants/env.constant.js';
@@ -48,6 +49,7 @@ import redisConfig from './redis.config.js';
         [EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_DOMAIN_NAME]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_DOMAIN_VERSION]: Joi.string().required(),
+        [EEnvKey.MINA_CRAWL_SAFE_BLOCK]: Joi.number().default(MINA_CRAWL_SAFE_BLOCK),
         // coinmarketcap
         [EEnvKey.COINMARKET_KEY]: Joi.string().required(),
         [EEnvKey.COINMARKET_URL]: Joi.string().required(),
