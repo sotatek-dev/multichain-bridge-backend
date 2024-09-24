@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import dayjs from 'dayjs';
 import { Logger } from 'log4js';
-import { Field, Mina, PublicKey, UInt32 } from 'o1js';
+import { fetchLastBlock, Field, Mina, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
+import { MINA_CRAWL_SAFE_BLOCK } from '../../constants/entity.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
@@ -25,25 +26,29 @@ export class SCBridgeMinaCrawler {
     private readonly loggerService: LoggerService,
   ) {
     this.logger = this.loggerService.getLogger('SC_BRIDGE_MINA_CRAWLER');
+    const Network = Mina.Network({
+      mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
+      archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
+    });
+    Mina.setActiveInstance(Network);
   }
   public async handleEventCrawlBlock() {
+    const { startBlockNumber, toBlock } = await this.getFromToBlock();
+    if (startBlockNumber.greaterThanOrEqual(toBlock).toBoolean()) {
+      this.logger.warn('Already latest block. Skipped.');
+      return;
+    }
+    const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
+    const zkapp = new Bridge(zkappAddress);
+
+    const events = await zkapp.fetchEvents(startBlockNumber.add(1), toBlock);
+    this.logger.info({ events });
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const { startBlockNumber } = await this.getFromToBlock();
-
-      const Network = Mina.Network({
-        mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
-        archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
-      });
-      Mina.setActiveInstance(Network);
-      const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
-
-      const zkapp = new Bridge(zkappAddress);
-      const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
-      this.logger.info({ events });
-
+      this.logger.info(`[handleCrawlMinaBridge] Crawling from  ${startBlockNumber} to ${toBlock}`);
       for (const event of events) {
         switch (event.type) {
           case 'Unlock':
@@ -56,12 +61,9 @@ export class SCBridgeMinaCrawler {
             continue;
         }
       }
-      this.logger.info(`[handleCrawlMinaBridge] Crawled from============================= ${startBlockNumber}`);
-      if (events.length > 0) {
-        // udpate current latest block
-        await this.updateLatestBlockCrawl(Number(events.pop().blockHeight.toString()), queryRunner);
-      }
-      return await queryRunner.commitTransaction();
+      // udpate current latest block
+      await this.updateLatestBlockCrawl(Number(toBlock.toString()), queryRunner);
+      return queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -135,8 +137,8 @@ export class SCBridgeMinaCrawler {
     };
   }
 
-  private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
-    await queryRunner.manager.update(
+  private updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
+    return queryRunner.manager.update(
       CrawlContract,
       {
         contractAddress: this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS),
@@ -148,8 +150,7 @@ export class SCBridgeMinaCrawler {
     );
   }
 
-  private async getFromToBlock(): Promise<{ startBlockNumber; toBlock }> {
-    let toBlock;
+  private async getFromToBlock(): Promise<{ startBlockNumber: UInt32; toBlock: UInt32 }> {
     const currentCrawledBlock = await this.crawlContractRepository.findOne({
       where: {
         networkName: ENetworkName.MINA,
@@ -168,7 +169,10 @@ export class SCBridgeMinaCrawler {
     } else {
       startBlockNumber = currentCrawledBlock.latestBlock;
     }
+    const latestBlock = await fetchLastBlock(this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS));
 
-    return { startBlockNumber, toBlock };
+    const toBlock = UInt32.from(latestBlock.blockchainLength.toUInt64().sub(MINA_CRAWL_SAFE_BLOCK).toString());
+
+    return { startBlockNumber: UInt32.from(startBlockNumber), toBlock };
   }
 }
