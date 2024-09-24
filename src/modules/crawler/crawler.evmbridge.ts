@@ -67,6 +67,10 @@ export class BlockchainEVMCrawler {
   }
 
   public async handlerLockEvent(event: EventData, queryRunner: QueryRunner) {
+    const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock: event.transactionHash });
+    if (isExist) {
+      this.logger.warn('Duplicated event', event.transactionHash);
+    }
     const blockTimeOfBlockNumber = await this.ethBridgeContract.getBlockTimeByBlockNumber(event.blockNumber);
     const eventUnlock = {
       senderAddress: event.returnValues.locker,
