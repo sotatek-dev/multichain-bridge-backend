@@ -1,9 +1,9 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { isNumber } from 'class-validator';
-import { MINA_CRAWL_SAFE_BLOCK } from 'constants/entity.constant.js';
 import Joi from 'joi';
 
+import { MINA_CRAWL_SAFE_BLOCK } from '../constants/entity.constant.js';
 import { EEnvironments, EEnvKey } from '../constants/env.constant.js';
 import redisConfig from './redis.config.js';
 
