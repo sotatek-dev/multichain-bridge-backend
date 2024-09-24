@@ -1,3 +1,4 @@
+import { MAX_RETRIES } from 'constants/service.constant.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 import { Brackets } from 'typeorm';
 
@@ -30,7 +31,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
       );
     }
     qb.andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.WAITING, EEventStatus.FAILED] })
-      .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: 3 })
+      .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: MAX_RETRIES })
       .orderBy(`${this.alias}.status`, EDirection.DESC)
       .addOrderBy(`${this.alias}.id`, EDirection.ASC)
       .addOrderBy(`${this.alias}.retry`, EDirection.ASC);
@@ -134,7 +135,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
           .orWhere(`signature.validator != :validator`, { validator })
           .orWhere(
             new Brackets(qb => {
-              qb.where(`signature.signature IS NULL`).andWhere(`signature.retry < 3`);
+              qb.where(`signature.signature IS NULL`).andWhere(`signature.retry < ${MAX_RETRIES}`);
             }),
           );
       }),

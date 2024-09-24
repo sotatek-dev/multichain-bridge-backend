@@ -123,7 +123,10 @@ export class SenderMinaBridge {
       }
       const { amountReceived, protocolFeeAmount } = this.getAmountReceivedAndFee(tokenPair, configTip, amountFrom);
 
-      const rateMINAETH = Number(rateethmina.toFixed(0)) || 2000;
+      const rateMINAETH = Number(rateethmina.toFixed(0)) || 2000; // refactor this
+
+      await this.eventLogRepository.update(dataLock.id, { amountReceived, protocolFee: protocolFeeAmount });
+
       const result = await this.callUnlockFunction(amountReceived, id, receiveAddress, protocolFeeAmount, rateMINAETH);
       // Update status eventLog when call function unlock
       if (result.success) {
@@ -132,9 +135,7 @@ export class SenderMinaBridge {
           retry: dataLock.retry,
           status: EEventStatus.PROCESSING,
           errorDetail: result.error,
-          amountReceived,
           txHashUnlock: result.data,
-          protocolFee: protocolFeeAmount,
         });
       } else {
         await this.eventLogRepository.updateStatusAndRetryEvenLog({
