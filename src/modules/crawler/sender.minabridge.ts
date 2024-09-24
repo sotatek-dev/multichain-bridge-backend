@@ -97,7 +97,7 @@ export class SenderMinaBridge {
         this.tokenPriceRepository.getRateETHToMina(),
       ]);
       if (!dataLock) {
-        this.logger.warn('No pending lock transaction!');
+        // this.logger.warn('No pending lock transaction!');
         return;
       }
       await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
@@ -245,12 +245,14 @@ export class SenderMinaBridge {
       if (!dataLock) {
         return;
       }
+      this.logger.info('Start generating mina signatures.');
 
       const { tokenReceivedAddress, tokenFromAddress, receiveAddress, amountFrom } = dataLock;
 
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
 
       if (!tokenPair) {
+        this.logger.warn('Unknown token pair', tokenFromAddress, tokenReceivedAddress);
         await this.eventLogRepository.updateStatusAndRetryEvenLog({
           id: dataLock.id,
           retry: dataLock.retry,
@@ -258,6 +260,7 @@ export class SenderMinaBridge {
         });
         return;
       }
+
       // check if this signature has been tried before.
       let multiSignature = await this.multiSignatureRepository.findOneBy({
         txId: dataLock.id,
