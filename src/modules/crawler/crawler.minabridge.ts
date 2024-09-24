@@ -95,8 +95,14 @@ export class SCBridgeMinaCrawler {
   }
 
   public async handlerLockEvent(event: any, queryRunner: QueryRunner) {
+    const txHashLock = event.event.transactionInfo.transactionHash;
     const field = Field.from(event.event.data.receipt.toString());
     const receiveAddress = DEFAULT_ADDRESS_PREFIX + field.toBigInt().toString(16);
+
+    const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock });
+    if (isExist) {
+      this.logger.warn('Duplicated event', txHashLock);
+    }
     const eventUnlock = {
       senderAddress: JSON.parse(JSON.stringify(event.event.data.locker)),
       amountFrom: event.event.data.amount.toString(),
@@ -105,7 +111,7 @@ export class SCBridgeMinaCrawler {
       networkReceived: ENetworkName.ETH,
       tokenFromName: EAsset.WETH,
       tokenReceivedAddress: this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
-      txHashLock: event.event.transactionInfo.transactionHash,
+      txHashLock,
       receiveAddress: receiveAddress,
       blockNumber: event.blockHeight.toString(),
       blockTimeLock: Number(Math.floor(dayjs().valueOf() / 1000)),
