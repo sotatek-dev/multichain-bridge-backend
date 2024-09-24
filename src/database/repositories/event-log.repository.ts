@@ -1,3 +1,4 @@
+import { GetHistoryDto } from 'modules/users/dto/history-response.dto.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 import { Brackets } from 'typeorm';
 
@@ -103,11 +104,16 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     return queryBuilder.getManyAndCount();
   }
 
-  public async getHistories(options) {
+  public async getHistories(options: GetHistoryDto) {
     const queryBuilder = this.createQb();
     queryBuilder.orderBy(`${this.alias}.id`, EDirection.DESC);
-    if (options.address) {
-      queryBuilder.andWhere(`${this.alias}.sender_address = :address`, { address: options.address });
+    if (typeof options.address === 'string') {
+      queryBuilder.andWhere(
+        `${this.alias}.sender_address ilike :address OR ${this.alias}.receive_address ilike :address`,
+        {
+          address: `%${options.address.toLowerCase()}%`,
+        },
+      );
     }
 
     this.queryBuilderAddPagination(queryBuilder, options);
