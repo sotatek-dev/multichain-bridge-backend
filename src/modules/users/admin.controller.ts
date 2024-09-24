@@ -5,7 +5,7 @@ import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthAdminGuard } from '../../shared/decorators/http.decorator.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetCommonConfigResponseDto } from './dto/common-config-response.dto.js';
-import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';
+import { GetHistoryDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';
 import { UsersService } from './users.service.js';
 
 @ApiTags('Admins')
@@ -17,7 +17,7 @@ export class AdminController {
   @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse({ type: [GetHistoryOfUserResponseDto] })
-  getHistoriesOfUser(@Query() query: GetHistoryOfUserDto) {
+  getHistoriesOfUser(@Query() query: GetHistoryDto) {
     return this.userService.getHistories(query);
   }
 
