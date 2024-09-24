@@ -1,6 +1,6 @@
 import { GetHistoryDto } from 'modules/users/dto/history-response.dto.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
-import { Brackets, ILike } from 'typeorm';
+import { Brackets } from 'typeorm';
 
 import { EDirection } from '../../constants/api.constant.js';
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
@@ -108,9 +108,12 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     const queryBuilder = this.createQb();
     queryBuilder.orderBy(`${this.alias}.id`, EDirection.DESC);
     if (typeof options.address === 'string') {
-      queryBuilder.andWhere(`${this.alias}.sender_address ilike :address`, {
-        address: `%${options.address.toLowerCase()}%`,
-      });
+      queryBuilder.andWhere(
+        `${this.alias}.sender_address ilike :address OR ${this.alias}.receive_address ilike :address`,
+        {
+          address: `%${options.address.toLowerCase()}%`,
+        },
+      );
     }
 
     this.queryBuilderAddPagination(queryBuilder, options);
