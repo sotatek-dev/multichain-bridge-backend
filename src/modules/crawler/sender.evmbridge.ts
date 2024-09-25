@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import BigNumber from 'bignumber.js/bignumber.mjs';
+// import BigNumber from 'bignumber.js/bignumber.mjs';
+import { BigNumber } from 'bignumber.js';
 import { ethers } from 'ethers';
 import { Logger } from 'log4js';
 
@@ -86,7 +87,7 @@ export class SenderEVMBridge {
           status: EEventStatus.PROCESSING,
           errorDetail: null,
           protocolFee,
-          amountReceived,
+          amountReceived: BigNumber(amountReceived).minus(protocolFee).toFixed(0).toString(),
         });
       } else {
         await this.handleError(result.error, dataLock);
