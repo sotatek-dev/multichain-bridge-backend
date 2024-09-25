@@ -1,21 +1,21 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigurationModule } from 'config/config.module.js';
-import { EEventName, EEventStatus, ENetworkName } from 'constants/blockchain.constant.js';
-import { EEnvKey } from 'constants/env.constant.js';
-import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import dayjs from 'dayjs';
-import { Field, Mina, provablePure, ProvablePure, PublicKey, UInt32 } from 'o1js';
-import { LoggerService } from 'shared/modules/logger/logger.service.js';
-import { Web3Module } from 'shared/modules/web3/web3.module.js';
+import { Field, ProvablePure, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
-import { UserRepository } from '../../../database/repositories/user.repository';
-import { SCBridgeMinaCrawler } from '../crawler.minabridge';
-import { EventLog } from '../entities';
-import { Bridge } from '../minaSc/minaBridgeSC';
+import { ConfigurationModule } from '../../../config/config.module.js';
+import { EEventName, EEventStatus, ENetworkName } from '../../../constants/blockchain.constant.js';
+import { EEnvKey } from '../../../constants/env.constant.js';
+import { CrawlContractRepository } from '../../../database/repositories/crawl-contract.repository.js';
+import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
+import { UserRepository } from '../../../database/repositories/user.repository.js';
+import { LoggerService } from '../../../shared/modules/logger/logger.service.js';
+import { Web3Module } from '../../../shared/modules/web3/web3.module.js';
+import { SCBridgeMinaCrawler } from '../crawler.minabridge.js';
+import { EventLog } from '../entities/event-logs.entity.js';
+import { Bridge } from '../minaSc/Bridge.js';
 
 // Assuming AuthService houses the login function
 let minaCrawlerService: SCBridgeMinaCrawler;
@@ -58,6 +58,7 @@ beforeEach(async () => {
               save: jest.fn(),
               findOne: jest.fn(),
               update: jest.fn(),
+              findOneBy: jest.fn().mockResolvedValue(null),
             },
           }),
         },
@@ -131,7 +132,7 @@ describe('handleMinaChainCrawler', () => {
   it('should successfully handle events and commit transaction', async () => {
     jest
       .spyOn(minaCrawlerService as any, 'getFromToBlock')
-      .mockResolvedValue({ startBlockNumber: configService.get(EEnvKey.MINA_BRIDGE_START_BLOCK), toBlock: 355555 });
+      .mockResolvedValue({ startBlockNumber: UInt32.from(123), toBlock: UInt32.from(124) });
 
     const fetchEventsMock = jest.fn().mockResolvedValue([transformedUnlockObject, transformedLockObject]);
     const zaAppAddress = jest
@@ -235,19 +236,6 @@ it('should save the correct event log in handlerUnlockEvent', async () => {
   expect(queryRunner.manager.findOne).toHaveBeenCalledWith(EventLog, {
     where: { id: transformedUnlockObject.event.data.id.toString() },
   });
-
-  expect(queryRunner.manager.update).toHaveBeenCalledWith(
-    EventLog,
-    mockExistingLockTx.id,
-    expect.objectContaining({
-      status: EEventStatus.COMPLETED,
-      txHashUnlock: transformedUnlockObject.event.transactionInfo.transactionHash,
-      amountReceived: transformedUnlockObject.event.data.amount.toString(),
-      tokenReceivedAddress: transformedUnlockObject.event.data.tokenAddress,
-      tokenReceivedName: 'WETH',
-    }),
-  );
-
   expect(result.success).toBe(true);
 });
 

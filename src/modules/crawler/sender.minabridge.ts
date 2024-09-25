@@ -97,11 +97,10 @@ export class SenderMinaBridge {
         this.tokenPriceRepository.getRateETHToMina(),
       ]);
       if (!dataLock) {
-        // this.logger.warn('No pending lock transaction!');
         return;
       }
-      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
 
+      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
       const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock;
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
       if (!tokenPair) {
@@ -151,6 +150,7 @@ export class SenderMinaBridge {
       }
       return result;
     } catch (error) {
+      console.log(error);
       await this.eventLogRepository.updateStatusAndRetryEvenLog({
         id: dataLock.id,
         retry: Number(dataLock.retry + 1),
