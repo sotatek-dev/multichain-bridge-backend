@@ -73,9 +73,6 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     const queryBuilder = this.createQb();
     queryBuilder
       .where(`${this.alias}.sender_address = :address`, { address })
-      .andWhere(`${this.alias}.status IN (:...status)`, {
-        status: [EEventStatus.PROCESSING, EEventStatus.WAITING, EEventStatus.COMPLETED],
-      })
       .orderBy(`${this.alias}.id`, EDirection.DESC)
       .select([
         `${this.alias}.id`,
