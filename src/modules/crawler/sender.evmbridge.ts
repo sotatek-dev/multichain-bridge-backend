@@ -86,7 +86,7 @@ export class SenderEVMBridge {
           status: EEventStatus.PROCESSING,
           errorDetail: null,
           protocolFee,
-          amountReceived,
+          amountReceived: BigNumber(amountReceived).minus(protocolFee).toFixed(0).toString(),
         });
       } else {
         await this.handleError(result.error, dataLock);
