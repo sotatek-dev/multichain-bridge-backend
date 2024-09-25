@@ -122,8 +122,8 @@ export class BlockchainEVMCrawler {
     await queryRunner.manager.update(EventLog, existLockTx.id, {
       status: EEventStatus.COMPLETED,
       txHashUnlock: event.transactionHash,
-      // amountReceived: event.returnValues.amount,
-      // protocolFee: event.returnValues.fee,
+      amountReceived: event.returnValues.amount,
+      protocolFee: event.returnValues.fee,
       tokenReceivedAddress: event.returnValues.token,
       tokenReceivedName: EAsset.ETH,
     });
