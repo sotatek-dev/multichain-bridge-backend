@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-// import BigNumber from 'bignumber.js/bignumber.mjs';
-import { BigNumber } from 'bignumber.js';
+import BigNumber from 'bignumber.js/bignumber.mjs';
 import { ethers } from 'ethers';
 import { Logger } from 'log4js';
 
