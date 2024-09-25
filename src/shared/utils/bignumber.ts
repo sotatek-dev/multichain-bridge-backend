@@ -11,6 +11,5 @@ export const calculateFee = (amount: string, gasFee: string | number, tipPercent
     .minus(BigNumber(gasFee))
     .multipliedBy(tipPercent * 10)
     .dividedBy(1000);
-
   return BigNumber(gasFee).plus(tip).toFixed(0, BigNumber.ROUND_UP);
 };
