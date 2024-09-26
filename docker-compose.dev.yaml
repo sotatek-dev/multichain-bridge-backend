@@ -48,18 +48,6 @@ services:
     networks:
       - myNetwork
     user: node
-  crawl-token-mina:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console crawl-mina-token-contract"
-    tty: true
-    restart: always
-
-    depends_on:
-      - postgres
-    networks:
-      - myNetwork
-    user: node
   sender-mina:
     image: mina-bridge:1.0.0
     command: >
