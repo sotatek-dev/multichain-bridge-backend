@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { isNumberString } from 'class-validator';
+import { isEmpty, isNumberString } from 'class-validator';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { ECoinMarketCapTokenId } from '../../constants/blockchain.constant.js';
@@ -28,30 +28,20 @@ export class BatchJobGetPriceToken {
 
     const result = await axios.get(apiUrl, { headers });
 
-    const MINA = result.data.data?.[ECoinMarketCapTokenId.MINA];
-    const ETH = result.data.data?.[ECoinMarketCapTokenId.ETH];
+    const minaNewPrice = result.data.data?.[ECoinMarketCapTokenId.MINA]?.quote?.USD.price;
+    const ethNewPrice = result.data.data?.[ECoinMarketCapTokenId.ETH]?.quote?.USD.price;
 
-    let totalUpdated = 0;
+    const res = await Promise.all([
+      this.updateTokenPrice(EAsset.MINA, minaNewPrice),
+      this.updateTokenPrice(EAsset.ETH, ethNewPrice),
+    ]);
 
-    if (MINA) {
-      await this.updateTokenPrice(EAsset.MINA, MINA?.quote?.USD.price);
-      totalUpdated++;
-    } else {
-      this.logger.warn('Cannot get MINA token price from CoinMarketCap!');
-    }
-    if (ETH) {
-      await this.updateTokenPrice(EAsset.ETH, ETH?.quote?.USD.price);
-      totalUpdated++;
-    } else {
-      this.logger.warn('Cannot get ETH token price from CoinMarketCap!');
-    }
-    this.logger.info(`Total token updated = ${totalUpdated}`);
-    return;
+    this.logger.info(`Total tokens updated = ${res.filter(e => !!e).length}`);
   }
-  private async updateTokenPrice(symbol: EAsset, newPrice: string) {
-    if (!isNumberString(newPrice.toString())) {
-      this.logger.warn('Invalid new price', newPrice);
-      return;
+  private async updateTokenPrice(symbol: EAsset, newPrice: string): Promise<boolean> {
+    if (isEmpty(newPrice) || !isNumberString(newPrice.toString())) {
+      this.logger.warn(`Cannot get ${symbol} token price from CoinMarketCap! value ${newPrice}.`);
+      return false;
     }
     const toUpdateToken = await this.tokenPriceRepository.getTokenPriceBySymbol(symbol);
     let oldPrice = '0';
@@ -63,5 +53,6 @@ export class BatchJobGetPriceToken {
       await toUpdateToken.save();
     }
     this.logger.info(`Updated price for ${symbol}. Old price: ${oldPrice}, new price: ${newPrice}.`);
+    return true;
   }
 }
