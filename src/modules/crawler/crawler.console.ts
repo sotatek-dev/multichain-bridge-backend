@@ -104,20 +104,6 @@ export class CrawlerConsole {
   }
 
   @Command({
-    command: 'crawl-mina-token-contract',
-    description: 'crawl Mina Token Contract',
-  })
-  async handleCrawlMinaToken() {
-    try {
-      while (true) {
-        await sleep(15);
-      }
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  @Command({
     command: 'sender-mina-bridge-unlock',
     description: 'sender Mina Bridge unlock',
   })
