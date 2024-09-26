@@ -72,7 +72,9 @@ export class EventLogRepository extends BaseRepository<EventLog> {
   public async getHistoriesOfUser(address: string, options) {
     const queryBuilder = this.createQb();
     queryBuilder
-      .where(`${this.alias}.sender_address = :address OR ${this.alias}.receive_address = :address`, { address })
+      .where(`LOWER(${this.alias}.sender_address) = :address OR LOWER(${this.alias}.receive_address) = :address`, {
+        address: address.toLowerCase(),
+      })
       .orderBy(`${this.alias}.id`, EDirection.DESC)
       .select([
         `${this.alias}.id`,
