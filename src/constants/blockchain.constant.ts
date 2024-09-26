@@ -28,3 +28,8 @@ export enum EMinaChainEnviroment {
   TESTNET = 'testnet',
   MAINNET = 'mainnet',
 }
+
+export enum ECoinMarketCapTokenId {
+  ETH = 1027,
+  MINA = 8646,
+}
