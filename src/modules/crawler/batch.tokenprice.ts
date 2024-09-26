@@ -39,7 +39,7 @@ export class BatchJobGetPriceToken {
     this.logger.info(`Total tokens updated = ${res.filter(e => !!e).length}`);
   }
   private async updateTokenPrice(symbol: EAsset, newPrice: string): Promise<boolean> {
-    if (isEmpty(newPrice) && !isNumberString(newPrice.toString())) {
+    if (isEmpty(newPrice) || !isNumberString(newPrice.toString())) {
       this.logger.warn(`Cannot get ${symbol} token price from CoinMarketCap! value ${newPrice}.`);
       return false;
     }
