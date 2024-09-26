@@ -28,8 +28,8 @@ export class BatchJobGetPriceToken {
 
     const result = await axios.get(apiUrl, { headers });
 
-    const minaNewPrice = result.data.data?.[ECoinMarketCapTokenId.MINA]?.quote?.USD.price;
-    const ethNewPrice = result.data.data?.[ECoinMarketCapTokenId.ETH]?.quote?.USD.price;
+    const minaNewPrice = String(result.data.data?.[ECoinMarketCapTokenId.MINA]?.quote?.USD.price).valueOf();
+    const ethNewPrice = String(result.data.data?.[ECoinMarketCapTokenId.ETH]?.quote?.USD.price).valueOf();
 
     const res = await Promise.all([
       this.updateTokenPrice(EAsset.MINA, minaNewPrice),
@@ -37,9 +37,10 @@ export class BatchJobGetPriceToken {
     ]);
 
     this.logger.info(`Total tokens updated = ${res.filter(e => !!e).length}`);
+    return true;
   }
   public async updateTokenPrice(symbol: EAsset, newPrice: string): Promise<boolean> {
-    if (isEmpty(newPrice) || !isNumberString(newPrice.toString())) {
+    if (isEmpty(newPrice) || !isNumberString(newPrice)) {
       this.logger.warn(`Cannot get ${symbol} token price from CoinMarketCap! value ${newPrice}.`);
       return false;
     }

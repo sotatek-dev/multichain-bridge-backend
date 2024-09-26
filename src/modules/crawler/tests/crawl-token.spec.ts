@@ -44,20 +44,22 @@ describe('BlockchainEVMCraler', () => {
 
   describe('handle crawl token price', () => {
     it('should update the token price', async () => {
-      const result1 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, '1.1');
-      const result2 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, 1.1 as any);
+      const result0 = await tokenCrawlService.handleGetPriceToken();
+      const result1 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, '1.1111111');
 
       expect(result1).toBeTruthy();
-      expect(result2).toBeTruthy();
+      expect(result0).toBeTruthy();
     });
     it('should fail to update the token price', async () => {
       const result1 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, null);
       const result2 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, undefined);
       const result3 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, '');
+      const result4 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, '1,2');
 
       expect(result1).toBeFalsy();
       expect(result2).toBeFalsy();
       expect(result3).toBeFalsy();
+      expect(result4).toBeFalsy();
     });
   });
 });
