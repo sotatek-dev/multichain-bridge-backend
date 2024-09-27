@@ -13,9 +13,9 @@ import { UserRepository } from '../../database/repositories/user.repository.js';
 import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
 import { httpBadRequest } from '../../shared/exceptions/http-exeption.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
-import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
-import { addDecimal, calculateFee } from '../../shared/utils/bignumber.js';
+import { addDecimal } from '../../shared/utils/bignumber.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
+import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
 
 @Injectable()
 export class UsersService {
@@ -27,7 +27,6 @@ export class UsersService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
-    private readonly ethBridgeContract: ETHBridgeContract,
   ) {
     this.logger = this.loggerService.getLogger('USER_SERVICE');
   }
@@ -72,9 +71,8 @@ export class UsersService {
     return this.dataSource.getRepository(TokenPair).find();
   }
 
-  async getProtocolFee(body) {
+  async getProtocolFee({ pairId }: GetProtocolFeeBodyDto) {
     let gasFee;
-    const { pairId, amount } = body;
     const [tokenPair, configTip] = await Promise.all([
       this.dataSource.getRepository(TokenPair).findOne({
         where: { id: pairId },
@@ -94,6 +92,6 @@ export class UsersService {
       );
     }
 
-    return { amount: calculateFee(amount, gasFee, configTip.tip) };
+    return { gasFee, tipRate: configTip.tip };
   }
 }

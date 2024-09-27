@@ -26,9 +26,4 @@ export class GetProtocolFeeBodyDto {
     required: true,
   })
   pairId: number;
-
-  @StringField({
-    required: true,
-  })
-  amount: string;
 }

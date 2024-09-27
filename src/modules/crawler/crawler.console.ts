@@ -117,19 +117,4 @@ export class CrawlerConsole {
       this.logger.error(error);
     }
   }
-
-  @Command({
-    command: 'get-price-token',
-    description: 'get price of token',
-  })
-  async getPriceCoinMarketCap() {
-    try {
-      while (true) {
-        await this.jobGetPrice.handleGetPriceToken();
-        await sleep(43200);
-      }
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
 }

@@ -59,17 +59,6 @@ services:
     networks:
       - myNetwork
     user: node
-  get-price-token:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console get-price-token"
-    tty: true
-    restart: always
-    depends_on:
-      - postgres
-    networks:
-      - myNetwork
-    user: node
   validate-evm-signature-1:
     image: mina-bridge:1.0.0
     command: >

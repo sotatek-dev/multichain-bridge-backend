@@ -6,7 +6,6 @@ import { CommonConfigRepository } from '../../../database/repositories/common-co
 import { EventLogRepository } from '../../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../../database/repositories/multi-signature.repository.js';
 import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
-import { TokenPriceRepository } from '../../../database/repositories/token-price.repository.js';
 import { LoggingModule } from '../../../shared/modules/logger/logger.module.js';
 import { Web3Module } from '../../../shared/modules/web3/web3.module.js';
 import { SenderMinaBridge } from '../sender.minabridge.js';
@@ -30,9 +29,7 @@ const mockCommonConfigRepository = {
 const mockTokenPairRepository = {
   getTokenPair: jest.fn(),
 };
-const mockTokenPriceRepository = {
-  getRateETHToMina: jest.fn(),
-};
+
 const mockMultiSignatureRepository = {
   getRateETHToMina: jest.fn(),
   findBy: jest.fn(),
@@ -49,7 +46,6 @@ describe('MinaSenderService', () => {
         { provide: EventLogRepository, useValue: mockEventLogRepository },
         { provide: CommonConfigRepository, useValue: mockCommonConfigRepository },
         { provide: TokenPairRepository, useValue: mockTokenPairRepository },
-        { provide: TokenPriceRepository, useValue: mockTokenPriceRepository },
         { provide: MultiSignatureRepository, useValue: mockMultiSignatureRepository },
       ],
     }).compile();
@@ -91,7 +87,6 @@ describe('MinaSenderService', () => {
       dailyQuota: '500',
       id: 1,
     });
-    mockTokenPriceRepository.getRateETHToMina.mockResolvedValue({ rateethmina: 3870.44 });
     mockTokenPairRepository.getTokenPair.mockResolvedValue({
       id: 5,
       deletedAt: null,
