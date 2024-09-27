@@ -82,9 +82,11 @@ export class SenderEVMBridge {
           status: EEventStatus.PROCESSING,
           errorDetail: null,
           protocolFee,
-          amountReceived: BigNumber(amountReceived).minus(protocolFee).toFixed(0).toString(),
-          gasFee: gasFeeEth,
-          tip: calculateTip(amountReceived, gasFeeEth, configTip.tip).toFixed(0).toString(),
+          amountReceived: BigNumber(amountReceived).minus(protocolFee).toFixed(0),
+          gasFee: this.configService.get(EEnvKey.GAS_FEE_EVM),
+          tip: calculateTip(amountReceived, gasFeeEth, configTip.tip)
+            .div(this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM))
+            .toString(),
         });
       } else {
         await this.handleError(result.error, dataLock);
