@@ -84,7 +84,7 @@ export class SCBridgeMinaCrawler {
       status: EEventStatus.COMPLETED,
       txHashUnlock: event.event.transactionInfo.transactionHash,
       amountReceived: event.event.data.amount.toString(),
-      tokenReceivedAddress: event.event.data.tokenAddress,
+      tokenReceivedAddress: (event.event.data.tokenAddress as PublicKey).toBase58(),
       tokenReceivedName: EAsset.WETH,
     });
 
