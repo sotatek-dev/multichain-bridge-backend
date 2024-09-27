@@ -97,6 +97,8 @@ export class EventLogRepository extends BaseRepository<EventLog> {
         `${this.alias}.protocolFee`,
         `${this.alias}.fromTokenDecimal`,
         `${this.alias}.toTokenDecimal`,
+        `${this.alias}.tip`,
+        `${this.alias}.gasFee`,
         `${this.alias}.status`,
         `${this.alias}.createdAt`,
       ]);
