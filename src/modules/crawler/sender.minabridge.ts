@@ -143,8 +143,10 @@ export class SenderMinaBridge {
           txHashUnlock: result.data,
           amountReceived,
           protocolFee: protocolFeeAmount,
-          gasFee: gasFeeMina,
-          tip: tipAmount,
+          gasFee: this.configService.get(EEnvKey.GASFEEMINA),
+          tip: calculateTip(amountReceived, gasFeeMina, configTip.tip)
+            .div(this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA))
+            .toString(),
         });
       } else {
         await this.eventLogRepository.updateStatusAndRetryEvenLog({
