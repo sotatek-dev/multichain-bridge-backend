@@ -17,14 +17,4 @@ export class TokenPriceRepository extends BaseRepository<TokenPrice> {
       .where(`${this.alias}.symbol IN (:...symbols)`, { symbols })
       .getMany();
   }
-
-  public async getRateETHToMina() {
-    const rate = await this.createQueryBuilder(`${this.alias}`)
-      .select(
-        `(select CAST(price_usd AS REAL) from token_prices tp2 where tp2.symbol = 'ETH') / (select CAST(price_usd AS REAL) from token_prices tp where tp.symbol = 'MINA') as rateETHMINA`,
-      )
-      .getRawOne();
-
-    return rate;
-  }
 }

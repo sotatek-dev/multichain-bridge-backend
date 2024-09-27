@@ -13,9 +13,8 @@ import { CommonConfigRepository } from '../../database/repositories/common-confi
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
-import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
-import { addDecimal, calculateFee } from '../../shared/utils/bignumber.js';
+import { addDecimal, calculateFee, calculateTip } from '../../shared/utils/bignumber.js';
 import { TokenPair } from '../users/entities/tokenpair.entity.js';
 import { CommonConfig } from './entities/common-config.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
@@ -36,7 +35,6 @@ export class SenderMinaBridge {
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
     private readonly tokenPairRepository: TokenPairRepository,
-    private readonly tokenPriceRepository: TokenPriceRepository,
     private readonly multiSignatureRepository: MultiSignatureRepository,
     private readonly loggerService: LoggerService,
   ) {
@@ -71,30 +69,34 @@ export class SenderMinaBridge {
     tokenPair: TokenPair,
     config: CommonConfig,
     amountFrom: string,
-  ): { amountReceived: string; protocolFeeAmount: string } {
+  ): { amountReceived: string; protocolFeeAmount: string; tipAmount: string; gasFeeMina: string } {
+    // convert decimal from ETH to MINA
     const amountReceiveConvert = BigNumber(amountFrom)
       .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
       .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
       .toString();
-    const protocolFeeAmount = BigNumber(
-      calculateFee(
-        amountReceiveConvert,
-        addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)),
-        config.tip,
-      ),
-    )
+    const gasFeeMina = addDecimal(
+      this.configService.get(EEnvKey.GASFEEMINA),
+      this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
+    );
+    // calc fee follow MINA decimal.
+    const protocolFeeAmount = BigNumber(calculateFee(amountReceiveConvert, gasFeeMina, config.tip))
       .toFixed(0)
       .toString();
     const amountReceived = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toFixed(0).toString();
-    return { amountReceived, protocolFeeAmount };
+    return {
+      amountReceived,
+      protocolFeeAmount,
+      tipAmount: calculateTip(amountReceiveConvert, gasFeeMina, config.tip).toFixed(0).toString(),
+      gasFeeMina,
+    };
   }
   public async handleUnlockMina() {
-    let dataLock, configTip, rateethmina;
+    let dataLock, configTip;
     try {
-      [dataLock, configTip, { rateethmina }] = await Promise.all([
+      [dataLock, configTip] = await Promise.all([
         this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA, this.validatorThreshhold),
         this.commonConfigRepository.getCommonConfig(),
-        this.tokenPriceRepository.getRateETHToMina(),
       ]);
       if (!dataLock) {
         return;
@@ -124,11 +126,13 @@ export class SenderMinaBridge {
         });
         return;
       }
-      const { amountReceived, protocolFeeAmount } = this.getAmountReceivedAndFee(tokenPair, configTip, amountFrom);
+      const { amountReceived, protocolFeeAmount, gasFeeMina, tipAmount } = this.getAmountReceivedAndFee(
+        tokenPair,
+        configTip,
+        amountFrom,
+      );
 
-      const rateMINAETH = Number(rateethmina.toFixed(0)) || 2000; // refactor this
-
-      const result = await this.callUnlockFunction(amountReceived, id, receiveAddress, protocolFeeAmount, rateMINAETH);
+      const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
       // Update status eventLog when call function unlock
       if (result.success) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog({
@@ -137,8 +141,10 @@ export class SenderMinaBridge {
           status: EEventStatus.PROCESSING,
           errorDetail: result.error,
           txHashUnlock: result.data,
-          amountReceived: BigNumber(amountReceived).minus(protocolFeeAmount).toFixed(0).toString(),
+          amountReceived,
           protocolFee: protocolFeeAmount,
+          gasFee: gasFeeMina,
+          tip: tipAmount,
         });
       } else {
         await this.eventLogRepository.updateStatusAndRetryEvenLog({
@@ -160,7 +166,7 @@ export class SenderMinaBridge {
     }
   }
 
-  private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount, rateMINAETH) {
+  private async callUnlockFunction(amount, txId, receiveAddress) {
     try {
       const generatedSignatures = await this.multiSignatureRepository.findBy({
         txId,
@@ -172,7 +178,7 @@ export class SenderMinaBridge {
       this.logger.info('compile the contract...');
       await this.compileContract();
 
-      const fee = protocolFeeAmount * rateMINAETH + +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
+      const fee = +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
       const feePayerPublicKey = this.feePayerKey.toPublicKey();
       const bridgePublicKey = this.bridgeKey.toPublicKey();
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);

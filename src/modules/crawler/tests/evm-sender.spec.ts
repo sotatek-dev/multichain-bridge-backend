@@ -1,33 +1,30 @@
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigurationModule } from 'config/config.module.js';
-import { EAsset } from 'constants/api.constant.js';
-import { EEventName, EEventStatus, ENetworkName, ETokenPairStatus } from 'constants/blockchain.constant.js';
-import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
-import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
-import { EventLogRepository } from 'database/repositories/event-log.repository';
-import { MultiSignatureRepository } from 'database/repositories/multi-signature.repository';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
-import { TokenPair } from 'modules/users/entities/tokenpair.entity.js';
-import { LoggerService } from 'shared/modules/logger/logger.service.js';
-import { Web3Module } from 'shared/modules/web3/web3.module.js';
-import { ETHBridgeContract } from 'shared/modules/web3/web3.service.js';
-import { DataSource, QueryRunner } from 'typeorm';
+import { DataSource } from 'typeorm';
 
-import { EventLog } from '../entities';
-import { CommonConfig } from '../entities/common-config.entity';
-import { MultiSignature } from '../entities/multi-signature.entity';
-import { SenderEVMBridge } from '../sender.evmbridge';
+import { ConfigurationModule } from '../../../config/config.module.js';
+import { EAsset } from '../../../constants/api.constant.js';
+import { EEventName, EEventStatus, ENetworkName, ETokenPairStatus } from '../../../constants/blockchain.constant.js';
+import { CommonConfigRepository } from '../../../database/repositories/common-configuration.repository.js';
+import { CrawlContractRepository } from '../../../database/repositories/crawl-contract.repository.js';
+import { EventLogRepository } from '../../../database/repositories/event-log.repository.js';
+import { MultiSignatureRepository } from '../../../database/repositories/multi-signature.repository.js';
+import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
+import { TokenPair } from '../../../modules/users/entities/tokenpair.entity.js';
+import { LoggerService } from '../../../shared/modules/logger/logger.service.js';
+import { Web3Module } from '../../../shared/modules/web3/web3.module.js';
+import { ETHBridgeContract } from '../../../shared/modules/web3/web3.service.js';
+import { CommonConfig } from '../entities/common-config.entity.js';
+import { EventLog } from '../entities/index.js';
+import { MultiSignature } from '../entities/multi-signature.entity.js';
+import { SenderEVMBridge } from '../sender.evmbridge.js';
 
 let senderEVMBridge: SenderEVMBridge;
-let dataSource: DataSource;
-let queryRunner: QueryRunner;
 let eventLogRepository: EventLogRepository;
 let commonConfigRepository: CommonConfigRepository;
 let tokenPairRepository: TokenPairRepository;
 let multiSignatureRepository: MultiSignatureRepository;
-let loggerService: LoggerService;
 let newEthBridgeContract: ETHBridgeContract;
 // Mock objects
 const mockJwtService = {
@@ -103,13 +100,10 @@ beforeEach(async () => {
 
   newEthBridgeContract = module.get<ETHBridgeContract>(ETHBridgeContract);
   senderEVMBridge = module.get<SenderEVMBridge>(SenderEVMBridge);
-  dataSource = module.get<DataSource>(DataSource);
-  queryRunner = dataSource.createQueryRunner();
   eventLogRepository = module.get<EventLogRepository>(EventLogRepository);
   commonConfigRepository = module.get<CommonConfigRepository>(CommonConfigRepository);
   tokenPairRepository = module.get<TokenPairRepository>(TokenPairRepository);
   multiSignatureRepository = module.get<MultiSignatureRepository>(MultiSignatureRepository);
-  loggerService = module.get<LoggerService>(LoggerService);
 });
 
 describe('handleValidateUnlockTxEVM', () => {
