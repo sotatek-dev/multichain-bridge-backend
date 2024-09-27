@@ -72,7 +72,7 @@ export class UsersService {
   }
 
   async getProtocolFee({ pairId }: GetProtocolFeeBodyDto) {
-    let gasFee;
+    let gasFee, decimal;
     const [tokenPair, configTip] = await Promise.all([
       this.dataSource.getRepository(TokenPair).findOne({
         where: { id: pairId },
@@ -81,17 +81,13 @@ export class UsersService {
     ]);
 
     if (tokenPair.toChain == ENetworkName.MINA) {
-      gasFee = addDecimal(
-        this.configService.get(EEnvKey.GAS_FEE_EVM),
-        this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
-      );
+      decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
+      gasFee = addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), decimal);
     } else {
-      gasFee = addDecimal(
-        this.configService.get(EEnvKey.GASFEEMINA),
-        this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
-      );
+      decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
+      gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA), decimal);
     }
 
-    return { gasFee, tipRate: configTip.tip };
+    return { gasFee, tipRate: configTip.tip, decimal };
   }
 }

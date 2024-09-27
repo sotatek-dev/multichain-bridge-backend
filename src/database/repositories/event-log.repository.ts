@@ -51,6 +51,8 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     protocolFee?: string;
     errorDetail?: string;
     txHashUnlock?: string;
+    gasFee?: string;
+    tip?: string;
   }) {
     return this.createQueryBuilder(`${this.alias}`)
       .update(EventLog)

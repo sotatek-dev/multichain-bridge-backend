@@ -39,4 +39,4 @@ export const getVariableName = <TResult>(getVar: () => TResult): string => {
 
 export const nullToZero = (value: string | number) => (value ? value.toString() : '0');
 export const isDevelopmentEnvironment = () =>
-  [EEnvironments.LOCAL].includes(process.env[EEnvKey.NODE_ENV] as EEnvironments);
+  [EEnvironments.LOCAL, EEnvironments.DEV].includes(process.env[EEnvKey.NODE_ENV] as EEnvironments);

@@ -53,6 +53,12 @@ export class EventLog extends BaseEntityIncludeTime {
   @Column({ name: 'protocol_fee', type: 'varchar', nullable: true })
   protocolFee: string;
 
+  @Column({ name: 'gas_fee', type: 'varchar', nullable: true })
+  gasFee: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  tip: string;
+
   @Column({ name: 'event', type: 'varchar', enum: EEventName, nullable: false })
   event: EEventName;
 

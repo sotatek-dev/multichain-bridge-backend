@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import BigNumber from 'bignumber.js/bignumber.mjs';
+import { BigNumber } from 'bignumber.js';
+// import BigNumber from 'bignumber.js/bignumber.mjs';
 import { ethers } from 'ethers';
 import { Logger } from 'log4js';
 
@@ -14,7 +15,7 @@ import { MultiSignatureRepository } from '../../database/repositories/multi-sign
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
-import { addDecimal, calculateFee } from '../../shared/utils/bignumber.js';
+import { addDecimal, calculateFee, calculateTip } from '../../shared/utils/bignumber.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 
@@ -58,18 +59,13 @@ export class SenderEVMBridge {
         await this.updateLogStatusWithRetry(dataLock, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
         return;
       }
-      // const gasFee = await this.ethBridgeContract.getEstimateGas(
-      //   tokenReceivedAddress,
-      //   BigNumber(amountReceive),
-      //   txHashLock,
-      //   receiveAddress,
-      //   0,
-      // );
-      const protocolFee = calculateFee(
-        amountReceived,
-        addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM)),
-        configTip.tip,
+      // fee and received amount.
+      const gasFeeEth = addDecimal(
+        this.configService.get(EEnvKey.GAS_FEE_EVM),
+        this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
       );
+      const protocolFee = calculateFee(amountReceived, gasFeeEth, configTip.tip);
+      // call unlock function
       const result = await this.ethBridgeContract.unlock(
         tokenReceivedAddress,
         BigNumber(amountReceived),
@@ -87,6 +83,8 @@ export class SenderEVMBridge {
           errorDetail: null,
           protocolFee,
           amountReceived: BigNumber(amountReceived).minus(protocolFee).toFixed(0).toString(),
+          gasFee: gasFeeEth,
+          tip: calculateTip(amountReceived, gasFeeEth, configTip.tip).toFixed(0).toString(),
         });
       } else {
         await this.handleError(result.error, dataLock);
@@ -116,13 +114,6 @@ export class SenderEVMBridge {
         return;
       }
 
-      // const gasFee = await this.ethBridgeContract.getEstimateGas(
-      //   tokenReceivedAddress,
-      //   BigNumber(amountReceive),
-      //   txHashLock,
-      //   receiveAddress,
-      //   0,
-      // );
       const protocolFee = calculateFee(
         amountReceived,
         addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM)),
