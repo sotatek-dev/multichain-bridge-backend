@@ -11,7 +11,7 @@ import { CommonConfigRepository } from '../../database/repositories/common-confi
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { UserRepository } from '../../database/repositories/user.repository.js';
 import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
-import { httpBadRequest } from '../../shared/exceptions/http-exeption.js';
+import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exeption.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
@@ -79,7 +79,9 @@ export class UsersService {
       }),
       this.commonConfigRepository.getCommonConfig(),
     ]);
-
+    if (!tokenPair) {
+      httpNotFound(EError.RESOURCE_NOT_FOUND);
+    }
     if (tokenPair.toChain == ENetworkName.MINA) {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
       gasFee = addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), decimal);
