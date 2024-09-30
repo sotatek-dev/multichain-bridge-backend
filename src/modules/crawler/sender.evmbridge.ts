@@ -59,11 +59,9 @@ export class SenderEVMBridge {
         await this.updateLogStatusWithRetry(dataLock, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
         return;
       }
+      const gasFeeEvmWithoutDecimals = this.configService.get(EEnvKey.GAS_FEE_EVM);
       // fee and received amount.
-      const gasFeeEth = addDecimal(
-        this.configService.get(EEnvKey.GAS_FEE_EVM),
-        this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
-      );
+      const gasFeeEth = addDecimal(gasFeeEvmWithoutDecimals, this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM));
       const protocolFee = calculateFee(amountReceived, gasFeeEth, configTip.tip);
       // call unlock function
       const result = await this.ethBridgeContract.unlock(
@@ -83,9 +81,9 @@ export class SenderEVMBridge {
           errorDetail: null,
           protocolFee,
           amountReceived: BigNumber(amountReceived).minus(protocolFee).toFixed(0),
-          gasFee: this.configService.get(EEnvKey.GAS_FEE_EVM),
+          gasFee: gasFeeEvmWithoutDecimals,
           tip: calculateTip(amountReceived, gasFeeEth, configTip.tip)
-            .div(this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM))
+            .div(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
             .toString(),
         });
       } else {
