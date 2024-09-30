@@ -87,8 +87,10 @@ export class SenderMinaBridge {
     return {
       amountReceived,
       protocolFeeAmount,
-      tipAmount: calculateTip(amountReceiveConvert, gasFeeMina, config.tip).toFixed(0).toString(),
-      gasFeeMina,
+      tipAmount: calculateTip(amountReceiveConvert, gasFeeMina, config.tip)
+        .div(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
+        .toString(),
+      gasFeeMina: this.configService.get(EEnvKey.GASFEEMINA),
     };
   }
   public async handleUnlockMina() {
@@ -131,7 +133,6 @@ export class SenderMinaBridge {
         configTip,
         amountFrom,
       );
-
       const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
       // Update status eventLog when call function unlock
       if (result.success) {
@@ -143,10 +144,8 @@ export class SenderMinaBridge {
           txHashUnlock: result.data,
           amountReceived,
           protocolFee: protocolFeeAmount,
-          gasFee: this.configService.get(EEnvKey.GASFEEMINA),
-          tip: calculateTip(amountReceived, gasFeeMina, configTip.tip)
-            .div(this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA))
-            .toString(),
+          gasFee: gasFeeMina,
+          tip: tipAmount,
         });
       } else {
         await this.eventLogRepository.updateStatusAndRetryEvenLog({
