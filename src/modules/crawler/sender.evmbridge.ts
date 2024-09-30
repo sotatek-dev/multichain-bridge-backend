@@ -234,7 +234,7 @@ export class SenderEVMBridge {
   }
 
   public getWallet(): ethers.Wallet {
-    const privateKey = this.configService.get<string>(EEnvKey.SIGNER_PRIVATE_KEY);
+    const privateKey = this.configService.get<string>(EEnvKey.EVM_VALIDATOR_PRIVATE_KEY);
     return new ethers.Wallet(privateKey);
   }
 }
