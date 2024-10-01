@@ -1,32 +1,31 @@
 import { ConfigService } from '@nestjs/config';
-import { Logger } from 'log4js';
 import { Command, Console } from 'nestjs-console';
 
 import { EEnvKey } from '../../constants/env.constant.js';
+import { EQueueName, getEvmValidatorQueueName, getMinaValidatorQueueName } from '../../constants/queue.constant.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { QueueService } from '../../shared/modules/queue/queue.service.js';
 import { sleep } from '../../shared/utils/promise.js';
-import { BatchJobGetPriceToken } from './batch.tokenprice.js';
 import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
 import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
+import { IGenerateSignature, IUnlockToken } from './interfaces/job.interface.js';
+import { JobUnlockProvider } from './job-unlock.provider.js';
 import { SenderEVMBridge } from './sender.evmbridge.js';
 import { SenderMinaBridge } from './sender.minabridge.js';
 
 @Console()
 export class CrawlerConsole {
-  private readonly numberOfBlockPerJob: number;
-  private readonly logger: Logger;
   constructor(
     private readonly configService: ConfigService,
     private blockchainEVMCrawler: BlockchainEVMCrawler,
     private scBridgeMinaCrawler: SCBridgeMinaCrawler,
     private senderEVMBridge: SenderEVMBridge,
     private senderMinaBridge: SenderMinaBridge,
-    private jobGetPrice: BatchJobGetPriceToken,
-    private loggerService: LoggerService,
-  ) {
-    this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
-    this.logger = loggerService.getLogger('CRAWLER_CONSOLE');
-  }
+    private readonly loggerService: LoggerService,
+    private readonly queueService: QueueService,
+    private readonly unlockProviderService: JobUnlockProvider,
+  ) {}
+  private readonly logger = this.loggerService.getLogger('CRAWLER_CONSOLE');
 
   @Command({
     command: 'crawl-eth-bridge-contract',
@@ -48,14 +47,15 @@ export class CrawlerConsole {
     description: 'validate ETH Bridge unlock',
   })
   async handleValidateEthLockTx() {
-    try {
-      while (true) {
-        await this.senderEVMBridge.unlockEVMTransaction();
-        await sleep(15);
-      }
-    } catch (error) {
-      this.logger.error(error);
-    }
+    const thisValidatorIndex = this.configService.get(EEnvKey.THIS_VALIDATOR_INDEX);
+    this.logger.info(`EVM_VALIDATOR_JOB_${thisValidatorIndex}: started`);
+    await this.queueService.handleQueueJob<IGenerateSignature>(
+      getEvmValidatorQueueName(thisValidatorIndex),
+      (data: IGenerateSignature) => {
+        return this.senderEVMBridge.validateUnlockEVMTransaction(data.eventLogId);
+      },
+      10,
+    );
   }
 
   @Command({
@@ -63,14 +63,15 @@ export class CrawlerConsole {
     description: 'validate MINA Bridge unlock',
   })
   async handleValidateMinaLockTx() {
-    try {
-      while (true) {
-        await this.senderMinaBridge.handleValidateUnlockTxMina();
-        await sleep(1);
-      }
-    } catch (error) {
-      this.logger.error(error);
-    }
+    const thisValidatorIndex = this.configService.get(EEnvKey.THIS_VALIDATOR_INDEX);
+    this.logger.info(`MINA_VALIDATOR_JOB_${thisValidatorIndex}: started`);
+    await this.queueService.handleQueueJob<IGenerateSignature>(
+      getMinaValidatorQueueName(thisValidatorIndex),
+      (data: IGenerateSignature) => {
+        return this.senderMinaBridge.handleValidateUnlockTxMina(data.eventLogId);
+      },
+      10,
+    );
   }
 
   @Command({
@@ -78,14 +79,10 @@ export class CrawlerConsole {
     description: 'sender ETH Bridge unlock',
   })
   async handleSenderETHBridgeUnlock() {
-    try {
-      while (true) {
-        await this.senderEVMBridge.handleUnlockEVM();
-        await sleep(15);
-      }
-    } catch (error) {
-      this.logger.error(error);
-    }
+    this.logger.info('MINA_SENDER_JOB: started');
+    await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.EVM_SENDER_QUEUE, (data: IUnlockToken) => {
+      return this.senderEVMBridge.handleUnlockEVM(data.eventLogId);
+    });
   }
 
   @Command({
@@ -108,13 +105,19 @@ export class CrawlerConsole {
     description: 'sender Mina Bridge unlock',
   })
   async handleSenderMinaBridgeUnlock() {
-    try {
-      while (true) {
-        await this.senderMinaBridge.handleUnlockMina();
-        await sleep(15);
-      }
-    } catch (error) {
-      this.logger.error(error);
-    }
+    this.logger.info('MINA_SENDER_JOB: started');
+    await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.MINA_SENDER_QUEUE, (data: IUnlockToken) => {
+      return this.senderMinaBridge.handleUnlockMina(data.eventLogId);
+    });
+  }
+  @Command({
+    command: 'unlock-job-provider',
+    description: 'handle all network unlock.',
+  })
+  async handleUnlockJobProvider() {
+    this.logger.info('UNLOCK_JOB_PROVIDER: started');
+    await this.queueService.handleQueueJob(EQueueName.UNLOCK_JOB_QUEUE, data => {
+      return this.unlockProviderService.handleJob(data);
+    });
   }
 }

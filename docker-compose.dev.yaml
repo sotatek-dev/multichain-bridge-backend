@@ -9,6 +9,7 @@ services:
       - ${PORT}:${PORT}
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
@@ -21,6 +22,7 @@ services:
 
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
@@ -33,6 +35,7 @@ services:
 
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
@@ -45,6 +48,7 @@ services:
 
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
@@ -56,6 +60,7 @@ services:
     restart: always
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
@@ -67,11 +72,13 @@ services:
     restart: always
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
     environment:
       EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_1}
+      THIS_VALIDATOR_INDEX: 1
 
   validate-evm-signature-2:
     image: mina-bridge:1.0.0
@@ -81,11 +88,13 @@ services:
     restart: always
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
     environment:
       EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_2}
+      THIS_VALIDATOR_INDEX: 2
 
   validate-evm-signature-3:
     image: mina-bridge:1.0.0
@@ -95,11 +104,13 @@ services:
     restart: always
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
     environment:
       EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_3}
+      THIS_VALIDATOR_INDEX: 3
   validate-mina-signature-1:
     image: mina-bridge:1.0.0
     command: >
@@ -108,10 +119,12 @@ services:
     restart: always
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     environment:
       MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_1}
+      THIS_VALIDATOR_INDEX: 1
     user: node
   validate-mina-signature-2:
     image: mina-bridge:1.0.0
@@ -121,11 +134,13 @@ services:
     restart: always
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
     environment:
       MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_2}
+      THIS_VALIDATOR_INDEX: 2
   validate-mina-signature-3:
     image: mina-bridge:1.0.0
     command: >
@@ -134,11 +149,25 @@ services:
     restart: always
     depends_on:
       - postgres
+      - redis
     networks:
       - myNetwork
     user: node
     environment:
       MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_3}
+      THIS_VALIDATOR_INDEX: 3
+  job-unlock-provider:
+    image: mina-bridge:1.0.0
+    command: >
+      sh -c "npm run console unlock-job-provider"
+    tty: true
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - myNetwork
+    user: node
   postgres:
     container_name: mina-bridge-${NODE_ENV}-postgres
     image: postgres:15.3-alpine3.18
@@ -153,10 +182,34 @@ services:
       POSTGRES_DB: mina-bridge
     networks:
       myNetwork:
-
+  bull_monitor:
+    image: hocptit/bull_ui:0.0.2
+    container_name: mina_bull_ui
+    environment:
+      REDIS_URI: redis://redis:${REDIS_PORT}
+      USERNAME: admin
+      PASSWORD: minabridge
+      QUEUES: UNLOCK_JOB_QUEUE,EVM_SENDER_QUEUE,MINA_SENDER_QUEUE,EVM_VALIDATOR_1,EVM_VALIDATOR_2,EVM_VALIDATOR_2,MINA_VALIDATOR_1,MINA_VALIDATOR_2,MINA_VALIDATOR_3
+    ports:
+      - '${BULL_MONITOR_PORT}:3011'
+    depends_on:
+      - redis
+    networks:
+      - myNetwork
+  redis:
+    image: redis:6.2-alpine
+    container_name: mereo_ticket_redis
+    ports:
+      - '${REDIS_PORT}:${REDIS_PORT}'
+    command: redis-server --save 20 1 --loglevel warning --port ${REDIS_PORT}
+    networks:
+      - myNetwork
+    volumes:
+      - redisData:/data
 
 volumes:
   postgresData:
+  redisData:
 networks:
   myNetwork:
     name: minaBridgeNetwork${NODE_ENV}

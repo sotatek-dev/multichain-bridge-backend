@@ -14,9 +14,33 @@ services:
       POSTGRES_DB: mina-bridge
     networks:
       myNetwork:
-
+  bull_monitor:
+    image: hocptit/bull_ui:0.0.2
+    container_name: mina_bull_ui
+    environment:
+      REDIS_URI: redis://redis:${REDIS_PORT}
+      USERNAME: admin
+      PASSWORD: minabridge
+      QUEUES: UNLOCK_JOB_QUEUE,EVM_SENDER_QUEUE,MINA_SENDER_QUEUE,EVM_VALIDATOR_1,EVM_VALIDATOR_2,EVM_VALIDATOR_2,MINA_VALIDATOR_1,MINA_VALIDATOR_2,MINA_VALIDATOR_3
+    ports:
+      - '${BULL_MONITOR_PORT}:3011'
+    depends_on:
+      - redis
+    networks:
+      - myNetwork
+  redis:
+    image: redis:6.2-alpine
+    container_name: mereo_ticket_redis
+    ports:
+      - '${REDIS_PORT}:${REDIS_PORT}'
+    command: redis-server --save 20 1 --loglevel warning --port ${REDIS_PORT}
+    networks:
+      - myNetwork
+    volumes:
+      - redisData:/data
 volumes:
   postgresData:
+  redisData:
 networks:
   myNetwork:
     name: minaBridgeNetwork${NODE_ENV}

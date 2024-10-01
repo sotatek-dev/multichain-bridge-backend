@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import assert from 'assert';
 import { BigNumber } from 'bignumber.js';
 // import BigNumber from 'bignumber.js/bignumber.mjs';
 import { ethers } from 'ethers';
@@ -18,6 +19,7 @@ import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
 import { addDecimal, calculateFee, calculateTip } from '../../shared/utils/bignumber.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
+import { JobUnlockProvider } from './job-unlock.provider.js';
 
 @Injectable()
 export class SenderEVMBridge {
@@ -30,108 +32,106 @@ export class SenderEVMBridge {
     private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
+    private readonly unlockJobProvider: JobUnlockProvider,
   ) {
     this.logger = loggerService.getLogger('SENDER_EVM_CONSOLE');
   }
 
-  async handleUnlockEVM() {
-    let dataLock: EventLog;
-    try {
-      const [threshold, configTip] = await Promise.all([
-        this.ethBridgeContract.getValidatorThreshold(),
-        this.commonConfigRepository.getCommonConfig(),
-      ]);
+  async handleUnlockEVM(txId: number) {
+    const [dataLock, configTip] = await Promise.all([
+      this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.ETH }),
+      this.commonConfigRepository.getCommonConfig(),
+    ]);
 
-      dataLock = await this.eventLogRepository.getEventLockWithNetwork(ENetworkName.ETH, threshold);
-      if (!dataLock) return;
-      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
-
-      const { tokenReceivedAddress, txHashLock, receiveAddress } = dataLock;
-
-      const { tokenPair, amountReceived } = await this.getTokenPairAndAmount(dataLock);
-      if (!tokenPair) {
-        await this.updateLogStatusWithRetry(dataLock, EEventStatus.NOTOKENPAIR);
-        return;
-      }
-
-      const isPassQuota = await this.isPassDailyQuota(dataLock.senderAddress, tokenPair.fromDecimal);
-      if (!isPassQuota) {
-        await this.updateLogStatusWithRetry(dataLock, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
-        return;
-      }
-      const gasFeeEvmWithoutDecimals = this.configService.get(EEnvKey.GAS_FEE_EVM);
-      // fee and received amount.
-      const gasFeeEth = addDecimal(gasFeeEvmWithoutDecimals, this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM));
-      const protocolFee = calculateFee(amountReceived, gasFeeEth, configTip.tip);
-      // call unlock function
-      const result = await this.ethBridgeContract.unlock(
-        tokenReceivedAddress,
-        BigNumber(amountReceived),
-        txHashLock,
-        receiveAddress,
-        BigNumber(protocolFee),
-        dataLock.validator.map(e => e.signature),
-      );
-      // Update status eventLog when call function unlock
-      if (result.success) {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog({
-          id: dataLock.id,
-          retry: dataLock.retry,
-          status: EEventStatus.PROCESSING,
-          errorDetail: null,
-          protocolFee,
-          amountReceived: BigNumber(amountReceived).minus(protocolFee).toFixed(0),
-          gasFee: gasFeeEvmWithoutDecimals,
-          tip: calculateTip(amountReceived, gasFeeEth, configTip.tip)
-            .div(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
-            .toString(),
-        });
-      } else {
-        await this.handleError(result.error, dataLock);
-      }
-      return result;
-    } catch (error) {
-      await this.handleError(error, dataLock);
+    if (!dataLock) {
+      this.logger.warn('data not found with tx', txId);
+      return;
     }
+
+    const { tokenReceivedAddress, txHashLock, receiveAddress } = dataLock;
+
+    const { tokenPair, amountReceived } = await this.getTokenPairAndAmount(dataLock);
+    if (!tokenPair) {
+      this.logger.warn('No token pair found!');
+      await this.updateLogStatusWithRetry(dataLock, EEventStatus.NOTOKENPAIR);
+      return;
+    }
+
+    const isPassQuota = await this.isPassDailyQuota(dataLock.senderAddress, tokenPair.fromDecimal);
+    if (!isPassQuota) {
+      this.logger.warn('Over daility quota!');
+      await this.updateLogStatusWithRetry(dataLock, EEventStatus.FAILED, EError.OVER_DAILY_QUOTA);
+      return;
+    }
+    const gasFeeEvmWithoutDecimals = this.configService.get(EEnvKey.GAS_FEE_EVM);
+    // fee and received amount.
+    const gasFeeEth = addDecimal(gasFeeEvmWithoutDecimals, this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM));
+    const protocolFee = calculateFee(amountReceived, gasFeeEth, configTip.tip);
+    // call unlock function
+    const result = await this.ethBridgeContract.unlock(
+      tokenReceivedAddress,
+      BigNumber(amountReceived),
+      txHashLock,
+      receiveAddress,
+      BigNumber(protocolFee),
+      dataLock.validator.map(e => e.signature),
+    );
+    // Update status eventLog when call function unlock
+    if (result.success) {
+      await this.eventLogRepository.updateStatusAndRetryEvenLog({
+        id: dataLock.id,
+        status: EEventStatus.PROCESSING,
+        errorDetail: null,
+        protocolFee,
+        amountReceived: BigNumber(amountReceived).minus(protocolFee).toFixed(0),
+        gasFee: gasFeeEvmWithoutDecimals,
+        tip: calculateTip(amountReceived, gasFeeEth, configTip.tip)
+          .div(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
+          .toString(),
+      });
+    } else {
+      this.logger.error(result.error);
+      this.updateLogStatusWithRetry(dataLock, EEventStatus.FAILED);
+    }
+
+    return result;
   }
 
-  async unlockEVMTransaction() {
-    let dataLock: EventLog;
-    try {
-      const wallet = this.getWallet();
-      const [validatorData, configTip] = await Promise.all([
-        this.eventLogRepository.getValidatorPendingSignature(wallet.address, ENetworkName.ETH),
-        this.commonConfigRepository.getCommonConfig(),
-      ]);
-      dataLock = validatorData;
-      if (!dataLock) {
-        return;
-      }
-      const { tokenReceivedAddress, txHashLock, receiveAddress } = dataLock;
-      const { tokenPair, amountReceived } = await this.getTokenPairAndAmount(dataLock);
-      if (!tokenPair) {
-        await this.updateLogStatusWithRetry(dataLock, EEventStatus.NOTOKENPAIR);
-        return;
-      }
-
-      const protocolFee = calculateFee(
-        amountReceived,
-        addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM)),
-        configTip.tip,
-      );
-
-      const signTx = await this.getSignature(wallet, {
-        token: tokenReceivedAddress,
-        amount: amountReceived,
-        user: receiveAddress,
-        hash: txHashLock,
-        fee: protocolFee.toString(),
-      });
-
-      if (signTx.success) await this.saveSignature(wallet.address, signTx.signature, dataLock.id);
-    } catch (error) {
-      await this.handleError(error, dataLock, true, this.getWallet().address);
+  async validateUnlockEVMTransaction(txId: number) {
+    const wallet = this.getWallet();
+    const [dataLock, configTip] = await Promise.all([
+      this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.ETH }),
+      this.commonConfigRepository.getCommonConfig(),
+    ]);
+    if (!dataLock) {
+      this.logger.warn('no data found tx', txId);
+      return;
     }
+    const { tokenReceivedAddress, txHashLock, receiveAddress } = dataLock;
+    const { tokenPair, amountReceived } = await this.getTokenPairAndAmount(dataLock);
+    if (!tokenPair) {
+      this.logger.warn('no token pair found tx', dataLock.tokenReceivedAddress, dataLock.tokenFromAddress);
+      await this.updateLogStatusWithRetry(dataLock, EEventStatus.NOTOKENPAIR);
+      return;
+    }
+
+    const protocolFee = calculateFee(
+      amountReceived,
+      addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM)),
+      configTip.tip,
+    );
+
+    const signTx = await this.getSignature(wallet, {
+      token: tokenReceivedAddress,
+      amount: amountReceived,
+      user: receiveAddress,
+      hash: txHashLock,
+      fee: protocolFee.toString(),
+    });
+    assert(signTx.success, `Generate signature failed!`);
+    await this.saveSignature(wallet.address, signTx.signature, dataLock.id);
+    await this.unlockJobProvider.addJobSendTx(dataLock.id, dataLock.networkReceived);
+    // notice job unlock provider about this.
   }
 
   private async isPassDailyQuota(address: string, fromDecimal: number): Promise<boolean> {
@@ -144,22 +144,6 @@ export class SenderEVMBridge {
       BigNumber(totalamount.totalamount).isGreaterThan(addDecimal(dailyQuota.dailyQuota, fromDecimal))
       ? false
       : true;
-  }
-
-  private async handleError(error: any, dataLock: EventLog, isMultiSignature = false, wallet?: string) {
-    this.logger.log(EError.INVALID_SIGNATURE, error);
-    const retryCount = dataLock ? Number(dataLock.retry + 1) : 1;
-
-    if (isMultiSignature) {
-      await this.upsertErrorAndRetryMultiSignature(wallet, dataLock.id, error);
-    } else {
-      await this.eventLogRepository.updateStatusAndRetryEvenLog({
-        id: dataLock.id,
-        retry: retryCount,
-        status: EEventStatus.FAILED,
-        errorDetail: error,
-      });
-    }
   }
 
   public async getSignature(wallet: ethers.Wallet, value: Record<string, any>) {
@@ -183,19 +167,6 @@ export class SenderEVMBridge {
     );
 
     return { success: true, signature, payload: { data: value } };
-  }
-
-  public async upsertErrorAndRetryMultiSignature(validator: string, txId: number, errorCode: unknown) {
-    const validatorSignature = await this.multiSignatureRepository.findOne({
-      where: { txId, validator },
-    });
-    if (!validatorSignature) {
-      await this.multiSignatureRepository.save(
-        new MultiSignature({ txId, validator, retry: 1, errorCode, chain: ENetworkName.ETH }),
-      );
-    } else {
-      await this.multiSignatureRepository.update({ txId, validator }, { retry: ++validatorSignature.retry, errorCode });
-    }
   }
 
   public async saveSignature(validatorAddress: string, signature: string, txId: number) {
@@ -227,13 +198,15 @@ export class SenderEVMBridge {
   private async updateLogStatusWithRetry(dataLock: EventLog, status: EEventStatus, errorDetail?: EError) {
     await this.eventLogRepository.updateStatusAndRetryEvenLog({
       id: dataLock.id,
-      retry: dataLock.retry,
       status,
       errorDetail,
     });
   }
 
   public getWallet(): ethers.Wallet {
+    assert(!!this.configService.get(EEnvKey.EVM_VALIDATOR_PRIVATE_KEY), 'validator private key invalid');
+    assert(!!this.configService.get(EEnvKey.THIS_VALIDATOR_INDEX), 'invalid validator index');
+
     const privateKey = this.configService.get<string>(EEnvKey.EVM_VALIDATOR_PRIVATE_KEY);
     return new ethers.Wallet(privateKey);
   }
