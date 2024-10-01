@@ -167,7 +167,7 @@ export class SenderMinaBridge {
     }
   }
 
-  private async callUnlockFunction(amount, txId, receiveAddress) {
+  private async callUnlockFunction(amount: string, txId: number, receiveAddress: string) {
     try {
       const generatedSignatures = await this.multiSignatureRepository.findBy({
         txId,
@@ -175,7 +175,7 @@ export class SenderMinaBridge {
       const signatureData = generatedSignatures
         .map(e => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
         .flat(1);
-      this.logger.info(`Found ${generatedSignatures.length} signatures.`);
+      this.logger.info(`Found ${generatedSignatures.length} signatures for txId= ${txId}`);
       this.logger.info('compile the contract...');
       await this.compileContract();
 
@@ -200,7 +200,7 @@ export class SenderMinaBridge {
 
       const typedAmount = UInt64.from(amount);
 
-      this.logger.info('Receivier token account status = ', hasAccount);
+      this.logger.info(`Addr ${receiveAddress} token account status =  ${hasAccount}`);
       // compile the contract to create prover keys
 
       this.logger.info('build transaction and create proof...');
