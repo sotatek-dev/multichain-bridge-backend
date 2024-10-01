@@ -39,7 +39,15 @@ export class SenderEVMBridge {
 
   async handleUnlockEVM(txId: number) {
     const [dataLock, configTip] = await Promise.all([
-      this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.ETH }),
+      this.eventLogRepository.findOne({
+        where: {
+          id: txId,
+          networkReceived: ENetworkName.ETH,
+        },
+        relations: {
+          validator: true,
+        },
+      }),
       this.commonConfigRepository.getCommonConfig(),
     ]);
 
