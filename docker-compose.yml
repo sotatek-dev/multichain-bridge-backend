@@ -30,7 +30,7 @@ services:
       - myNetwork
   redis:
     image: redis:6.2-alpine
-    container_name: mereo_ticket_redis
+    container_name: mina_redis
     ports:
       - '${REDIS_PORT}:${REDIS_PORT}'
     command: redis-server --save 20 1 --loglevel warning --port ${REDIS_PORT}
