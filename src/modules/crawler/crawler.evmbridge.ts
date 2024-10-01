@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import assert from 'assert';
 import { Logger } from 'log4js';
 import { DataSource, QueryRunner } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
@@ -12,6 +13,7 @@ import { TokenPairRepository } from '../../database/repositories/token-pair.repo
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
+import { JobUnlockProvider } from './job-unlock.provider.js';
 
 @Injectable()
 export class BlockchainEVMCrawler {
@@ -24,6 +26,7 @@ export class BlockchainEVMCrawler {
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly loggerService: LoggerService,
     private readonly ethBridgeContract: ETHBridgeContract,
+    private readonly unlockJobProvider: JobUnlockProvider,
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
     this.logger = loggerService.getLogger('BLOCKCHAIN_EVM_CRAWLER');
@@ -104,8 +107,9 @@ export class BlockchainEVMCrawler {
       eventUnlock.toTokenDecimal = tokenPair.toDecimal;
     }
 
-    await queryRunner.manager.save(EventLog, eventUnlock);
-
+    const result = await queryRunner.manager.save(EventLog, eventUnlock);
+    assert(!!result.id && !!result.networkReceived, 'Cannot add job to signatures queue.');
+    await this.unlockJobProvider.addJobSignatures(result.id, result.networkReceived);
     return {
       success: true,
     };

@@ -12,6 +12,7 @@ import { CrawlerConsole } from './crawler.console.js';
 import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
 import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
 import { CrawlerService } from './crawler.service.js';
+import { JobUnlockProvider } from './job-unlock.provider.js';
 import { SenderEVMBridge } from './sender.evmbridge.js';
 import { SenderMinaBridge } from './sender.minabridge.js';
 
@@ -34,6 +35,7 @@ import { SenderMinaBridge } from './sender.minabridge.js';
     SCBridgeMinaCrawler,
     SenderMinaBridge,
     BatchJobGetPriceToken,
+    JobUnlockProvider,
   ],
   exports: [CrawlerService],
 })

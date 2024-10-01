@@ -45,7 +45,6 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     ...updateData
   }: {
     id: number;
-    retry: number;
     status: EEventStatus;
     amountReceived?: string;
     protocolFee?: string;
