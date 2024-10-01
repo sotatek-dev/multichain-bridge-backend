@@ -1,38 +1,34 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-import { EDirection } from '@constants/api.constant';
+import { EDirection } from '../../constants/api.constant.js';
+import { NumberField, StringField } from '../decorators/field.decorator.js';
 
 export class BasePaginationRequestDto {
-  @ApiProperty({ required: false })
-  @Min(1)
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  @Expose()
+  @NumberField({
+    required: false,
+    minimum: 1,
+    example: 10,
+  })
   limit: number;
 
-  @ApiProperty({ required: false })
-  @Min(1)
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  @Expose()
+  @NumberField({
+    required: false,
+    minimum: 1,
+    example: 1,
+  })
   page: number;
 }
 
 export class BasePaginationWithSortRequestDto extends BasePaginationRequestDto {
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  @Expose()
+  @StringField({
+    required: false,
+  })
   sortBy: string;
 
-  @ApiProperty({ enum: EDirection, required: false })
-  @IsEnum(EDirection)
-  @IsOptional()
-  @Expose()
+  @StringField({
+    required: false,
+    enum: EDirection,
+  })
   direction: EDirection;
 }
 
@@ -52,9 +48,8 @@ export class BasePaginationResponseDto<T = any> {
 }
 
 export class BasePaginationWithSortAndSearchRequestDto extends BasePaginationWithSortRequestDto {
-  @ApiPropertyOptional()
-  @IsString()
-  @IsOptional()
-  @Expose()
+  @StringField({
+    required: false,
+  })
   search: string;
 }

@@ -1,47 +1,53 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-// import { LoggerService } from '@shared/modules/logger/logger.service';
-import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
 import dayjs from 'dayjs';
-import { Field, Mina, PublicKey, UInt32 } from 'o1js';
+import { Logger } from 'log4js';
+import { fetchLastBlock, Field, Mina, PublicKey, UInt32 } from 'o1js';
 import { DataSource, QueryRunner } from 'typeorm';
 
-import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
-
-import { CrawlContract, EventLog } from '@modules/crawler/entities';
-
-import { Bridge } from './minaSc/minaBridgeSC';
+import { EAsset } from '../../constants/api.constant.js';
+import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
+import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
+import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
+import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { Bridge } from './minaSc/Bridge.js';
 
 @Injectable()
 export class SCBridgeMinaCrawler {
+  private readonly logger: Logger;
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
-    // private loggerService: LoggerService,
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
-  ) {}
+    private readonly loggerService: LoggerService,
+  ) {
+    this.logger = this.loggerService.getLogger('SC_BRIDGE_MINA_CRAWLER');
+    const Network = Mina.Network({
+      mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
+      archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
+    });
+    Mina.setActiveInstance(Network);
+  }
   public async handleEventCrawlBlock() {
+    const { startBlockNumber, toBlock } = await this.getFromToBlock();
+    if (startBlockNumber.greaterThanOrEqual(toBlock).toBoolean()) {
+      this.logger.warn('Already latest block. Skipped.');
+      return;
+    }
+    const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
+    const zkapp = new Bridge(zkappAddress);
+
+    const events = await zkapp.fetchEvents(startBlockNumber.add(1), toBlock);
+    this.logger.info({ events });
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const { startBlockNumber, toBlock } = await this.getFromToBlock();
-
-      const Network = Mina.Network({
-        mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
-        archive: 'https://api.minascan.io/archive/devnet/v1/graphql/',
-      });
-      Mina.setActiveInstance(Network);
-      const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
-      const zkAppToken = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
-
-      const zkapp = new Bridge(zkappAddress);
-      const events = await zkapp.fetchEvents(UInt32.from(Number(startBlockNumber) + 1));
-      console.log({ events });
-
+      this.logger.info(`[handleCrawlMinaBridge] Crawling from  ${startBlockNumber} to ${toBlock}`);
       for (const event of events) {
         switch (event.type) {
           case 'Unlock':
@@ -54,11 +60,9 @@ export class SCBridgeMinaCrawler {
             continue;
         }
       }
-      console.log(`[handleCrawlMinaBridge] Crawled from============================= ${startBlockNumber}`);
-      if (events.length > 0) {
-        await this.updateLatestBlockCrawl(Number(events.reverse()[0].blockHeight.toString()), queryRunner);
-      }
-      return await queryRunner.commitTransaction();
+      // udpate current latest block
+      await this.updateLatestBlockCrawl(Number(toBlock.toString()), queryRunner);
+      await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -67,7 +71,7 @@ export class SCBridgeMinaCrawler {
     }
   }
 
-  private async handlerUnLockEvent(event, queryRunner: QueryRunner) {
+  public async handlerUnLockEvent(event, queryRunner: QueryRunner) {
     const existLockTx = await queryRunner.manager.findOne(EventLog, {
       where: { id: event.event.data.id.toString() },
     });
@@ -80,26 +84,34 @@ export class SCBridgeMinaCrawler {
       status: EEventStatus.COMPLETED,
       txHashUnlock: event.event.transactionInfo.transactionHash,
       amountReceived: event.event.data.amount.toString(),
-      tokenReceivedAddress: event.event.data.tokenAddress.toBase58(),
-      tokenReceivedName: 'WETH',
+      tokenReceivedAddress: (event.event.data.tokenAddress as PublicKey).toBase58(),
+      tokenReceivedName: EAsset.WETH,
     });
+
+    return {
+      success: true,
+    };
   }
 
-  private async handlerLockEvent(event, queryRunner: QueryRunner) {
+  public async handlerLockEvent(event: any, queryRunner: QueryRunner) {
+    const txHashLock = event.event.transactionInfo.transactionHash;
     const field = Field.from(event.event.data.receipt.toString());
-    const receiveAddress = '0x' + field.toBigInt().toString(16);
+    const receiveAddress = DEFAULT_ADDRESS_PREFIX + field.toBigInt().toString(16);
 
-    // const timeLock = await this.getDateTimeByBlock(event.blockHeight.toString());
-
+    const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock });
+    if (isExist) {
+      this.logger.warn('Duplicated event', txHashLock);
+      return;
+    }
     const eventUnlock = {
-      senderAddress: event.event.data.locker.toBase58(),
+      senderAddress: JSON.parse(JSON.stringify(event.event.data.locker)),
       amountFrom: event.event.data.amount.toString(),
       tokenFromAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
       networkFrom: ENetworkName.MINA,
       networkReceived: ENetworkName.ETH,
-      tokenFromName: 'WETH',
+      tokenFromName: EAsset.WETH,
       tokenReceivedAddress: this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
-      txHashLock: event.event.transactionInfo.transactionHash,
+      txHashLock,
       receiveAddress: receiveAddress,
       blockNumber: event.blockHeight.toString(),
       blockTimeLock: Number(Math.floor(dayjs().valueOf() / 1000)),
@@ -122,45 +134,17 @@ export class SCBridgeMinaCrawler {
       eventUnlock.toTokenDecimal = tokenPair.toDecimal;
     }
 
-    console.log({ eventUnlock });
+    this.logger.info({ eventUnlock });
 
     await queryRunner.manager.save(EventLog, eventUnlock);
+
+    return {
+      success: true,
+    };
   }
 
-  private async getDateTimeByBlock(blockNumber: number) {
-    console.log(1111, blockNumber);
-
-    const endpoint = 'https://devnet.graphql.minaexplorer.com/'; // Replace with your GraphQL endpoint
-    const query = `
-      query {
-          transaction(query: {blockHeight: ${blockNumber}}) {
-            dateTime
-          }
-        }
-    `;
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query,
-      }),
-    });
-
-    const result = await response.json();
-
-    console.log('=========', result.data.transaction);
-
-    const dateTime = dayjs(result.data.transaction.dateTime);
-
-    // Convert DateTime to Unix timestamp in seconds
-    const unixTimestampInSeconds = Math.floor(dateTime.valueOf() / 1000);
-    return unixTimestampInSeconds;
-  }
-
-  private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
-    await queryRunner.manager.update(
+  private updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
+    return queryRunner.manager.update(
       CrawlContract,
       {
         contractAddress: this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS),
@@ -172,8 +156,7 @@ export class SCBridgeMinaCrawler {
     );
   }
 
-  private async getFromToBlock(): Promise<{ startBlockNumber; toBlock }> {
-    let toBlock;
+  private async getFromToBlock(): Promise<{ startBlockNumber: UInt32; toBlock: UInt32 }> {
     const currentCrawledBlock = await this.crawlContractRepository.findOne({
       where: {
         networkName: ENetworkName.MINA,
@@ -192,7 +175,15 @@ export class SCBridgeMinaCrawler {
     } else {
       startBlockNumber = currentCrawledBlock.latestBlock;
     }
+    const latestBlock = await fetchLastBlock(this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS));
 
-    return { startBlockNumber, toBlock };
+    const toBlock = UInt32.from(
+      latestBlock.blockchainLength
+        .toUInt64()
+        .sub(this.configService.get<number>(EEnvKey.MINA_CRAWL_SAFE_BLOCK))
+        .toString(),
+    );
+
+    return { startBlockNumber: UInt32.from(startBlockNumber), toBlock };
   }
 }

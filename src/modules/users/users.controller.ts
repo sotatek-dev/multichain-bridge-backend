@@ -1,14 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { ETableName } from '@constants/entity.constant';
-
-import { GuardPublic } from '@guards/guard.decorator';
-
-import { getHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto';
-import { GetProtocolFeeBodyDto } from './dto/user-request.dto';
-import { GetListTokenPairResponseDto, GetProtocolFeeResponseDto } from './dto/user-response.dto';
-import { UsersService } from './users.service';
+import { ETableName } from '../../constants/entity.constant.js';
+import { GuardPublic } from '../../guards/guard.decorator.js';
+import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';
+import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
+import { GetListTokenPairResponseDto, GetProtocolFeeResponseDto } from './dto/user-response.dto.js';
+import { UsersService } from './users.service.js';
 
 @ApiTags('Users')
 @Controller(ETableName.USERS)
@@ -18,7 +16,7 @@ export class UsersController {
   @Get('history/:address')
   @GuardPublic()
   @ApiOkResponse({ type: [GetHistoryOfUserResponseDto] })
-  getHistoriesOfUser(@Param('address') address: string, @Query() query: getHistoryOfUserDto) {
+  getHistoriesOfUser(@Param('address') address: string, @Query() query: GetHistoryOfUserDto) {
     return this.userService.getHistoriesOfUser(address, query);
   }
 

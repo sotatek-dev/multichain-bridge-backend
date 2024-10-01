@@ -1,8 +1,12 @@
 import * as dotenv from 'dotenv';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import type { DataSourceOptions } from 'typeorm';
+import { fileURLToPath } from 'url';
 
-import { EEnvKey } from '@constants/env.constant';
+import { EEnvKey } from './constants/env.constant.js';
+import { isDevelopmentEnvironment } from './shared/utils/util.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 export const migrationDir = join(__dirname, 'database/migrations');
@@ -16,8 +20,7 @@ export default {
   entities: [join(__dirname, '/modules/**/entities/*.entity{.js,.ts}')],
   migrationsTableName: 'custom_migration_table',
   migrations: [join(migrationDir, '*{.js,.ts}')],
-  logging: process.env[EEnvKey.NODE_ENV] === 'local' ? true : false,
-  // synchronize: true,
+  logging: isDevelopmentEnvironment(),
   cache: true,
   timezone: 'Z',
   extra: { decimalNumbers: true },

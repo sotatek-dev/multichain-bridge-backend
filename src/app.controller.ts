@@ -1,8 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 
-import { GuardPublic } from '@guards/guard.decorator';
-
-import { AppService } from './app.service';
+import { AppService } from './app.service.js';
+import { GuardPublic } from './guards/guard.decorator.js';
 
 @Controller()
 export class AppController {
@@ -10,7 +9,7 @@ export class AppController {
 
   @Get()
   @GuardPublic()
-  getHello(): string {
-    return this.appService.getHello();
+  getHello() {
+    return this.appService.getApiVersion();
   }
 }

@@ -1,4 +1,8 @@
-import { AES, enc } from 'crypto-js';
+import * as cryptoJs from 'crypto-js';
+
+import { EEnvironments, EEnvKey } from '../../constants/env.constant.js';
+
+const { AES, enc } = cryptoJs;
 
 export const toLower = (value: string) => value.toLowerCase();
 
@@ -34,3 +38,5 @@ export const getVariableName = <TResult>(getVar: () => TResult): string => {
 };
 
 export const nullToZero = (value: string | number) => (value ? value.toString() : '0');
+export const isDevelopmentEnvironment = () =>
+  [EEnvironments.LOCAL, EEnvironments.DEV].includes(process.env[EEnvKey.NODE_ENV] as EEnvironments);

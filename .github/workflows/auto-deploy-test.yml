@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} is deploying test branch [test] 🌏 🚀 🛰️ 
 on:
   push:
     branches:
-      - "test"
+      - 'testing'
 jobs:
   DeployTest:
     runs-on: [self-hosted, mina-bridge-test]
@@ -11,12 +11,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v2
         with:
-          node-version: 16.15.0
+          node-version: v18.20.4
       - run: |
           echo "${{ vars.MINA_BRIDGE_BE_TEST }}" >> .env
-          docker-compose -p mina-bridge-test-env up -d
-          yarn
-          yarn prebuild
-          yarn build
-          yarn migration:run
-          npx pm2 reload ecosystem.config.js
+          docker build . -t mina-bridge:1.0.0
+          docker compose -f docker-compose.dev.yaml up -d

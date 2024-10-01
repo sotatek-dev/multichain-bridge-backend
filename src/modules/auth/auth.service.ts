@@ -1,46 +1,42 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UserRepository } from 'database/repositories/user.repository';
+import { Logger } from 'log4js';
 import Client from 'mina-signer';
-import { DataSource } from 'typeorm';
-import Web3 from 'web3';
-import { toChecksumAddress } from 'web3-utils';
+import pkg from 'web3-utils';
 
-import { EEnvKey } from '@constants/env.constant';
-import { EError } from '@constants/error.constant';
+import { EMinaChainEnviroment } from '../../constants/blockchain.constant.js';
+import { EEnvironments, EEnvKey } from '../../constants/env.constant.js';
+import { EError } from '../../constants/error.constant.js';
+import { UserRepository } from '../../database/repositories/user.repository.js';
+import { User } from '../../modules/users/entities/user.entity.js';
+import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exeption.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
+import { LoginDto, LoginMinaDto } from './dto/auth-request.dto.js';
+import { IJwtPayload } from './interfaces/auth.interface.js';
 
-import { User } from '@modules/users/entities/user.entity';
-
-import { httpBadRequest, httpNotFound } from '@shared/exceptions/http-exeption';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
-
-import { LoginDto, LoginMinaDto } from './dto/auth-request.dto';
-import { IJwtPayload } from './interfaces/auth.interface';
-
+const { toChecksumAddress } = pkg;
 @Injectable()
 export class AuthService {
-  private web3: Web3;
+  private readonly logger: Logger;
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
     private readonly userRepository: UserRepository,
+    private readonly loggerService: LoggerService,
     private readonly ethBridgeContract: ETHBridgeContract,
-    private dataSource: DataSource,
-  ) {}
+  ) {
+    this.logger = loggerService.getLogger('AUTH_SERVICE');
+  }
 
   async login(data: LoginDto) {
-    try {
-      // Validate signature and check for address in database
-      if (!this.validateSignature(data.address, data.signature)) throw new Error('Invalid signature');
-      const admin = await this.validateAdminAccount(data.address, true);
+    // Validate signature and check for address in database
+    if (!(await this.validateSignature(data.address, data.signature))) httpBadRequest(EError.INVALID_SIGNATURE);
+    const admin = await this.validateAdminAccount(data.address, true);
 
-      // Generate access and refresh token
-      return this.getToken(admin);
-    } catch (err) {
-      console.log('[err] auth.service.ts: ---', err);
-      throw new httpBadRequest(EError.USER_NOT_FOUND);
-    }
+    // Generate access and refresh token
+    return this.getToken(admin);
   }
 
   async loginMina(data: LoginMinaDto) {
@@ -52,7 +48,7 @@ export class AuthService {
       // Generate access and refresh token
       return this.getToken(admin);
     } catch (err) {
-      console.log('[err] auth.service.ts: ---', err);
+      this.logger.error('[err] auth.service.ts: ---', err);
       throw new httpBadRequest(EError.USER_NOT_FOUND);
     }
   }
@@ -75,20 +71,24 @@ export class AuthService {
   }
 
   private async validateSignature(address: string, signature: string) {
-    const recover = await this.ethBridgeContract.recover(
-      signature,
-      this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
-    );
-    const checksumRecover = toChecksumAddress(recover);
-    const checksumAddress = toChecksumAddress(address);
+    try {
+      const recover = await this.ethBridgeContract.recover(
+        signature,
+        this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
+      );
+      const checksumRecover = toChecksumAddress(recover);
+      const checksumAddress = toChecksumAddress(address);
 
-    return checksumRecover === checksumAddress;
+      return checksumRecover === checksumAddress;
+    } catch (error) {
+      httpBadRequest(EError.INVALID_SIGNATURE);
+    }
   }
 
   private async validateSignatureMina(address: string, signature) {
-    let client = new Client({ network: 'mainnet' });
-    if (process.env.NODE_ENV !== 'production') {
-      client = new Client({ network: 'testnet' });
+    let client = new Client({ network: EMinaChainEnviroment.MAINNET });
+    if (process.env.NODE_ENV !== EEnvironments.PRODUCTION) {
+      client = new Client({ network: EMinaChainEnviroment.TESTNET });
     }
 
     const signer = {
@@ -99,8 +99,8 @@ export class AuthService {
     return client.verifyMessage(signer);
   }
 
-  private async validateAdminAccount(address: string, is_evm: boolean) {
-    if (is_evm) {
+  private async validateAdminAccount(address: string, isEvm: boolean) {
+    if (isEvm) {
       address = toChecksumAddress(address);
     }
     const admin = await this.userRepository.findOneBy({ walletAddress: address });
@@ -116,7 +116,7 @@ export class AuthService {
     try {
       jwtData = this.jwtService.verify(refreshToken, {
         secret,
-      }) as IJwtPayload;
+      });
     } catch (error) {
       httpBadRequest(EError.INVALID_TOKEN);
     }
@@ -129,15 +129,4 @@ export class AuthService {
 
     return this.getToken(user);
   }
-
-  // async register(data: SignupDto) {
-  //   const { email, password } = data;
-  //   const hashedPassword = await generateHash(password);
-  //   const newUserData = {
-  //     email,
-  //     password: hashedPassword,
-  //   };
-  //   const newUser = await this.userRepository.save(newUserData);
-  //   return this.getToken(newUser);
-  // }
 }

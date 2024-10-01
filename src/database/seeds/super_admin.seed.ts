@@ -2,7 +2,8 @@ import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
 
-import { User } from '@modules/users/entities/user.entity';
+import { ERole } from '../../constants/api.constant.js';
+import { User } from '../../modules/users/entities/user.entity.js';
 
 export default class SuperAdminSeeder implements Seeder {
   public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {
@@ -11,18 +12,18 @@ export default class SuperAdminSeeder implements Seeder {
     const listAdmin = [
       {
         walletAddress: process.env.ADMIN_ADDRESS_EVM,
-        name: 'admin evm',
+        name: ERole.EVM_ADMIN,
       },
       {
         walletAddress: process.env.ADMIN_ADDRESS_MINA,
-        name: 'admin mina',
+        name: ERole.MINA_ADMIN,
       },
     ];
 
-    for (let i = 0; i < listAdmin.length; i++) {
+    for (const admin of listAdmin) {
       const newUser = new User({
-        walletAddress: listAdmin[i].walletAddress,
-        name: listAdmin[i].name,
+        walletAddress: admin.walletAddress,
+        name: admin.name,
       });
       await repository.insert(newUser);
     }

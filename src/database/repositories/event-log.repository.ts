@@ -1,47 +1,62 @@
+import { GetHistoryDto } from 'modules/users/dto/history-response.dto.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
+import { Brackets } from 'typeorm';
 
-import { EDirection } from '@constants/api.constant';
-import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
-import { ETableName } from '@constants/entity.constant';
-
-import { BaseRepository } from '@core/base-repository';
-
-import { EventLog } from '@modules/crawler/entities';
-
-import { endOfDayUnix, startOfDayUnix } from '@shared/utils/time';
+import { EDirection } from '../../constants/api.constant.js';
+import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
+import { ETableName } from '../../constants/entity.constant.js';
+import { MAX_RETRIES } from '../../constants/service.constant.js';
+import { BaseRepository } from '../../core/base-repository.js';
+import { EventLog } from '../../modules/crawler/entities/event-logs.entity.js';
+import { endOfDayUnix, startOfDayUnix } from '../../shared/utils/time.js';
 
 @EntityRepository(EventLog)
 export class EventLogRepository extends BaseRepository<EventLog> {
   protected alias: ETableName = ETableName.EVENT_LOGS;
 
-  public async getEventLockWithNetwork(network: ENetworkName): Promise<EventLog> {
-    return this.createQueryBuilder(`${this.alias}`)
-      .where(`${this.alias}.networkReceived = :network`, { network })
-      .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.WAITING, EEventStatus.FAILED] })
-      .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: 3 })
+  public async getEventLockWithNetwork(network: ENetworkName, threshold?: number): Promise<EventLog> {
+    const qb = this.createQueryBuilder(`${this.alias}`);
+    qb.innerJoinAndSelect(`${this.alias}.validator`, 'signature');
+
+    qb.where(`${this.alias}.networkReceived = :network`, { network });
+
+    if (threshold) {
+      qb.andWhere(
+        `(SELECT COUNT(${ETableName.MULTI_SIGNATURE}.id) 
+          FROM  ${ETableName.MULTI_SIGNATURE} 
+          WHERE ${ETableName.MULTI_SIGNATURE}.tx_id = ${this.alias}.id 
+          AND   ${ETableName.MULTI_SIGNATURE}.signature IS NOT NULL)  >= :threshold  `,
+        {
+          threshold,
+        },
+      );
+    }
+    qb.andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.WAITING, EEventStatus.FAILED] })
+      .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: MAX_RETRIES })
       .orderBy(`${this.alias}.status`, EDirection.DESC)
       .addOrderBy(`${this.alias}.id`, EDirection.ASC)
-      .addOrderBy(`${this.alias}.retry`, EDirection.ASC)
-      .getOne();
+      .addOrderBy(`${this.alias}.retry`, EDirection.ASC);
+
+    return qb.getOne();
   }
 
-  public async updateStatusAndRetryEvenLog(
-    id: number,
-    retry: number,
-    status: EEventStatus,
-    errorDetail?,
-    txHashUnlock?,
-    protocolFee?,
-  ) {
+  public async updateStatusAndRetryEvenLog({
+    id,
+    ...updateData
+  }: {
+    id: number;
+    retry: number;
+    status: EEventStatus;
+    amountReceived?: string;
+    protocolFee?: string;
+    errorDetail?: string;
+    txHashUnlock?: string;
+    gasFee?: string;
+    tip?: string;
+  }) {
     return this.createQueryBuilder(`${this.alias}`)
       .update(EventLog)
-      .set({
-        status,
-        retry,
-        errorDetail,
-        txHashUnlock,
-        protocolFee,
-      })
+      .set(updateData)
       .where(`${this.alias}.id = :id`, { id })
       .execute();
   }
@@ -59,9 +74,8 @@ export class EventLogRepository extends BaseRepository<EventLog> {
   public async getHistoriesOfUser(address: string, options) {
     const queryBuilder = this.createQb();
     queryBuilder
-      .where(`${this.alias}.sender_address = :address`, { address })
-      .andWhere(`${this.alias}.status IN (:...status)`, {
-        status: [EEventStatus.PROCESSING, EEventStatus.WAITING, EEventStatus.COMPLETED],
+      .where(`LOWER(${this.alias}.sender_address) = :address OR LOWER(${this.alias}.receive_address) = :address`, {
+        address: address.toLowerCase(),
       })
       .orderBy(`${this.alias}.id`, EDirection.DESC)
       .select([
@@ -83,6 +97,8 @@ export class EventLogRepository extends BaseRepository<EventLog> {
         `${this.alias}.protocolFee`,
         `${this.alias}.fromTokenDecimal`,
         `${this.alias}.toTokenDecimal`,
+        `${this.alias}.tip`,
+        `${this.alias}.gasFee`,
         `${this.alias}.status`,
         `${this.alias}.createdAt`,
       ]);
@@ -91,13 +107,16 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     return queryBuilder.getManyAndCount();
   }
 
-  public async getHistories(options) {
+  public async getHistories(options: GetHistoryDto) {
     const queryBuilder = this.createQb();
-    queryBuilder
-      .andWhere(`${this.alias}.status IN (:...status)`, { status: [EEventStatus.PROCESSING, EEventStatus.WAITING] })
-      .orderBy(`${this.alias}.id`, EDirection.DESC);
-    if (options.address) {
-      queryBuilder.andWhere(`${this.alias}.sender_address = :address`, { address: options.address });
+    queryBuilder.orderBy(`${this.alias}.id`, EDirection.DESC);
+    if (typeof options.address === 'string') {
+      queryBuilder.andWhere(
+        `${this.alias}.sender_address ilike :address OR ${this.alias}.receive_address ilike :address`,
+        {
+          address: `%${options.address.toLowerCase()}%`,
+        },
+      );
     }
 
     this.queryBuilderAddPagination(queryBuilder, options);
@@ -105,13 +124,33 @@ export class EventLogRepository extends BaseRepository<EventLog> {
   }
 
   public async sumAmountBridgeOfUserInDay(address) {
-    console.log('new====date', startOfDayUnix(new Date()), endOfDayUnix(new Date()));
-
     const qb = this.createQb();
     qb.select([`${this.alias}.sender_address`, `SUM(CAST(${this.alias}.amount_from as DECIMAL(100,2))) as totalamount`])
       .where(`${this.alias}.sender_address = :address`, { address })
       .andWhere(`${this.alias}.block_time_lock BETWEEN ${startOfDayUnix(new Date())} AND ${endOfDayUnix(new Date())}`)
       .groupBy(`${this.alias}.sender_address`);
     return qb.getRawOne();
+  }
+
+  async getValidatorPendingSignature(validator: string, network: ENetworkName) {
+    const qb = this.createQueryBuilder(`${this.alias}`);
+    qb.leftJoinAndSelect(`${this.alias}.validator`, 'signature');
+    qb.where(`${this.alias}.networkReceived = :network`, { network });
+    qb.andWhere(
+      new Brackets(qb => {
+        qb.where(`signature.validator IS NULL`)
+          .orWhere(`signature.validator != :validator`, { validator })
+          .orWhere(
+            new Brackets(qb => {
+              qb.where(`signature.signature IS NULL`).andWhere(`signature.retry < ${MAX_RETRIES}`);
+            }),
+          );
+      }),
+    );
+    qb.andWhere(`${this.alias}.status = :status`, { status: EEventStatus.WAITING })
+      .addOrderBy(`${this.alias}.id`, EDirection.ASC)
+      .addOrderBy(`${this.alias}.retry`, EDirection.ASC);
+
+    return qb.getOne();
   }
 }

@@ -1,158 +1,225 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import BigNumber from 'bignumber.js';
-import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
-import { EventLogRepository } from 'database/repositories/event-log.repository';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
-import { TokenPriceRepository } from 'database/repositories/token-price.repository';
-import { AccountUpdate, fetchAccount, Mina, PrivateKey, PublicKey, UInt64 } from 'o1js';
+import assert from 'assert';
+import BigNumber from 'bignumber.js/bignumber.mjs';
+import { Logger } from 'log4js';
+import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
+import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signature, UInt64 } from 'o1js';
 
-import { EEventStatus, ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
-import { EError } from '@constants/error.constant';
-
-import { addDecimal, calculateFee } from '@shared/utils/bignumber';
-
-import { FungibleToken } from './minaSc/fungibleToken';
-import { Bridge } from './minaSc/minaBridgeSC';
+import { DECIMAL_BASE, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
+import { EError } from '../../constants/error.constant.js';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
+import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
+import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
+import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { addDecimal, calculateFee, calculateTip } from '../../shared/utils/bignumber.js';
+import { TokenPair } from '../users/entities/tokenpair.entity.js';
+import { CommonConfig } from './entities/common-config.entity.js';
+import { MultiSignature } from './entities/multi-signature.entity.js';
+import { Bridge } from './minaSc/Bridge.js';
+import { Manager } from './minaSc/Manager.js';
+import { ValidatorManager } from './minaSc/ValidatorManager.js';
 
 @Injectable()
 export class SenderMinaBridge {
+  private readonly logger: Logger;
+  private isContractCompiled = false;
+  private readonly feePayerKey: PrivateKey;
+  private readonly bridgeKey: PrivateKey;
+  private readonly tokenPublicKey: PublicKey;
+  private readonly validatorThreshhold;
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
     private readonly tokenPairRepository: TokenPairRepository,
-    private readonly tokenPriceRepository: TokenPriceRepository,
-  ) {}
+    private readonly multiSignatureRepository: MultiSignatureRepository,
+    private readonly loggerService: LoggerService,
+  ) {
+    this.logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
+    this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
+    this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
+    this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
+    this.validatorThreshhold = this.configService.get(EEnvKey.MINA_VALIDATOR_THRESHHOLD);
 
+    const network = Mina.Network({
+      mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
+      archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
+    });
+    Mina.setActiveInstance(network);
+  }
+  private getContractsInfo() {
+    this.logger.log('Bridge', this.bridgeKey.toPublicKey().toBase58());
+    this.logger.log('FeePayer', this.feePayerKey.toPublicKey().toBase58());
+    this.logger.log('Token', this.tokenPublicKey.toBase58());
+  }
+  private async compileContract() {
+    if (!this.isContractCompiled) {
+      await FungibleToken.compile();
+      await FungibleTokenAdmin.compile();
+      await Bridge.compile();
+      await Manager.compile();
+      await ValidatorManager.compile();
+      this.isContractCompiled = true;
+    }
+  }
+  private getAmountReceivedAndFee(
+    tokenPair: TokenPair,
+    config: CommonConfig,
+    amountFrom: string,
+  ): { amountReceived: string; protocolFeeAmount: string; tipAmount: string; gasFeeMina: string } {
+    // convert decimal from ETH to MINA
+    const amountReceiveConvert = BigNumber(amountFrom)
+      .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
+      .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
+      .toString();
+    const gasFeeMina = addDecimal(
+      this.configService.get(EEnvKey.GASFEEMINA),
+      this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
+    );
+    // calc fee follow MINA decimal.
+    const protocolFeeAmount = BigNumber(calculateFee(amountReceiveConvert, gasFeeMina, config.tip))
+      .toFixed(0)
+      .toString();
+    const amountReceived = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toFixed(0).toString();
+    return {
+      amountReceived,
+      protocolFeeAmount,
+      tipAmount: calculateTip(amountReceiveConvert, gasFeeMina, config.tip)
+        .div(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
+        .toString(),
+      gasFeeMina: this.configService.get(EEnvKey.GASFEEMINA),
+    };
+  }
   public async handleUnlockMina() {
-    let dataLock, configTip, rateethmina;
+    let dataLock, configTip;
     try {
-      [dataLock, configTip, { rateethmina }] = await Promise.all([
-        this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA),
+      [dataLock, configTip] = await Promise.all([
+        this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA, this.validatorThreshhold),
         this.commonConfigRepository.getCommonConfig(),
-        this.tokenPriceRepository.getRateETHToMina(),
       ]);
       if (!dataLock) {
         return;
       }
-      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
 
+      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
       const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock;
       const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
-
       if (!tokenPair) {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          dataLock.retry,
-          EEventStatus.NOTOKENPAIR,
-        );
+        this.logger.warn('Token pair not found.');
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: dataLock.retry,
+          status: EEventStatus.NOTOKENPAIR,
+        });
         return;
       }
 
-      const amountReceiveConvert = BigNumber(amountFrom)
-        .dividedBy(BigNumber(10).pow(tokenPair.fromDecimal))
-        .multipliedBy(BigNumber(10).pow(tokenPair.toDecimal))
-        .toString();
-      const protocolFeeAmount = calculateFee(
-        amountReceiveConvert,
-        addDecimal(this.configService.get(EEnvKey.GASFEEMINA), this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)),
-        configTip.tip,
-      );
-      const amountReceive = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toString();
       const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
       if (!isPassDailyQuota) {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          dataLock.retry,
-          EEventStatus.FAILED,
-          EError.OVER_DAILY_QUOTA,
-        );
+        this.logger.warn('Passed daily quota.');
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: dataLock.retry,
+          status: EEventStatus.FAILED,
+          errorDetail: EError.OVER_DAILY_QUOTA,
+        });
         return;
       }
-
-      const rateMINAETH = Number(rateethmina.toFixed(0)) || 2000;
-      const result = await this.callUnlockFunction(amountReceive, id, receiveAddress, protocolFeeAmount, rateMINAETH);
+      const { amountReceived, protocolFeeAmount, gasFeeMina, tipAmount } = this.getAmountReceivedAndFee(
+        tokenPair,
+        configTip,
+        amountFrom,
+      );
+      const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
       // Update status eventLog when call function unlock
       if (result.success) {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          dataLock.retry,
-          EEventStatus.PROCESSING,
-          result.error,
-          result.data,
-          protocolFeeAmount,
-        );
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: dataLock.retry,
+          status: EEventStatus.PROCESSING,
+          errorDetail: result.error,
+          txHashUnlock: result.data,
+          amountReceived,
+          protocolFee: protocolFeeAmount,
+          gasFee: gasFeeMina,
+          tip: tipAmount,
+        });
       } else {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog(
-          dataLock.id,
-          Number(dataLock.retry + 1),
-          EEventStatus.FAILED,
-          result.error,
-        );
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: Number(dataLock.retry + 1),
+          status: EEventStatus.FAILED,
+          errorDetail: JSON.stringify(result.error),
+        });
       }
+      return result;
     } catch (error) {
-      await this.eventLogRepository.updateStatusAndRetryEvenLog(
-        dataLock.id,
-        Number(dataLock.retry + 1),
-        EEventStatus.FAILED,
-        error,
-      );
+      console.log(error);
+      await this.eventLogRepository.updateStatusAndRetryEvenLog({
+        id: dataLock.id,
+        retry: Number(dataLock.retry + 1),
+        status: EEventStatus.FAILED,
+        errorDetail: JSON.stringify(error),
+      });
     }
   }
 
-  private async callUnlockFunction(amount, txId, receiveAddress, protocolFeeAmount, rateMINAETH) {
+  private async callUnlockFunction(amount, txId, receiveAddress) {
     try {
-      const feepayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
-      const zkAppKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
-      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-      const MINAURL = 'https://proxy.devnet.minaexplorer.com/graphql';
-      const ARCHIVEURL = 'https://api.minascan.io/archive/devnet/v1/graphql/';
-      //
-      const network = Mina.Network({
-        mina: MINAURL,
-        archive: ARCHIVEURL,
+      const generatedSignatures = await this.multiSignatureRepository.findBy({
+        txId,
       });
-      Mina.setActiveInstance(network);
+      const signatureData = generatedSignatures
+        .map(e => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
+        .flat(1);
+      this.logger.info(`Found ${generatedSignatures.length} signatures.`);
+      this.logger.info('compile the contract...');
+      await this.compileContract();
 
-      console.log('compile the contract...');
-      await Bridge.compile();
-      await FungibleToken.compile();
-      const fee = 1 * Math.pow(10, 9);
-      // const fee = protocolFeeAmount * rateMINAETH + 5 * Math.pow(10, 8); // in nanomina (1 billion = 1.0 mina)
-      const feepayerAddress = feepayerKey.toPublicKey();
-      const zkAppAddress = zkAppKey.toPublicKey();
-      const zkBridge = new Bridge(zkAppAddress);
-      await fetchAccount({ publicKey: zkAppAddress });
-      await fetchAccount({ publicKey: feepayerAddress });
+      const fee = +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
+      const feePayerPublicKey = this.feePayerKey.toPublicKey();
+      const bridgePublicKey = this.bridgeKey.toPublicKey();
+      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
 
-      const hasAccount = Mina.hasAccount(receiverPublicKey);
-      let sentTx: Mina.PendingTransaction;
+      const zkBridge = new Bridge(bridgePublicKey);
+      const token = new FungibleToken(this.tokenPublicKey);
+      const tokenId = token.deriveTokenId();
+      await Promise.all([
+        fetchAccount({ publicKey: bridgePublicKey }),
+        fetchAccount({ publicKey: feePayerPublicKey }),
+        fetchAccount({ publicKey: receiverPublicKey, tokenId }),
+        fetchAccount({
+          publicKey: this.tokenPublicKey,
+          tokenId,
+        }),
+      ]);
+      const hasAccount = Mina.hasAccount(receiverPublicKey, tokenId);
+
+      const typedAmount = UInt64.from(amount);
+
+      this.logger.info('Receivier token account status = ', hasAccount);
       // compile the contract to create prover keys
-      try {
-        // call update() and send transaction
-        console.log('build transaction and create proof...');
-        const tx = await Mina.transaction({ sender: feepayerAddress, fee }, async () => {
-          if (!hasAccount) AccountUpdate.fundNewAccount(feepayerAddress, 1);
-          await zkBridge.unlock(UInt64.from(amount), receiverPublicKey, UInt64.from(txId));
-        });
-        await tx.prove();
-        console.log('send transaction...');
-        sentTx = await tx.sign([feepayerKey, zkAppKey]).send();
-      } catch (err) {
-        console.log(err);
-      }
-      console.log('=====================txhash: ', sentTx?.hash);
-      await sentTx?.wait({ maxAttempts: 100 });
-      console.log('=====================done: ', sentTx?.hash);
-      if (sentTx.hash) {
-        return { success: true, error: null, data: sentTx.hash };
-      } else {
-        return { success: false, error: sentTx, data: null };
-      }
+
+      this.logger.info('build transaction and create proof...');
+      const tx = await Mina.transaction({ sender: feePayerPublicKey, fee }, async () => {
+        if (!hasAccount) AccountUpdate.fundNewAccount(feePayerPublicKey);
+        await zkBridge.unlock(typedAmount, receiverPublicKey, UInt64.from(txId), this.tokenPublicKey, ...signatureData);
+      });
+      this.logger.info('Proving tx.');
+      await tx.prove();
+      this.logger.info('send transaction...');
+      const sentTx = await tx.sign([this.feePayerKey, this.bridgeKey]).send();
+
+      this.logger.info('Transaction waiting to be applied with txhash: ', sentTx.hash);
+      await sentTx?.wait({ maxAttempts: 300 });
+
+      assert(sentTx?.hash, 'transaction failed');
+      return { success: true, error: null, data: sentTx.hash };
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
       return { success: false, error, data: null };
     }
   }
@@ -171,32 +238,64 @@ export class SenderMinaBridge {
     }
     return true;
   }
+  async handleValidateUnlockTxMina() {
+    let dataLock, config;
+    assert(!!this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
+    const signerPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
+    const signerPublicKey = PublicKey.fromPrivateKey(signerPrivateKey).toBase58();
+    try {
+      [dataLock, config] = await Promise.all([
+        this.eventLogRepository.getValidatorPendingSignature(signerPublicKey, ENetworkName.MINA),
+        this.commonConfigRepository.getCommonConfig(),
+      ]);
 
-  private async fetchNonce(feepayerAddress) {
-    console.log('nonce=======', feepayerAddress);
-    const url = 'https://proxy.berkeley.minaexplorer.com/graphql';
-    const query = `
-    query {
-      account(publicKey: "${feepayerAddress}") {
-        inferredNonce
+      if (!dataLock) {
+        return;
       }
+      this.logger.info('Start generating mina signatures.');
+
+      const { tokenReceivedAddress, tokenFromAddress, receiveAddress, amountFrom } = dataLock;
+
+      const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
+
+      if (!tokenPair) {
+        this.logger.warn('Unknown token pair', tokenFromAddress, tokenReceivedAddress);
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          retry: dataLock.retry,
+          status: EEventStatus.NOTOKENPAIR,
+        });
+        return;
+      }
+
+      // check if this signature has been tried before.
+      let multiSignature = await this.multiSignatureRepository.findOneBy({
+        txId: dataLock.id,
+        validator: signerPublicKey,
+      });
+      if (!multiSignature) {
+        multiSignature = new MultiSignature({
+          chain: ENetworkName.MINA,
+          validator: signerPublicKey,
+          txId: dataLock.id,
+        });
+      }
+
+      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
+      const { amountReceived } = this.getAmountReceivedAndFee(tokenPair, config, amountFrom);
+
+      const msg = [
+        ...receiverPublicKey.toFields(),
+        ...UInt64.from(amountReceived).toFields(),
+        ...this.tokenPublicKey.toFields(),
+      ];
+      const signature = Signature.create(signerPrivateKey, msg);
+
+      multiSignature.signature = signature.toJSON();
+      await this.multiSignatureRepository.save(multiSignature);
+    } catch (error) {
+      this.logger.log(EError.INVALID_SIGNATURE, error);
+      await this.multiSignatureRepository.upsertErrorAndRetryMultiSignature(signerPublicKey, dataLock.id, error);
     }
-    `;
-    const response = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify({ operationName: null, query, variables: {} }),
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const json = await response.json();
-    console.log('nonce=======', json);
-
-    const inferredNonce = Number(json.data.account.inferredNonce);
-    return inferredNonce;
-  }
-
-  private tweakMintPrecondition(token: FungibleToken, mempoolMintAmount: number) {
-    // here we take `circulating` variable from state slot with index 3 and increase it by `mempoolMintAmount`
-    const prevPreconditionVal = token.self.body.preconditions.account.state[3]!.value;
-    token.self.body.preconditions.account.state[3]!.value = prevPreconditionVal.add(mempoolMintAmount);
   }
 }

@@ -1,52 +1,59 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { TokenPriceRepository } from 'database/repositories/token-price.repository';
-import { DataSource, QueryRunner } from 'typeorm';
+import { isEmpty, isNumberString } from 'class-validator';
 
-import { EEnvKey } from '@constants/env.constant';
-
-import { TokenPrice } from './entities';
+import { EAsset } from '../../constants/api.constant.js';
+import { ECoinMarketCapTokenId } from '../../constants/blockchain.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
+import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { TokenPrice } from './entities/index.js';
 
 @Injectable()
 export class BatchJobGetPriceToken {
   constructor(
     private readonly configService: ConfigService,
     private readonly tokenPriceRepository: TokenPriceRepository,
+    private loggerService: LoggerService,
   ) {}
+  private readonly logger = this.loggerService.getLogger('CRAWL_TOKEN_PRICE');
+
   public async handleGetPriceToken() {
-    try {
-      const apiKey = this.configService.get(EEnvKey.COINMARKET_KEY);
-      const apiUrl = this.configService.get(EEnvKey.COINMARKET_URL);
-      const headers = {
-        'X-CMC_PRO_API_KEY': apiKey,
-      };
+    const apiKey = this.configService.get(EEnvKey.COINMARKET_KEY);
+    const apiUrl = this.configService.get(EEnvKey.COINMARKET_URL);
+    const headers = {
+      'X-CMC_PRO_API_KEY': apiKey,
+    };
 
-      const result = await axios.get(apiUrl, { headers });
+    const result = await axios.get(apiUrl, { headers });
 
-      result?.data?.data.forEach(async e => {
-        if (e.symbol == 'MINA') {
-          const tokenMina = await this.tokenPriceRepository.getTokenPriceBySymbol('MINA');
-          if (!tokenMina) {
-            this.tokenPriceRepository.save(new TokenPrice({ symbol: 'MINA', priceUsd: e.quote.USD.price || 1 }));
-          } else {
-            tokenMina.priceUsd = e.quote.USD.price;
-            tokenMina.save();
-          }
-        }
-        if (e.symbol == 'ETH') {
-          const tokenMina = await this.tokenPriceRepository.getTokenPriceBySymbol('ETH');
-          if (!tokenMina) {
-            this.tokenPriceRepository.save(new TokenPrice({ symbol: 'ETH', priceUsd: e.quote.USD.price || 2300 }));
-          } else {
-            tokenMina.priceUsd = e.quote.USD.price;
-            tokenMina.save();
-          }
-        }
-      });
-    } catch (error) {
-      throw error;
-    } finally {
+    const minaNewPrice = String(result.data.data?.[ECoinMarketCapTokenId.MINA]?.quote?.USD.price).valueOf();
+    const ethNewPrice = String(result.data.data?.[ECoinMarketCapTokenId.ETH]?.quote?.USD.price).valueOf();
+
+    const res = await Promise.all([
+      this.updateTokenPrice(EAsset.MINA, minaNewPrice),
+      this.updateTokenPrice(EAsset.ETH, ethNewPrice),
+    ]);
+
+    this.logger.info(`Total tokens updated = ${res.filter(e => !!e).length}`);
+    return true;
+  }
+  public async updateTokenPrice(symbol: EAsset, newPrice: string): Promise<boolean> {
+    if (isEmpty(newPrice) || !isNumberString(newPrice)) {
+      this.logger.warn(`Cannot get ${symbol} token price from CoinMarketCap! value ${newPrice}.`);
+      return false;
     }
+    const toUpdateToken = await this.tokenPriceRepository.getTokenPriceBySymbol(symbol);
+    let oldPrice = '0';
+    if (!toUpdateToken) {
+      await this.tokenPriceRepository.save(new TokenPrice({ symbol, priceUsd: newPrice }));
+    } else {
+      oldPrice = toUpdateToken.priceUsd;
+      toUpdateToken.priceUsd = newPrice;
+      await toUpdateToken.save();
+    }
+    this.logger.info(`Updated price for ${symbol}. Old price: ${oldPrice}, new price: ${newPrice}.`);
+    return true;
   }
 }

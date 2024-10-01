@@ -1,21 +1,16 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BigNumber from 'bignumber.js';
+import { Logger } from '@nestjs/common';
+import BigNumber from 'bignumber.js/bignumber.mjs';
 import { TransactionReceipt } from 'web3-core';
 import { Contract, EventData } from 'web3-eth-contract';
-import { toBN, toHex } from 'web3-utils';
+import pkg from 'web3-utils';
 
-import {
-  ETH_BRIDGE_ADDRESS_INJECT,
-  ETH_BRIDGE_START_BLOCK_INJECT,
-  RPC_ETH_SERVICE_INJECT,
-} from '@constants/service.constant';
+import { sleep } from '../../utils/promise.js';
+import { EthBridgeAbi } from './abis/eth-bridge-contract.js';
+import { IRpcService } from './web3.module.js';
 
-import { sleep } from '@shared/utils/promise';
-
-import ETHBridgeAbi from './abis/eth-bridge-contract.json';
-import { IRpcService } from './web3.module';
-
+const { toBN, toHex } = pkg;
 export class DefaultContract {
+  private readonly logger = new Logger('CONTRACT');
   private contract: Contract;
   private readonly contractAddress: string;
   private readonly abi: any;
@@ -33,7 +28,7 @@ export class DefaultContract {
   }
 
   private initContract() {
-    this.contract = new this.rpcService.web3.eth.Contract(this.abi, this.contractAddress);
+    this.contract = new this.rpcService.web3.eth.Contract(JSON.parse(this.abi), this.contractAddress);
   }
   public getContractAddress() {
     return this.contractAddress;
@@ -80,29 +75,22 @@ export class DefaultContract {
   }
 
   public async estimateGas(method: string, param: Array<any>, specifySignerIndex?: number): Promise<number> {
-    try {
-      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
-        this.rpcService.privateKeys[specifySignerIndex ?? 0],
-      );
+    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
+    const data = this.contract.methods[method](...param).encodeABI();
+    const gasPrice = await this.rpcService.web3.eth.getGasPrice();
+    const nonce = await this.rpcService.getNonce(signer.address);
 
-      const data = this.contract.methods[method](...param).encodeABI();
-      const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-      const nonce = await this.rpcService.getNonce(signer.address);
+    // gas estimation
+    const rawTx = {
+      nonce: nonce,
+      gasPrice: toHex(toBN(gasPrice)),
+      from: signer.address,
+      to: this.contractAddress,
+      data: data,
+    };
 
-      // gas estimation
-      const rawTx = {
-        nonce: nonce,
-        gasPrice: toHex(toBN(gasPrice)),
-        from: signer.address,
-        to: this.contractAddress,
-        data: data,
-      };
-
-      const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
-      return gasLimit;
-    } catch (error) {
-      return error;
-    }
+    const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
+    return gasLimit;
   }
 
   public async write(
@@ -111,9 +99,7 @@ export class DefaultContract {
     specifySignerIndex?: number,
   ): Promise<{ success: boolean; error: Error; data: TransactionReceipt }> {
     try {
-      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
-        this.rpcService.privateKeys[specifySignerIndex ?? 0],
-      );
+      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
 
       const data = this.contract.methods[method](...param).encodeABI();
       const gasPrice = await this.rpcService.web3.eth.getGasPrice();
@@ -140,7 +126,7 @@ export class DefaultContract {
         error: null,
         data: await this.rpcService.web3.eth.sendSignedTransaction(signedTx.rawTransaction),
       };
-    } catch (error) {
+    } catch (error: any) {
       return { success: false, error, data: null };
     }
   }
@@ -154,10 +140,10 @@ export class DefaultContract {
       );
 
       const response = [];
-      for (let index = 0; index < writeData.length; index++) {
+      for (const element of writeData) {
         // gas estimation
         const nonce = await this.rpcService.getNonce(signer.address);
-        const { method, param } = writeData[index];
+        const { method, param } = element;
         const data = this.contract.methods[method](...param).encodeABI();
         const gasPrice = await this.rpcService.web3.eth.getGasPrice();
         const rawTx = {
@@ -181,7 +167,7 @@ export class DefaultContract {
         error: null,
         data: response,
       };
-    } catch (error) {
+    } catch (error: any) {
       return { success: false, error, data: null };
     }
   }
@@ -190,38 +176,50 @@ export class DefaultContract {
     return this.rpcService.web3.eth.getBlock(blockNumber);
   }
 
+  public async getChainId() {
+    return this.rpcService.web3.eth.getChainId();
+  }
+
   public async convertGasPriceToEther(amount: number) {
     try {
       const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-      console.log('Current gas price:', gasPrice, 'wei'); // Gas price is returned in wei
+      this.logger.warn('Current gas price:', gasPrice, 'wei'); // Gas price is returned in wei
       const estimateGasToWei = BigNumber(amount).multipliedBy(BigNumber(gasPrice)).toString();
       return this.rpcService.web3.utils.fromWei(estimateGasToWei, 'ether');
     } catch (error) {
-      console.error('Error getting gas price:', error);
+      this.logger.error('Error getting gas price:', error);
     }
   }
 }
 
-@Injectable()
 export class ETHBridgeContract extends DefaultContract {
-  constructor(
-    @Inject(RPC_ETH_SERVICE_INJECT) rpcETHService: IRpcService,
-    @Inject(ETH_BRIDGE_ADDRESS_INJECT) address: string,
-    @Inject(ETH_BRIDGE_START_BLOCK_INJECT) startBlock: number,
-  ) {
-    super(rpcETHService, ETHBridgeAbi, address, startBlock);
+  constructor(rpcETHService: IRpcService, address: string, _startBlock: number) {
+    super(rpcETHService, EthBridgeAbi, address, _startBlock);
   }
+
   public async getBaseURI() {
     return this.call('getBaseURI', []);
   }
   public async latestIndex() {
     return this.call('latestIndex', []);
   }
+  public async getValidatorThreshold() {
+    return this.call('threshold', []);
+  }
   public async mintNFT(toAddress: string) {
     return this.write('mint', [toAddress]);
   }
-  public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
-    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, fee]);
+  public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress, fee?, _signatures?) {
+    console.log(
+      '🚀 ~ ETHBridgeContract ~ unlock ~ tokenFromAddress, amount, txHashLock, receiveAddress, fee?, _signatures?:',
+      tokenFromAddress,
+      amount,
+      txHashLock,
+      receiveAddress,
+      fee,
+      _signatures,
+    );
+    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, fee, _signatures]);
   }
   public async getEstimateGas(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
     const estimateGas = await this.estimateGas('unlock', [
@@ -230,6 +228,7 @@ export class ETHBridgeContract extends DefaultContract {
       receiveAddress,
       txHashLock,
       Number(fee),
+      [],
     ]);
     const getGasPrice = await this.convertGasPriceToEther(estimateGas);
     return getGasPrice;

@@ -1,37 +1,29 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
-
-import { UseSwaggerDecorator } from '@shared/decorators/swagger.decorator';
+import { NumberField, StringField } from '../../../shared/decorators/field.decorator.js';
 
 export class CreateUserDto {
-  @UseSwaggerDecorator()
-  @Expose()
-  @IsString()
+  @StringField({
+    required: true,
+    isEmail: true,
+  })
   email: string;
 
-  @UseSwaggerDecorator()
-  @Expose()
-  @IsString()
+  @StringField({
+    required: true,
+  })
   password: string;
 }
 
-@Exclude()
 export class UpdateProfileBodyDto {
-  @ApiProperty({ example: 'email' })
-  @IsOptional()
-  @IsString()
-  @Expose()
+  @StringField({
+    required: true,
+    isEmail: true,
+  })
   email: string;
 }
 
 export class GetProtocolFeeBodyDto {
-  @ApiProperty({ example: 1 })
-  @IsNumber()
+  @NumberField({
+    required: true,
+  })
   pairId: number;
-
-  @ApiProperty({ example: 1000 })
-  @IsString()
-  @Expose()
-  amount: string;
 }

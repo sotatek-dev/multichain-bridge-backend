@@ -1,20 +1,20 @@
 import { ConfigService } from '@nestjs/config';
+import { Logger } from 'log4js';
 import { Command, Console } from 'nestjs-console';
 
-import { EEnvKey } from '@constants/env.constant';
-
-import { sleep } from '@shared/utils/promise';
-
-import { BatchJobGetPriceToken } from './batch.tokenprice';
-import { BlockchainEVMCrawler } from './crawler.evmbridge';
-import { SCBridgeMinaCrawler } from './crawler.minabridge';
-import { SenderEVMBridge } from './sender.evmbridge';
-import { SenderMinaBridge } from './sender.minabridge';
+import { EEnvKey } from '../../constants/env.constant.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { sleep } from '../../shared/utils/promise.js';
+import { BatchJobGetPriceToken } from './batch.tokenprice.js';
+import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
+import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
+import { SenderEVMBridge } from './sender.evmbridge.js';
+import { SenderMinaBridge } from './sender.minabridge.js';
 
 @Console()
 export class CrawlerConsole {
   private readonly numberOfBlockPerJob: number;
-
+  private readonly logger: Logger;
   constructor(
     private readonly configService: ConfigService,
     private blockchainEVMCrawler: BlockchainEVMCrawler,
@@ -22,8 +22,10 @@ export class CrawlerConsole {
     private senderEVMBridge: SenderEVMBridge,
     private senderMinaBridge: SenderMinaBridge,
     private jobGetPrice: BatchJobGetPriceToken,
+    private loggerService: LoggerService,
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
+    this.logger = loggerService.getLogger('CRAWLER_CONSOLE');
   }
 
   @Command({
@@ -33,11 +35,41 @@ export class CrawlerConsole {
   async handleCrawlETHBridge() {
     try {
       while (true) {
-        this.blockchainEVMCrawler.handleEventCrawlBlock();
+        await this.blockchainEVMCrawler.handleEventCrawlBlock();
         await sleep(15);
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
+    }
+  }
+
+  @Command({
+    command: 'validate-eth-bridge-unlock',
+    description: 'validate ETH Bridge unlock',
+  })
+  async handleValidateEthLockTx() {
+    try {
+      while (true) {
+        await this.senderEVMBridge.unlockEVMTransaction();
+        await sleep(15);
+      }
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  @Command({
+    command: 'validate-mina-bridge-unlock',
+    description: 'validate MINA Bridge unlock',
+  })
+  async handleValidateMinaLockTx() {
+    try {
+      while (true) {
+        await this.senderMinaBridge.handleValidateUnlockTxMina();
+        await sleep(1);
+      }
+    } catch (error) {
+      this.logger.error(error);
     }
   }
 
@@ -48,11 +80,11 @@ export class CrawlerConsole {
   async handleSenderETHBridgeUnlock() {
     try {
       while (true) {
-        this.senderEVMBridge.handleUnlockEVM();
+        await this.senderEVMBridge.handleUnlockEVM();
         await sleep(15);
       }
     } catch (error) {
-      console.log(error);
+      this.logger.error(error);
     }
   }
 
@@ -63,25 +95,11 @@ export class CrawlerConsole {
   async handleCrawlMinaBridge() {
     try {
       while (true) {
-        this.scBridgeMinaCrawler.handleEventCrawlBlock();
+        await this.scBridgeMinaCrawler.handleEventCrawlBlock();
         await sleep(15);
       }
     } catch (error) {
-      console.log(error);
-    }
-  }
-
-  @Command({
-    command: 'crawl-mina-token-contract',
-    description: 'crawl Mina Token Contract',
-  })
-  async handleCrawlMinaToken() {
-    try {
-      while (true) {
-        await sleep(15);
-      }
-    } catch (error) {
-      console.log(error);
+      this.logger.error(error);
     }
   }
 
@@ -96,22 +114,7 @@ export class CrawlerConsole {
         await sleep(3);
       }
     } catch (error) {
-      console.log(error);
-    }
-  }
-
-  @Command({
-    command: 'get-price-token',
-    description: 'get price of token',
-  })
-  async getPriceCoinMarketCap() {
-    try {
-      while (true) {
-        this.jobGetPrice.handleGetPriceToken();
-        await sleep(43200);
-      }
-    } catch (error) {
-      console.log(error);
+      this.logger.error(error);
     }
   }
 }

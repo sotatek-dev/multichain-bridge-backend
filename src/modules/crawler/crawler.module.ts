@@ -1,18 +1,19 @@
 import { Module } from '@nestjs/common';
-import { CommonConfigRepository } from 'database/repositories/common-configuration.repository';
-import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
-import { EventLogRepository } from 'database/repositories/event-log.repository';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
-import { TokenPriceRepository } from 'database/repositories/token-price.repository';
 import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
 
-import { BatchJobGetPriceToken } from './batch.tokenprice';
-import { CrawlerConsole } from './crawler.console';
-import { BlockchainEVMCrawler } from './crawler.evmbridge';
-import { SCBridgeMinaCrawler } from './crawler.minabridge';
-import { CrawlerService } from './crawler.service';
-import { SenderEVMBridge } from './sender.evmbridge';
-import { SenderMinaBridge } from './sender.minabridge';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
+import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
+import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
+import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
+import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
+import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
+import { BatchJobGetPriceToken } from './batch.tokenprice.js';
+import { CrawlerConsole } from './crawler.console.js';
+import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
+import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
+import { CrawlerService } from './crawler.service.js';
+import { SenderEVMBridge } from './sender.evmbridge.js';
+import { SenderMinaBridge } from './sender.minabridge.js';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SenderMinaBridge } from './sender.minabridge';
       CommonConfigRepository,
       TokenPairRepository,
       TokenPriceRepository,
+      MultiSignatureRepository,
     ]),
   ],
   providers: [

@@ -1,7 +1,8 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Transform } from 'class-transformer';
-import { castArray, isArray, isNil, map, trim } from 'lodash';
+import pkg from 'lodash';
 
+const { castArray, isArray, isNil, map, trim } = pkg;
 export function Trim(): PropertyDecorator {
   return Transform(params => {
     const value = params.value as string[] | string;
@@ -13,17 +14,23 @@ export function Trim(): PropertyDecorator {
     return trim(value).replace(/\s\s+/g, ' ');
   });
 }
-
+function toBoolean(value: string | number | boolean): boolean {
+  if (typeof value === 'string') return value.toLowerCase() === 'true';
+  return Boolean(value).valueOf();
+}
 export function ToBoolean(): PropertyDecorator {
   return Transform(
+    ({ value }) => {
+      if (value) return toBoolean(value);
+    },
+    { toClassOnly: true },
+  );
+}
+export function ToBooleanArray(): PropertyDecorator {
+  return Transform(
     params => {
-      switch (params.value) {
-        case 'true':
-          return true;
-        case 'false':
-          return false;
-        default:
-          return params.value;
+      if (isArray(params.value)) {
+        return params.value.map(v => toBoolean(v));
       }
     },
     { toClassOnly: true },

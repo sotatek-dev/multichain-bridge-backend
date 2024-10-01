@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
+import { EEventName, EEventStatus } from '../../constants/blockchain.constant.js';
 
 export class EventLogs1702277564741 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

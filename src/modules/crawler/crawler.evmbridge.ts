@@ -1,32 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CrawlContractRepository } from 'database/repositories/crawl-contract.repository';
-import { TokenPairRepository } from 'database/repositories/token-pair.repository';
+import { Logger } from 'log4js';
 import { DataSource, QueryRunner } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
-import { EEventName, EEventStatus, ENetworkName } from '@constants/blockchain.constant';
-import { EEnvKey } from '@constants/env.constant';
-
-import { CrawlContract, EventLog } from '@modules/crawler/entities';
-
-// import { LoggerService } from '@shared/modules/logger/logger.service';
-import { ETHBridgeContract } from '@shared/modules/web3/web3.service';
+import { EAsset } from '../../constants/api.constant.js';
+import { EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
+import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
+import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
+import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
 
 @Injectable()
 export class BlockchainEVMCrawler {
   private readonly numberOfBlockPerJob: number;
+  private readonly logger: Logger;
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
-    // private loggerService: LoggerService,
-    private readonly ethBridgeContract: ETHBridgeContract,
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
+    private readonly loggerService: LoggerService,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
+    this.logger = loggerService.getLogger('BLOCKCHAIN_EVM_CRAWLER');
   }
-  // private logger = this.loggerService.getLogger('CrawlContractEVMBridge');
 
   public async handleEventCrawlBlock() {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -34,7 +35,14 @@ export class BlockchainEVMCrawler {
     await queryRunner.startTransaction();
     try {
       const { startBlockNumber, toBlock } = await this.getFromToBlock();
+      if (startBlockNumber > toBlock) {
+        this.logger.info(
+          `Block <${startBlockNumber}> is the newest block can be processed (on network: ${toBlock}). Wait for the next tick...`,
+        );
+        return;
+      }
       const events = await this.ethBridgeContract.getEvent(startBlockNumber, toBlock);
+
       for (const event of events) {
         switch (event.event) {
           case 'Lock':
@@ -47,7 +55,7 @@ export class BlockchainEVMCrawler {
             continue;
         }
       }
-      console.log(`[handleCrawlETHBridge] Crawled from ${startBlockNumber} to ${toBlock}`);
+      this.logger.info(`[handleCrawlETHBridge] Crawled from ${startBlockNumber} to ${toBlock}`);
       await this.updateLatestBlockCrawl(toBlock, queryRunner);
       return await queryRunner.commitTransaction();
     } catch (error) {
@@ -58,7 +66,12 @@ export class BlockchainEVMCrawler {
     }
   }
 
-  private async handlerLockEvent(event: EventData, queryRunner: QueryRunner) {
+  public async handlerLockEvent(event: EventData, queryRunner: QueryRunner) {
+    const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock: event.transactionHash });
+    if (isExist) {
+      this.logger.warn('Duplicated event', event.transactionHash);
+      return;
+    }
     const blockTimeOfBlockNumber = await this.ethBridgeContract.getBlockTimeByBlockNumber(event.blockNumber);
     const eventUnlock = {
       senderAddress: event.returnValues.locker,
@@ -92,9 +105,13 @@ export class BlockchainEVMCrawler {
     }
 
     await queryRunner.manager.save(EventLog, eventUnlock);
+
+    return {
+      success: true,
+    };
   }
 
-  private async handlerUnLockEvent(event: EventData, queryRunner: QueryRunner) {
+  public async handlerUnLockEvent(event: EventData, queryRunner: QueryRunner) {
     const existLockTx = await queryRunner.manager.findOne(EventLog, {
       where: { txHashLock: event.returnValues.hash },
     });
@@ -106,13 +123,17 @@ export class BlockchainEVMCrawler {
       status: EEventStatus.COMPLETED,
       txHashUnlock: event.transactionHash,
       amountReceived: event.returnValues.amount,
-      tokenReceivedAddress: event.returnValues.token,
       protocolFee: event.returnValues.fee,
-      tokenReceivedName: 'ETH',
+      tokenReceivedAddress: event.returnValues.token,
+      tokenReceivedName: EAsset.ETH,
     });
+
+    return {
+      success: true,
+    };
   }
 
-  private async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
+  public async updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
     await queryRunner.manager.update(
       CrawlContract,
       {
@@ -129,7 +150,7 @@ export class BlockchainEVMCrawler {
     let startBlockNumber = this.ethBridgeContract.getStartBlock();
     let toBlock = await this.ethBridgeContract.getBlockNumber();
 
-    let currentCrawledBlock = await this.crawlContractRepository.findOne({
+    const currentCrawledBlock = await this.crawlContractRepository.findOne({
       where: { networkName: ENetworkName.ETH },
     });
     if (!currentCrawledBlock) {
@@ -138,7 +159,7 @@ export class BlockchainEVMCrawler {
         networkName: ENetworkName.ETH,
         latestBlock: startBlockNumber,
       });
-      currentCrawledBlock = await this.crawlContractRepository.save(tmpData);
+      await this.crawlContractRepository.save(tmpData);
     } else {
       startBlockNumber = Number(currentCrawledBlock.latestBlock) + 1;
     }
