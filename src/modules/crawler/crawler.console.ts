@@ -79,7 +79,7 @@ export class CrawlerConsole {
     description: 'sender ETH Bridge unlock',
   })
   async handleSenderETHBridgeUnlock() {
-    this.logger.info('MINA_SENDER_JOB: started');
+    this.logger.info('ETH_SENDER_JOB: started');
     await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.EVM_SENDER_QUEUE, (data: IUnlockToken) => {
       return this.senderEVMBridge.handleUnlockEVM(data.eventLogId);
     });
