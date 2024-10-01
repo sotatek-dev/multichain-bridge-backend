@@ -1,0 +1,83 @@
+@startuml 1
+title Lock From Eth to Mina
+actor User
+boundary fe as "Frontend"
+control be as "Backend"
+boundary evm_crawler as "EVM crawler"
+boundary mina_validator as "Mina signature validators"
+boundary mina_sender as "Mina tx sender"
+boundary mina_crawler as "Mina crawler"
+participant Ethereum
+participant Mina
+database db as "Database"
+autonumber
+
+group#LightGreen User lock token from Evm
+
+    User -> fe : select network to bridge
+
+    activate fe
+    fe -> be : get list of token pairs
+    activate be
+    be --> fe : list of token pairs
+    deactivate be
+
+    User -> fe: select destination wallet, amount
+    fe --> User: display amount, tip, fee
+    User -> fe: perform bridge action
+    fe -> Ethereum: call lock tx using user's wallet
+    activate Ethereum
+    Ethereum --> fe: tx status success
+    deactivate Ethereum
+
+    fe --> User: show popup success
+    deactivate fe
+
+
+end
+group#LightGreen Crawler evm fetch lock tx
+    evm_crawler->Ethereum: fetch lock events
+    activate Ethereum
+    Ethereum --> evm_crawler: return locked tx events
+    deactivate Ethereum
+
+    evm_crawler -> db: save tx to be unlock in Mina
+    activate db
+    db --> evm_crawler: saved tx with status waiting to be unlocked
+    deactivate db
+end
+group#LightGreen System unlock token to Mina
+
+    mina_validator -> db: get pending unlock tx and verify theirs signature
+    activate mina_validator
+    activate db
+    db --> mina_validator: update signature
+    deactivate db
+    deactivate mina_validator
+
+    mina_sender -> db: get signatured verified tx
+    activate db
+    activate mina_sender
+    db -> mina_sender: return tx
+    deactivate db
+
+    mina_sender -> Mina: prove, send tx
+    activate Mina
+    Mina --> mina_sender: return tx hash
+    deactivate Mina
+    deactivate mina_sender
+
+    mina_crawler -> Mina: get unlock events
+    activate mina_crawler
+    activate Mina
+    Mina --> mina_crawler: events unlock
+    deactivate Mina
+    mina_crawler ->db: mark tx unlock as completed
+    activate db
+    db -> mina_crawler: update completed
+    deactivate mina_crawler
+    deactivate db
+end
+
+@enduml
+
