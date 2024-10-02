@@ -49,7 +49,7 @@ export class JobUnlockProvider {
           );
         } else {
           this.logger.info('no pending tx');
-          return;
+          continue;
         }
         for (const tx of totalTxs) {
           if (isSignatureFullFilled) {
