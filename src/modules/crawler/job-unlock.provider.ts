@@ -9,7 +9,7 @@ import { EventLogRepository } from '../../database/repositories/event-log.reposi
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { QueueService } from '../../shared/modules/queue/queue.service.js';
 import { sleep } from '../../shared/utils/promise.js';
-import { getTimeInFutureInSeconds } from '../../shared/utils/time.js';
+import { getTimeInFutureInMinutes } from '../../shared/utils/time.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interfaces/job.interface.js';
 
@@ -73,10 +73,11 @@ export class JobUnlockProvider {
   // helpers
   private updateIntervalStatusForTxs(ids: number[], isSignatureFullFilled: boolean) {
     const payload: Partial<EventLog> = {};
+    const nextTime = getTimeInFutureInMinutes(60 * 5).toString();
     if (isSignatureFullFilled) {
-      payload.nextSendTxJobTime = getTimeInFutureInSeconds(10).toString();
+      payload.nextSendTxJobTime = nextTime;
     } else {
-      payload.nextValidateSignatureTime = getTimeInFutureInSeconds(10).toString();
+      payload.nextValidateSignatureTime = nextTime;
     }
     return this.eventLogRepository.update({ id: In(ids) }, payload);
   }

@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
-import BigNumber from 'bignumber.js/bignumber.mjs';
-import { Logger } from 'log4js';
+import { BigNumber } from 'bignumber.js';
 import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
 import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signature, UInt64 } from 'o1js';
 import { Not } from 'typeorm';
@@ -15,19 +14,16 @@ import { EventLogRepository } from '../../database/repositories/event-log.reposi
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
-import { QueueService } from '../../shared/modules/queue/queue.service.js';
 import { addDecimal, calculateFee, calculateTip } from '../../shared/utils/bignumber.js';
 import { TokenPair } from '../users/entities/tokenpair.entity.js';
 import { CommonConfig } from './entities/common-config.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
-import { JobUnlockProvider } from './job-unlock.provider.js';
 import { Bridge } from './minaSc/Bridge.js';
 import { Manager } from './minaSc/Manager.js';
 import { ValidatorManager } from './minaSc/ValidatorManager.js';
 
 @Injectable()
 export class SenderMinaBridge {
-  private readonly logger: Logger;
   private isContractCompiled = false;
   private readonly feePayerKey: PrivateKey;
   private readonly bridgeKey: PrivateKey;
@@ -39,10 +35,7 @@ export class SenderMinaBridge {
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly multiSignatureRepository: MultiSignatureRepository,
     private readonly loggerService: LoggerService,
-    private readonly queueService: QueueService,
-    private readonly unlockJobProvider: JobUnlockProvider,
   ) {
-    this.logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
     this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
     this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
     this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
@@ -53,6 +46,7 @@ export class SenderMinaBridge {
     });
     Mina.setActiveInstance(network);
   }
+  private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   private getContractsInfo() {
     this.logger.log('Bridge', this.bridgeKey.toPublicKey().toBase58());
     this.logger.log('FeePayer', this.feePayerKey.toPublicKey().toBase58());
