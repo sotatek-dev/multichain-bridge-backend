@@ -12,7 +12,9 @@ import { MODULES } from './modules/index.js';
 import { CustomAuthorizationHeaderMiddleware } from './shared/middleware/custom-authorization-header.middleware.js';
 import { LoggerHttpRequestMiddleware } from './shared/middleware/logger-http-request.middleware.js';
 import { LoggingModule } from './shared/modules/logger/logger.module.js';
+import { QueueModule } from './shared/modules/queue/queue.module.js';
 import { Web3Module } from './shared/modules/web3/web3.module.js';
+import { isDevelopmentEnvironment } from './shared/utils/util.js';
 
 const modules = [
   ConfigurationModule,
@@ -21,6 +23,7 @@ const modules = [
   LoggingModule,
   GuardModule,
   Web3Module,
+  QueueModule,
   ConsoleModule,
   ...MODULES,
 ];
@@ -38,7 +41,7 @@ export class AppModule {
       },
     ];
     consumer.apply(CustomAuthorizationHeaderMiddleware).forRoutes(...thirdPartyLoginRoutes);
-    if (process.env.NODE_ENV !== 'production') {
+    if (isDevelopmentEnvironment()) {
       consumer.apply(LoggerHttpRequestMiddleware).forRoutes('*');
     }
   }

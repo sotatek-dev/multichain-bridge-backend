@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import assert from 'assert';
 import { Logger } from 'log4js';
 import { DataSource, QueryRunner } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
@@ -104,8 +105,8 @@ export class BlockchainEVMCrawler {
       eventUnlock.toTokenDecimal = tokenPair.toDecimal;
     }
 
-    await queryRunner.manager.save(EventLog, eventUnlock);
-
+    const result = await queryRunner.manager.save(EventLog, eventUnlock);
+    assert(!!result.id && !!result.networkReceived, 'Cannot add job to signatures queue.');
     return {
       success: true,
     };

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
-import BigNumber from 'bignumber.js/bignumber.mjs';
-import { Logger } from 'log4js';
+import { BigNumber } from 'bignumber.js';
 import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
 import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signature, UInt64 } from 'o1js';
+import { Not } from 'typeorm';
 
 import { DECIMAL_BASE, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
@@ -24,12 +24,10 @@ import { ValidatorManager } from './minaSc/ValidatorManager.js';
 
 @Injectable()
 export class SenderMinaBridge {
-  private readonly logger: Logger;
   private isContractCompiled = false;
   private readonly feePayerKey: PrivateKey;
   private readonly bridgeKey: PrivateKey;
   private readonly tokenPublicKey: PublicKey;
-  private readonly validatorThreshhold;
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -38,11 +36,9 @@ export class SenderMinaBridge {
     private readonly multiSignatureRepository: MultiSignatureRepository,
     private readonly loggerService: LoggerService,
   ) {
-    this.logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
     this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY));
     this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY));
     this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS));
-    this.validatorThreshhold = this.configService.get(EEnvKey.MINA_VALIDATOR_THRESHHOLD);
 
     const network = Mina.Network({
       mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
@@ -50,6 +46,7 @@ export class SenderMinaBridge {
     });
     Mina.setActiveInstance(network);
   }
+  private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   private getContractsInfo() {
     this.logger.log('Bridge', this.bridgeKey.toPublicKey().toBase58());
     this.logger.log('FeePayer', this.feePayerKey.toPublicKey().toBase58());
@@ -93,78 +90,64 @@ export class SenderMinaBridge {
       gasFeeMina: this.configService.get(EEnvKey.GASFEEMINA),
     };
   }
-  public async handleUnlockMina() {
-    let dataLock, configTip;
-    try {
-      [dataLock, configTip] = await Promise.all([
-        this.eventLogRepository.getEventLockWithNetwork(ENetworkName.MINA, this.validatorThreshhold),
-        this.commonConfigRepository.getCommonConfig(),
-      ]);
-      if (!dataLock) {
-        return;
-      }
+  public async handleUnlockMina(txId: number) {
+    const [dataLock, configTip] = await Promise.all([
+      this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.MINA }),
+      this.commonConfigRepository.getCommonConfig(),
+    ]);
+    if (!dataLock) {
+      this.logger.warn(`Not found tx with id ${txId}`);
+      return;
+    }
 
-      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
-      const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock;
-      const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
-      if (!tokenPair) {
-        this.logger.warn('Token pair not found.');
-        await this.eventLogRepository.updateStatusAndRetryEvenLog({
-          id: dataLock.id,
-          retry: dataLock.retry,
-          status: EEventStatus.NOTOKENPAIR,
-        });
-        return;
-      }
-
-      const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
-      if (!isPassDailyQuota) {
-        this.logger.warn('Passed daily quota.');
-        await this.eventLogRepository.updateStatusAndRetryEvenLog({
-          id: dataLock.id,
-          retry: dataLock.retry,
-          status: EEventStatus.FAILED,
-          errorDetail: EError.OVER_DAILY_QUOTA,
-        });
-        return;
-      }
-      const { amountReceived, protocolFeeAmount, gasFeeMina, tipAmount } = this.getAmountReceivedAndFee(
-        tokenPair,
-        configTip,
-        amountFrom,
-      );
-      const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
-      // Update status eventLog when call function unlock
-      if (result.success) {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog({
-          id: dataLock.id,
-          retry: dataLock.retry,
-          status: EEventStatus.PROCESSING,
-          errorDetail: result.error,
-          txHashUnlock: result.data,
-          amountReceived,
-          protocolFee: protocolFeeAmount,
-          gasFee: gasFeeMina,
-          tip: tipAmount,
-        });
-      } else {
-        await this.eventLogRepository.updateStatusAndRetryEvenLog({
-          id: dataLock.id,
-          retry: Number(dataLock.retry + 1),
-          status: EEventStatus.FAILED,
-          errorDetail: JSON.stringify(result.error),
-        });
-      }
-      return result;
-    } catch (error) {
-      console.log(error);
+    await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
+    const { tokenReceivedAddress, tokenFromAddress, id, receiveAddress, amountFrom, senderAddress } = dataLock;
+    const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
+    if (!tokenPair) {
+      this.logger.warn('Token pair not found.');
       await this.eventLogRepository.updateStatusAndRetryEvenLog({
         id: dataLock.id,
-        retry: Number(dataLock.retry + 1),
+        status: EEventStatus.NOTOKENPAIR,
+      });
+      return;
+    }
+
+    const isPassDailyQuota = await this.isPassDailyQuota(senderAddress, tokenPair.fromDecimal);
+    if (!isPassDailyQuota) {
+      this.logger.warn('Passed daily quota.');
+      await this.eventLogRepository.updateStatusAndRetryEvenLog({
+        id: dataLock.id,
         status: EEventStatus.FAILED,
-        errorDetail: JSON.stringify(error),
+        errorDetail: EError.OVER_DAILY_QUOTA,
+      });
+      return;
+    }
+    const { amountReceived, protocolFeeAmount, gasFeeMina, tipAmount } = this.getAmountReceivedAndFee(
+      tokenPair,
+      configTip,
+      amountFrom,
+    );
+    const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
+    // Update status eventLog when call function unlock
+    if (result.success) {
+      await this.eventLogRepository.updateStatusAndRetryEvenLog({
+        id: dataLock.id,
+        status: EEventStatus.PROCESSING,
+        errorDetail: result.error,
+        txHashUnlock: result.data,
+        amountReceived,
+        protocolFee: protocolFeeAmount,
+        gasFee: gasFeeMina,
+        tip: tipAmount,
+      });
+    } else {
+      await this.eventLogRepository.updateStatusAndRetryEvenLog({
+        id: dataLock.id,
+        status: EEventStatus.FAILED,
+        errorDetail: JSON.stringify(result.error),
       });
     }
+    return result;
   }
 
   private async callUnlockFunction(amount: string, txId: number, receiveAddress: string) {
@@ -238,64 +221,68 @@ export class SenderMinaBridge {
     }
     return true;
   }
-  async handleValidateUnlockTxMina() {
-    let dataLock, config;
-    assert(!!this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
+
+  async handleValidateUnlockTxMina(txId: number) {
+    assert(!!this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY), 'invalid validator private key');
+    assert(!!this.configService.get(EEnvKey.THIS_VALIDATOR_INDEX), 'invalid validator index');
+
     const signerPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
     const signerPublicKey = PublicKey.fromPrivateKey(signerPrivateKey).toBase58();
-    try {
-      [dataLock, config] = await Promise.all([
-        this.eventLogRepository.getValidatorPendingSignature(signerPublicKey, ENetworkName.MINA),
-        this.commonConfigRepository.getCommonConfig(),
-      ]);
+    const [dataLock, config] = await Promise.all([
+      this.eventLogRepository.findOneBy({
+        id: txId,
+        networkReceived: ENetworkName.MINA,
+        status: Not(EEventStatus.PROCESSING),
+      }),
+      this.commonConfigRepository.getCommonConfig(),
+    ]);
 
-      if (!dataLock) {
-        return;
-      }
-      this.logger.info('Start generating mina signatures.');
-
-      const { tokenReceivedAddress, tokenFromAddress, receiveAddress, amountFrom } = dataLock;
-
-      const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
-
-      if (!tokenPair) {
-        this.logger.warn('Unknown token pair', tokenFromAddress, tokenReceivedAddress);
-        await this.eventLogRepository.updateStatusAndRetryEvenLog({
-          id: dataLock.id,
-          retry: dataLock.retry,
-          status: EEventStatus.NOTOKENPAIR,
-        });
-        return;
-      }
-
-      // check if this signature has been tried before.
-      let multiSignature = await this.multiSignatureRepository.findOneBy({
-        txId: dataLock.id,
-        validator: signerPublicKey,
-      });
-      if (!multiSignature) {
-        multiSignature = new MultiSignature({
-          chain: ENetworkName.MINA,
-          validator: signerPublicKey,
-          txId: dataLock.id,
-        });
-      }
-
-      const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
-      const { amountReceived } = this.getAmountReceivedAndFee(tokenPair, config, amountFrom);
-
-      const msg = [
-        ...receiverPublicKey.toFields(),
-        ...UInt64.from(amountReceived).toFields(),
-        ...this.tokenPublicKey.toFields(),
-      ];
-      const signature = Signature.create(signerPrivateKey, msg);
-
-      multiSignature.signature = signature.toJSON();
-      await this.multiSignatureRepository.save(multiSignature);
-    } catch (error) {
-      this.logger.log(EError.INVALID_SIGNATURE, error);
-      await this.multiSignatureRepository.upsertErrorAndRetryMultiSignature(signerPublicKey, dataLock.id, error);
+    if (!dataLock) {
+      this.logger.warn(`Data not found with id ${txId}`);
+      return;
     }
+    this.logger.info('Start generating mina signatures for tx', txId);
+
+    const { tokenReceivedAddress, tokenFromAddress, receiveAddress, amountFrom } = dataLock;
+
+    const tokenPair = await this.tokenPairRepository.getTokenPair(tokenFromAddress, tokenReceivedAddress);
+
+    if (!tokenPair) {
+      this.logger.warn('Unknown token pair', tokenFromAddress, tokenReceivedAddress);
+      await this.eventLogRepository.updateStatusAndRetryEvenLog({
+        id: dataLock.id,
+        status: EEventStatus.NOTOKENPAIR,
+      });
+      return;
+    }
+
+    // check if this signature has been tried before.
+    let multiSignature = await this.multiSignatureRepository.findOneBy({
+      txId: dataLock.id,
+      validator: signerPublicKey,
+    });
+    if (multiSignature) {
+      this.logger.warn('signature existed');
+      return;
+    }
+
+    const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
+    const { amountReceived } = this.getAmountReceivedAndFee(tokenPair, config, amountFrom);
+
+    const msg = [
+      ...receiverPublicKey.toFields(),
+      ...UInt64.from(amountReceived).toFields(),
+      ...this.tokenPublicKey.toFields(),
+    ];
+    const signature = Signature.create(signerPrivateKey, msg).toJSON();
+
+    multiSignature = new MultiSignature({
+      chain: ENetworkName.MINA,
+      validator: signerPublicKey,
+      txId: dataLock.id,
+      signature,
+    });
+    await this.multiSignatureRepository.save(multiSignature);
+    // notice the job unlock provider here
   }
 }
