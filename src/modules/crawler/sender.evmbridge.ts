@@ -2,9 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
 import { BigNumber } from 'bignumber.js';
-// import BigNumber from 'bignumber.js/bignumber.mjs';
 import { ethers } from 'ethers';
-import { Logger } from 'log4js';
 import { Not } from 'typeorm';
 
 import { getEthBridgeAddress } from '../../config/common.config.js';
@@ -20,11 +18,9 @@ import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
 import { addDecimal, calculateFee, calculateTip } from '../../shared/utils/bignumber.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
-import { JobUnlockProvider } from './job-unlock.provider.js';
 
 @Injectable()
 export class SenderEVMBridge {
-  private readonly logger: Logger;
   constructor(
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
@@ -33,10 +29,8 @@ export class SenderEVMBridge {
     private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
-    private readonly unlockJobProvider: JobUnlockProvider,
-  ) {
-    this.logger = loggerService.getLogger('SENDER_EVM_CONSOLE');
-  }
+  ) {}
+  private logger = this.loggerService.getLogger('SENDER_EVM_CONSOLE');
 
   async handleUnlockEVM(txId: number) {
     const [dataLock, configTip] = await Promise.all([
