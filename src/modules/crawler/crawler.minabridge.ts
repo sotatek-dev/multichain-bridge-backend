@@ -13,7 +13,6 @@ import { CrawlContractRepository } from '../../database/repositories/crawl-contr
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
-import { JobUnlockProvider } from './job-unlock.provider.js';
 import { Bridge } from './minaSc/Bridge.js';
 
 @Injectable()
@@ -25,7 +24,6 @@ export class SCBridgeMinaCrawler {
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly loggerService: LoggerService,
-    private readonly unlockJobProvider: JobUnlockProvider,
   ) {
     this.logger = this.loggerService.getLogger('SC_BRIDGE_MINA_CRAWLER');
     const Network = Mina.Network({
@@ -141,7 +139,6 @@ export class SCBridgeMinaCrawler {
 
     const result = await queryRunner.manager.save(EventLog, eventUnlock);
     assert(!!result.id && !!result.networkReceived, 'Cannot add job to signatures queue.');
-    await this.unlockJobProvider.addJobSignatures(result.id, result.networkReceived);
     return {
       success: true,
     };

@@ -115,9 +115,7 @@ export class CrawlerConsole {
     description: 'handle all network unlock.',
   })
   async handleUnlockJobProvider() {
-    this.logger.info('UNLOCK_JOB_PROVIDER: started');
-    await this.queueService.handleQueueJob(EQueueName.UNLOCK_JOB_QUEUE, data => {
-      return this.unlockProviderService.handleJob(data);
-    });
+    this.logger.info('JOB_UNLOCK_PROVIDER: started');
+    await this.unlockProviderService.handleJob();
   }
 }
