@@ -5,6 +5,7 @@ import { BigNumber } from 'bignumber.js';
 // import BigNumber from 'bignumber.js/bignumber.mjs';
 import { ethers } from 'ethers';
 import { Logger } from 'log4js';
+import { Not } from 'typeorm';
 
 import { getEthBridgeAddress } from '../../config/common.config.js';
 import { DECIMAL_BASE, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
@@ -43,6 +44,7 @@ export class SenderEVMBridge {
         where: {
           id: txId,
           networkReceived: ENetworkName.ETH,
+          status: Not(EEventStatus.PROCESSING),
         },
         relations: {
           validator: true,
@@ -138,8 +140,6 @@ export class SenderEVMBridge {
     });
     assert(signTx.success, `Generate signature failed!`);
     await this.saveSignature(wallet.address, signTx.signature, dataLock.id);
-    await this.unlockJobProvider.addJobSendTx(dataLock.id, dataLock.networkReceived);
-    // notice job unlock provider about this.
   }
 
   private async isPassDailyQuota(address: string, fromDecimal: number): Promise<boolean> {

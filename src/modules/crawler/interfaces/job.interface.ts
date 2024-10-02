@@ -16,7 +16,6 @@ export interface IUnlockToken {
   eventLogId: number;
 }
 export interface IJobUnlockPayload {
-  type: 'need_signatures' | 'need_send_tx';
   eventLogId: number;
   network: ENetworkName;
 }

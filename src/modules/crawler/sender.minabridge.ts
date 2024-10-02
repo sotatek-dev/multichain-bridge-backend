@@ -5,6 +5,7 @@ import BigNumber from 'bignumber.js/bignumber.mjs';
 import { Logger } from 'log4js';
 import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
 import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signature, UInt64 } from 'o1js';
+import { Not } from 'typeorm';
 
 import { DECIMAL_BASE, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
@@ -234,7 +235,11 @@ export class SenderMinaBridge {
     const signerPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_PRIVATE_KEY));
     const signerPublicKey = PublicKey.fromPrivateKey(signerPrivateKey).toBase58();
     const [dataLock, config] = await Promise.all([
-      this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.MINA }),
+      this.eventLogRepository.findOneBy({
+        id: txId,
+        networkReceived: ENetworkName.MINA,
+        status: Not(EEventStatus.PROCESSING),
+      }),
       this.commonConfigRepository.getCommonConfig(),
     ]);
 
@@ -284,7 +289,6 @@ export class SenderMinaBridge {
       signature,
     });
     await this.multiSignatureRepository.save(multiSignature);
-    await this.unlockJobProvider.addJobSendTx(dataLock.id, dataLock.networkReceived);
     // notice the job unlock provider here
   }
 }

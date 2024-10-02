@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { assert } from 'console';
+import { In } from 'typeorm';
 
 import { ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
@@ -8,6 +8,9 @@ import { EQueueName, getEvmValidatorQueueName, getMinaValidatorQueueName } from 
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { QueueService } from '../../shared/modules/queue/queue.service.js';
+import { sleep } from '../../shared/utils/promise.js';
+import { getTimeInFutureInSeconds } from '../../shared/utils/time.js';
+import { EventLog } from './entities/event-logs.entity.js';
 import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interfaces/job.interface.js';
 
 @Injectable()
@@ -19,36 +22,63 @@ export class JobUnlockProvider {
     private readonly eventLogRepository: EventLogRepository,
   ) {}
   private logger = this.loggerService.getLogger('JOB_UNLOCK_PROVIDER');
-  public addJobSignatures(eventLogId: number, network: ENetworkName) {
-    return this.queueService.addJobToQueue<IJobUnlockPayload>(
-      EQueueName.UNLOCK_JOB_QUEUE,
-      { eventLogId, network, type: 'need_signatures' },
-      {
-        attempts: 5,
-        backoff: 5000,
-      },
-    );
+
+  public async handleJob() {
+    await Promise.all([this.getPendingTx(true), this.getPendingTx(false)]);
   }
-  public addJobSendTx(eventLogId: number, network: ENetworkName) {
-    return this.queueService.addJobToQueue<IJobUnlockPayload>(
-      EQueueName.UNLOCK_JOB_QUEUE,
-      { eventLogId, network, type: 'need_send_tx' },
-      {
-        attempts: 5,
-        backoff: 5000,
-      },
-    );
-  }
-  public async handleJob(data: IJobUnlockPayload) {
-    switch (data.type) {
-      case 'need_signatures':
-        return this.handleSignaturesJobs(data);
-      case 'need_send_tx':
-        return this.handleSendTxJobs(data);
-      default:
-        this.logger.error('unknown type', data);
-        return;
+
+  private async getPendingTx(isSignatureFullFilled: boolean) {
+    while (true) {
+      try {
+        const [pendingSignaturesMinaTx, pendingSignaturesEthTx] = await Promise.all([
+          this.eventLogRepository.getPendingTx(
+            ENetworkName.MINA,
+            isSignatureFullFilled,
+            this.getNumOfValidators(ENetworkName.MINA),
+          ),
+          this.eventLogRepository.getPendingTx(
+            ENetworkName.ETH,
+            isSignatureFullFilled,
+            this.getNumOfValidators(ENetworkName.ETH),
+          ),
+        ]);
+        const totalTxs = [...pendingSignaturesEthTx, ...pendingSignaturesMinaTx];
+        if (totalTxs.length > 0) {
+          this.logger.info(
+            `${isSignatureFullFilled ? 'Sending tx' : 'Validating signature'} for ${totalTxs.length}, mina count ${pendingSignaturesMinaTx.length}, eth count ${pendingSignaturesEthTx.length}`,
+          );
+        } else {
+          this.logger.info('no pending tx');
+          return;
+        }
+        for (const tx of totalTxs) {
+          if (isSignatureFullFilled) {
+            await this.handleSendTxJobs({ eventLogId: tx.id, network: tx.networkReceived });
+          } else {
+            await this.handleSignaturesJobs({ eventLogId: tx.id, network: tx.networkReceived });
+          }
+        }
+        await this.updateIntervalStatusForTxs(
+          totalTxs.map(e => e.id),
+          isSignatureFullFilled,
+        );
+        // update interval status of tx
+      } catch (error) {
+        this.logger.error(error);
+      } finally {
+        await sleep(5);
+      }
     }
+  }
+  // helpers
+  private updateIntervalStatusForTxs(ids: number[], isSignatureFullFilled: boolean) {
+    const payload: Partial<EventLog> = {};
+    if (isSignatureFullFilled) {
+      payload.nextSendTxJobTime = getTimeInFutureInSeconds(10).toString();
+    } else {
+      payload.nextValidateSignatureTime = getTimeInFutureInSeconds(10).toString();
+    }
+    return this.eventLogRepository.update({ id: In(ids) }, payload);
   }
   private getNumOfValidators(network: ENetworkName) {
     switch (network) {
@@ -57,8 +87,8 @@ export class JobUnlockProvider {
       case ENetworkName.MINA:
         return this.configService.get(EEnvKey.MINA_VALIDATOR_THRESHHOLD);
       default:
-        this.logger.warn('Unknown network!');
-        throw new Error('Unknown network!');
+        this.logger.warn('Unknown network!', network);
+        throw new Error('Unknown network!' + network);
     }
   }
   private getSenderQueueName(network: ENetworkName) {
@@ -104,22 +134,6 @@ export class JobUnlockProvider {
 
   private async handleSendTxJobs(data: IJobUnlockPayload) {
     // check if there is enough threshhold -> then create an unlock job.
-    const numOfValidators = this.getNumOfValidators(data.network);
-
-    const eventLog = await this.eventLogRepository.findOne({
-      where: {
-        id: data.eventLogId,
-      },
-      relations: {
-        validator: true,
-      },
-    });
-    assert(!!eventLog, 'not found tx with id = ' + data.eventLogId);
-    this.logger.info(`Found ${eventLog.validator.length} signatures.`);
-    if (eventLog.validator.length < numOfValidators) {
-      this.logger.warn('not enough validators tx', data.eventLogId);
-      return;
-    }
     await this.queueService.addJobToQueue<IUnlockToken>(
       this.getSenderQueueName(data.network),
       {
