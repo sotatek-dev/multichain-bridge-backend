@@ -1,4 +1,3 @@
-import { GetHistoryDto } from 'modules/users/dto/history-response.dto.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 import { Brackets } from 'typeorm';
 
@@ -8,7 +7,8 @@ import { ETableName } from '../../constants/entity.constant.js';
 import { MAX_RETRIES } from '../../constants/service.constant.js';
 import { BaseRepository } from '../../core/base-repository.js';
 import { EventLog } from '../../modules/crawler/entities/event-logs.entity.js';
-import { endOfDayUnix, startOfDayUnix } from '../../shared/utils/time.js';
+import { GetHistoryDto } from '../../modules/users/dto/history-response.dto.js';
+import { endOfDayUnix, nowUnix, startOfDayUnix } from '../../shared/utils/time.js';
 
 @EntityRepository(EventLog)
 export class EventLogRepository extends BaseRepository<EventLog> {
@@ -39,13 +39,40 @@ export class EventLogRepository extends BaseRepository<EventLog> {
 
     return qb.getOne();
   }
+  public async getPendingTx(
+    network: ENetworkName,
+    isSignatureFullFilled: boolean,
+    numOfSignaturesNeeded: number,
+  ): Promise<Array<{ id: number; networkReceived: ENetworkName }>> {
+    const currentUnixTimestamp = nowUnix();
+    const qb = this.createQueryBuilder(`${this.alias}`);
+    qb.select([`${this.alias}.id as "id"`, `${this.alias}.network_received as "networkReceived"`]);
+    qb.leftJoin(`${this.alias}.validator`, 'signature');
+
+    qb.where(`${this.alias}.network_received = :network`, { network });
+
+    qb.andWhere(`${this.alias}.status IN (:...status)`, {
+      status: [EEventStatus.WAITING], //  EEventStatus.PROCESSING add in future
+    })
+      .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: MAX_RETRIES })
+      .orderBy(`${this.alias}.id`, EDirection.DESC)
+      .groupBy(`${this.alias}.id`)
+      .addGroupBy(`${this.alias}.network_received`);
+    if (isSignatureFullFilled) {
+      qb.andWhere(`${this.alias}.next_send_tx_job_time < :currentUnixTimestamp`, { currentUnixTimestamp });
+      qb.having(`COUNT(signature.id) = :numOfSignaturesNeeded`, { numOfSignaturesNeeded });
+    } else {
+      qb.andWhere(`${this.alias}.next_validate_signature_job_time < :currentUnixTimestamp`, { currentUnixTimestamp });
+      qb.having(`COUNT(signature.id) < :numOfSignaturesNeeded`, { numOfSignaturesNeeded });
+    }
+    return qb.getRawMany();
+  }
 
   public async updateStatusAndRetryEvenLog({
     id,
     ...updateData
   }: {
     id: number;
-    retry: number;
     status: EEventStatus;
     amountReceived?: string;
     protocolFee?: string;

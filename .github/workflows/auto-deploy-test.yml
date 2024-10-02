@@ -15,4 +15,4 @@ jobs:
       - run: |
           echo "${{ vars.MINA_BRIDGE_BE_TEST }}" >> .env
           docker build . -t mina-bridge:1.0.0
-          docker compose -f docker-compose.dev.yaml up -d
+          docker compose -f docker-compose.dev.yaml up -d --remove-orphans

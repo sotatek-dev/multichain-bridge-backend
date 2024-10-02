@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import assert from 'assert';
 import dayjs from 'dayjs';
 import { Logger } from 'log4js';
 import { fetchLastBlock, Field, Mina, PublicKey, UInt32 } from 'o1js';
@@ -136,8 +137,8 @@ export class SCBridgeMinaCrawler {
 
     this.logger.info({ eventUnlock });
 
-    await queryRunner.manager.save(EventLog, eventUnlock);
-
+    const result = await queryRunner.manager.save(EventLog, eventUnlock);
+    assert(!!result.id && !!result.networkReceived, 'Cannot add job to signatures queue.');
     return {
       success: true,
     };

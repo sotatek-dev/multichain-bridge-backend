@@ -84,6 +84,12 @@ export class EventLog extends BaseEntityIncludeTime {
   @JoinColumn({ name: 'id' })
   validator: Relation<MultiSignature[]>;
 
+  @Column({ name: 'next_validate_signature_job_time', default: 0 })
+  nextValidateSignatureTime: string;
+
+  @Column({ name: 'next_send_tx_job_time', default: 0 })
+  nextSendTxJobTime: string;
+
   constructor(value: Partial<EventLog>) {
     super();
     Object.assign(this, value);
