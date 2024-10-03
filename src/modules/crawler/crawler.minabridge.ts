@@ -9,12 +9,34 @@ import { DataSource, QueryRunner } from 'typeorm';
 import { EAsset } from '../../constants/api.constant.js';
 import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { calculateUnlockFee } from '../../shared/utils/bignumber.js';
 import { Bridge } from './minaSc/Bridge.js';
 
+interface IMinaLockTokenEventData {
+  id: UInt32;
+  tokenAddress: PublicKey;
+}
+interface IMinaEvent {
+  type: string;
+  event: {
+    data: any;
+    transactionInfo: {
+      transactionHash: string;
+      transactionStatus: string;
+      transactionMemo: string;
+    };
+  };
+  blockHeight: UInt32;
+  blockHash: string;
+  parentBlockHash: string;
+  globalSlot: UInt32;
+  chainStatus: string;
+}
 @Injectable()
 export class SCBridgeMinaCrawler {
   private readonly logger: Logger;
@@ -24,6 +46,7 @@ export class SCBridgeMinaCrawler {
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly loggerService: LoggerService,
+    private readonly commonConfigRepository: CommonConfigRepository,
   ) {
     this.logger = this.loggerService.getLogger('SC_BRIDGE_MINA_CRAWLER');
     const Network = Mina.Network({
@@ -38,7 +61,7 @@ export class SCBridgeMinaCrawler {
       this.logger.warn('Already latest block. Skipped.');
       return;
     }
-    const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS));
+    const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS)!);
     const zkapp = new Bridge(zkappAddress);
 
     const events = await zkapp.fetchEvents(startBlockNumber.add(1), toBlock);
@@ -72,9 +95,10 @@ export class SCBridgeMinaCrawler {
     }
   }
 
-  public async handlerUnLockEvent(event, queryRunner: QueryRunner) {
+  public async handlerUnLockEvent(event: IMinaEvent, queryRunner: QueryRunner) {
+    const { id, tokenAddress } = event.event.data as IMinaLockTokenEventData;
     const existLockTx = await queryRunner.manager.findOne(EventLog, {
-      where: { id: event.event.data.id.toString() },
+      where: { id: Number(id.toString()) },
     });
 
     if (!existLockTx) {
@@ -85,7 +109,7 @@ export class SCBridgeMinaCrawler {
       status: EEventStatus.COMPLETED,
       txHashUnlock: event.event.transactionInfo.transactionHash,
       amountReceived: event.event.data.amount.toString(),
-      tokenReceivedAddress: (event.event.data.tokenAddress as PublicKey).toBase58(),
+      tokenReceivedAddress: tokenAddress.toBase58(),
       tokenReceivedName: EAsset.WETH,
     });
 
@@ -94,19 +118,38 @@ export class SCBridgeMinaCrawler {
     };
   }
 
-  public async handlerLockEvent(event: any, queryRunner: QueryRunner) {
+  public async handlerLockEvent(event: IMinaEvent, queryRunner: QueryRunner) {
     const txHashLock = event.event.transactionInfo.transactionHash;
     const field = Field.from(event.event.data.receipt.toString());
     const receiveAddress = DEFAULT_ADDRESS_PREFIX + field.toBigInt().toString(16);
-
+    const inputAmount = event.event.data.amount.toString();
     const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock });
     if (isExist) {
       this.logger.warn('Duplicated event', txHashLock);
       return;
     }
-    const eventUnlock = {
+    const fromTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
+      toTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
+    const config = await this.commonConfigRepository.getCommonConfig();
+
+    assert(!!config?.tip, 'tip config undefined');
+
+    const {
+      tipWithDecimalPlaces,
+      gasFeeWithDecimalPlaces,
+      amountReceiveNoDecimalPlace,
+      protocolFeeNoDecimalPlace,
+      success,
+    } = calculateUnlockFee({
+      fromDecimal: fromTokenDecimal,
+      toDecimal: toTokenDecimal,
+      inputAmountNoDecimalPlaces: inputAmount,
+      gasFeeWithDecimalPlaces: this.configService.get(EEnvKey.GAS_FEE_EVM)!,
+      tipPercent: +config!.tip,
+    });
+    const eventUnlock: Partial<EventLog> = {
       senderAddress: JSON.parse(JSON.stringify(event.event.data.locker)),
-      amountFrom: event.event.data.amount.toString(),
+      amountFrom: inputAmount,
       tokenFromAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
       networkFrom: ENetworkName.MINA,
       networkReceived: ENetworkName.ETH,
@@ -114,26 +157,19 @@ export class SCBridgeMinaCrawler {
       tokenReceivedAddress: this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
       txHashLock,
       receiveAddress: receiveAddress,
-      blockNumber: event.blockHeight.toString(),
+      blockNumber: +event.blockHeight.toString(),
       blockTimeLock: Number(Math.floor(dayjs().valueOf() / 1000)),
       event: EEventName.LOCK,
       returnValues: JSON.stringify(event),
-      status: EEventStatus.WAITING,
+      status: success ? EEventStatus.WAITING : EEventStatus.CANNOT_PROCESS,
       retry: 0,
-      fromTokenDecimal: null,
-      toTokenDecimal: null,
+      fromTokenDecimal,
+      toTokenDecimal,
+      gasFee: gasFeeWithDecimalPlaces,
+      tip: tipWithDecimalPlaces,
+      amountReceived: amountReceiveNoDecimalPlace,
+      protocolFee: protocolFeeNoDecimalPlace,
     };
-
-    const tokenPair = await this.tokenPairRepository.getTokenPair(
-      this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
-      this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
-    );
-    if (!tokenPair) {
-      eventUnlock.status = EEventStatus.NOTOKENPAIR;
-    } else {
-      eventUnlock.fromTokenDecimal = tokenPair.fromDecimal;
-      eventUnlock.toTokenDecimal = tokenPair.toDecimal;
-    }
 
     this.logger.info({ eventUnlock });
 
@@ -181,7 +217,7 @@ export class SCBridgeMinaCrawler {
     const toBlock = UInt32.from(
       latestBlock.blockchainLength
         .toUInt64()
-        .sub(this.configService.get<number>(EEnvKey.MINA_CRAWL_SAFE_BLOCK))
+        .sub(this.configService.get<number>(EEnvKey.MINA_CRAWL_SAFE_BLOCK) ?? 3)
         .toString(),
     );
 

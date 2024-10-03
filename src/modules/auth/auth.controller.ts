@@ -11,13 +11,10 @@ import { LoginResponseDto, MessageResponseDto, RefreshTokenResponseDto } from '.
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  private readonly ethBridgeStartBlock: number;
   constructor(
     private authService: AuthService,
     private readonly configService: ConfigService,
-  ) {
-    this.ethBridgeStartBlock = this.configService.get<number>(EEnvKey.ETH_BRIDGE_START_BLOCK);
-  }
+  ) {}
 
   @Post('/login-admin-evm')
   @GuardPublic()

@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import BigNumber from 'bignumber.js/bignumber.mjs';
+import { BigNumber } from 'bignumber.js';
 import { TransactionReceipt } from 'web3-core';
 import { Contract, EventData } from 'web3-eth-contract';
 import pkg from 'web3-utils';
@@ -37,13 +37,13 @@ export class DefaultContract {
     return this.startBlock;
   }
   public async getBlockNumber() {
-    const safeBlock = parseInt(process.env.SAFE_BLOCK) || 0;
+    const safeBlock = parseInt(process.env?.SAFE_BLOCK ?? '0');
     const blockNumber: number = await this.wrapper(() => this.rpcService.web3.eth.getBlockNumber());
 
     return blockNumber - safeBlock;
   }
 
-  public async recover(signature, message) {
+  public async recover(signature: string, message: string) {
     const recover = this.rpcService.web3.eth.accounts.recover(message, signature);
     return recover;
   }
@@ -74,7 +74,7 @@ export class DefaultContract {
     return this.wrapper(() => this.contract.methods[method](...param).call(), true);
   }
 
-  public async estimateGas(method: string, param: Array<any>, specifySignerIndex?: number): Promise<number> {
+  public async estimateGas(method: string, param: Array<any>): Promise<number> {
     const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
     const data = this.contract.methods[method](...param).encodeABI();
     const gasPrice = await this.rpcService.web3.eth.getGasPrice();
@@ -96,8 +96,7 @@ export class DefaultContract {
   public async write(
     method: string,
     param: Array<any>,
-    specifySignerIndex?: number,
-  ): Promise<{ success: boolean; error: Error; data: TransactionReceipt }> {
+  ): Promise<{ success: boolean; error: Error | null; data: TransactionReceipt | null }> {
     try {
       const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
 
@@ -133,7 +132,7 @@ export class DefaultContract {
   public async multiWrite(
     writeData: any[],
     specifySignerIndex?: number,
-  ): Promise<{ success: boolean; error: Error; data: TransactionReceipt[] }> {
+  ): Promise<{ success: boolean; error: Error | null; data: TransactionReceipt[] | null }> {
     try {
       const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
         this.rpcService.privateKeys[specifySignerIndex ?? 0],
@@ -209,29 +208,24 @@ export class ETHBridgeContract extends DefaultContract {
   public async mintNFT(toAddress: string) {
     return this.write('mint', [toAddress]);
   }
-  public async unlock(tokenFromAddress, amount, txHashLock, receiveAddress, fee?, _signatures?) {
+  public async unlock(
+    tokenReceivedAddress: string,
+    amount: string,
+    txHashLock: string,
+    receiveAddress: string,
+    fee?: string,
+    _signatures?: string[],
+  ) {
     console.log(
-      '🚀 ~ ETHBridgeContract ~ unlock ~ tokenFromAddress, amount, txHashLock, receiveAddress, fee?, _signatures?:',
-      tokenFromAddress,
+      '🚀 ~ ETHBridgeContract ~ unlock ~ tokenReceivedAddress, amount, txHashLock, receiveAddress, fee?, _signatures?:',
+      tokenReceivedAddress,
       amount,
       txHashLock,
       receiveAddress,
       fee,
       _signatures,
     );
-    return this.write('unlock', [tokenFromAddress, amount, receiveAddress, txHashLock, fee, _signatures]);
-  }
-  public async getEstimateGas(tokenFromAddress, amount, txHashLock, receiveAddress, fee?) {
-    const estimateGas = await this.estimateGas('unlock', [
-      tokenFromAddress,
-      amount,
-      receiveAddress,
-      txHashLock,
-      Number(fee),
-      [],
-    ]);
-    const getGasPrice = await this.convertGasPriceToEther(estimateGas);
-    return getGasPrice;
+    return this.write('unlock', [tokenReceivedAddress, amount, receiveAddress, txHashLock, fee, _signatures]);
   }
   public async getTokenURI(tokenId: number) {
     return this.call('tokenURI', [tokenId]);
