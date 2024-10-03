@@ -10,7 +10,6 @@ export class BullLib {
       redis: redisConfig,
       settings: {
         lockDuration: defaultLockTime, // lock the job for one hours.
-        lockRenewTime: Math.floor(defaultLockTime / 2),
         maxStalledCount: 0,
       },
     });

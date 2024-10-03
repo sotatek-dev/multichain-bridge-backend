@@ -17,6 +17,7 @@ export enum EEventStatus {
   COMPLETED = 'completed',
   FAILED = 'failed',
   NOTOKENPAIR = 'noTokenPair',
+  CANNOT_PROCESS = 'cannotProcess',
 }
 
 export enum ETokenPairStatus {

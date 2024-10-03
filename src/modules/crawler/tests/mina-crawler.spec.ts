@@ -137,7 +137,7 @@ describe('handleMinaChainCrawler', () => {
     const fetchEventsMock = jest.fn().mockResolvedValue([transformedUnlockObject, transformedLockObject]);
     const zaAppAddress = jest
       .fn()
-      .mockResolvedValue(PublicKey.fromBase58(configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS)));
+      .mockResolvedValue(PublicKey.fromBase58(configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS)!));
 
     jest.spyOn(new Bridge(zaAppAddress), 'fetchEvents').mockResolvedValue(transformedEventArr);
     jest.spyOn(new Bridge(zaAppAddress), 'fetchEvents').mockImplementation(fetchEventsMock);
@@ -196,7 +196,7 @@ describe('handleMinaChainCrawler', () => {
       toTokenDecimal: null,
     });
 
-    expect(result.success).toBe(true);
+    expect(result!.success).toBe(true);
   });
 });
 
@@ -236,7 +236,7 @@ it('should save the correct event log in handlerUnlockEvent', async () => {
   expect(queryRunner.manager.findOne).toHaveBeenCalledWith(EventLog, {
     where: { id: transformedUnlockObject.event.data.id.toString() },
   });
-  expect(result.success).toBe(true);
+  expect(result!.success).toBe(true);
 });
 
 afterEach(() => {

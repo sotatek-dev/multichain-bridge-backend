@@ -8,7 +8,7 @@ import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
 export class TokenPairRepository extends BaseRepository<TokenPair> {
   protected alias: ETableName = ETableName.TOKEN_PAIRS;
 
-  public async getTokenPair(tokenFromAddress, toAddress) {
+  public async getTokenPair(tokenFromAddress: string, toAddress: string) {
     return this.createQueryBuilder(`${this.alias}`)
       .where(`${this.alias}.fromAddress = :tokenFromAddress`, { tokenFromAddress })
       .andWhere(`${this.alias}.toAddress = :toAddress`, { toAddress })

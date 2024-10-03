@@ -8,6 +8,7 @@ import { MultiSignatureRepository } from '../../../database/repositories/multi-s
 import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
 import { LoggingModule } from '../../../shared/modules/logger/logger.module.js';
 import { Web3Module } from '../../../shared/modules/web3/web3.module.js';
+import { EventLog } from '../entities/event-logs.entity.js';
 import { SenderMinaBridge } from '../sender.minabridge.js';
 
 // Mock objects
@@ -22,6 +23,7 @@ const mockEventLogRepository = {
   updateLockEvenLog: jest.fn(),
   sumAmountBridgeOfUserInDay: jest.fn(),
   update: jest.fn(),
+  findOneBy: jest.fn(),
 };
 const mockCommonConfigRepository = {
   getCommonConfig: jest.fn(),
@@ -72,37 +74,17 @@ describe('MinaSenderService', () => {
         signature: `{"r":"5570236603572533401994258050414813854840150826583453247540834111404926928692","s":"21736293135419403848339637561979298566104722930867359295319005331842934575203"}`,
       },
     ]);
-    mockEventLogRepository.getEventLockWithNetwork.mockResolvedValue({
-      id: 333,
+    mockEventLogRepository.findOneBy.mockResolvedValue({
+      id: 1,
       tokenReceivedAddress: 'B62qqKNnNRpCtgcBexw5khZSpk9K2d9Z7Wzcyir3WZcVd15Bz8eShVi',
       tokenFromAddress: '0x0000000000000000000000000000000000000000',
       receiveAddress: 'B62qkkjqtrVmRLQhmkCQPw2dwhCZfUsmxCRTSfgdeUPhyTdoMv7h6b9',
       amountFrom: '159719371259000000',
-      senderAddress: '0xb3Edf83eA590F44f5c400077EBd94CCFE10E4Bb0',
-    });
-    mockEventLogRepository.sumAmountBridgeOfUserInDay.mockResolvedValue(0);
-    mockCommonConfigRepository.getCommonConfig.mockResolvedValue({
-      asset: 'ETH',
-      tip: '0.5',
-      dailyQuota: '500',
-      id: 1,
-    });
-    mockTokenPairRepository.getTokenPair.mockResolvedValue({
-      id: 5,
-      deletedAt: null,
-      fromChain: 'eth',
-      toChain: 'mina',
-      fromSymbol: 'ETH',
-      toSymbol: 'WETH',
-      fromAddress: '0x0000000000000000000000000000000000000000',
-      toAddress: 'B62qqKNnNRpCtgcBexw5khZSpk9K2d9Z7Wzcyir3WZcVd15Bz8eShVi',
-      fromDecimal: 18,
-      toDecimal: 9,
-      fromScAddress: '0xa4045da3c53138F84C97668f6deFDf8f4C9348f6',
-      toScAddress: 'B62qpeJGDMHp36rqyvfxHmjmHEZk7a7ryq2nCFFHkGHRMqXqkq5F2VS',
-      status: 'enable',
-    });
-    const result = await minaCrawlerService.handleUnlockMina();
+      amountReceived: '151732453',
+      tip: '0.00798591856295',
+      gasFee: '0.000001',
+    } as Partial<EventLog>);
+    const result = await minaCrawlerService.handleUnlockMina(1);
     expect(result.success).toBe(true);
   });
 

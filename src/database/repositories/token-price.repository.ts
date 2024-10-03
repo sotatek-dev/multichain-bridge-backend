@@ -8,11 +8,11 @@ import { TokenPrice } from '../../modules/crawler/entities/token-prices.entity.j
 export class TokenPriceRepository extends BaseRepository<TokenPrice> {
   protected alias: ETableName = ETableName.TOKEN_PRICES;
 
-  public async getTokenPriceBySymbol(symbol) {
+  public async getTokenPriceBySymbol(symbol: string) {
     return this.createQueryBuilder(`${this.alias}`).where(`${this.alias}.symbol = :symbol`, { symbol }).getOne();
   }
 
-  public async getTokenPriceByListSymbol(symbols) {
+  public async getTokenPriceByListSymbol(symbols: string[]) {
     return this.createQueryBuilder(`${this.alias}`)
       .where(`${this.alias}.symbol IN (:...symbols)`, { symbols })
       .getMany();

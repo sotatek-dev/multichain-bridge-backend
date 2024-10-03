@@ -1,10 +1,10 @@
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { ObjectLiteral, Repository, SelectQueryBuilder } from 'typeorm';
 
 import { EDirection } from '../constants/api.constant.js';
 import { ETableName } from '../constants/entity.constant.js';
 import { IPagination } from '../shared/interfaces/pagination.interface.js';
 
-export abstract class BaseRepository<E> extends Repository<E> {
+export abstract class BaseRepository<E extends ObjectLiteral> extends Repository<E> {
   protected abstract alias: ETableName;
 
   protected createQb() {
@@ -25,9 +25,9 @@ export abstract class BaseRepository<E> extends Repository<E> {
       queryBuilder.take(data.limit);
     }
     if (data.page && data.useLimit) {
-      queryBuilder.offset((data.page - 1) * data.limit);
+      queryBuilder.offset((data.page - 1) * data.limit!);
     } else if (data.page) {
-      queryBuilder.skip((data.page - 1) * data.limit);
+      queryBuilder.skip((data.page - 1) * data.limit!);
     }
     if (data.sortBy) {
       if (!selections || selections?.includes(`${this.alias}.${data.sortBy}`)) {
@@ -51,7 +51,7 @@ export abstract class BaseRepository<E> extends Repository<E> {
     }
 
     if (data.page) {
-      queryBuilder.offset((data.page - 1) * data.limit);
+      queryBuilder.offset((data.page - 1) * data.limit!);
     }
 
     if (data.sortBy) {

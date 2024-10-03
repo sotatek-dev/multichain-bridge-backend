@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
-export const fileFilter = (_: Request, file: any, callback) => {
+export const fileFilter = (_: Request, file: any, callback: CallableFunction) => {
   if (!file) {
     throw new HttpException({ key: 'FILE_NOT_EMPTY', message: 'File Not Empty!' }, HttpStatus.BAD_REQUEST);
   }

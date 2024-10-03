@@ -8,11 +8,12 @@ import { EventData } from 'web3-eth-contract';
 import { EAsset } from '../../constants/api.constant.js';
 import { EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
-import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
+import { calculateUnlockFee } from '../../shared/utils/bignumber.js';
 
 @Injectable()
 export class BlockchainEVMCrawler {
@@ -22,11 +23,11 @@ export class BlockchainEVMCrawler {
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
     private readonly crawlContractRepository: CrawlContractRepository,
-    private readonly tokenPairRepository: TokenPairRepository,
     private readonly loggerService: LoggerService,
     private readonly ethBridgeContract: ETHBridgeContract,
+    private readonly commonConfigRepository: CommonConfigRepository,
   ) {
-    this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB);
+    this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB)!;
     this.logger = loggerService.getLogger('BLOCKCHAIN_EVM_CRAWLER');
   }
 
@@ -68,15 +69,37 @@ export class BlockchainEVMCrawler {
   }
 
   public async handlerLockEvent(event: EventData, queryRunner: QueryRunner) {
+    const inputAmount = event.returnValues.amount;
     const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock: event.transactionHash });
     if (isExist) {
       this.logger.warn('Duplicated event', event.transactionHash);
       return;
     }
+    const fromTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
+      toTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
+    const config = await this.commonConfigRepository.getCommonConfig();
+    assert(!!config?.tip, 'tip config undefined');
+    const {
+      success,
+      amountReceiveNoDecimalPlace,
+      error,
+      gasFeeWithDecimalPlaces,
+      protocolFeeNoDecimalPlace,
+      tipWithDecimalPlaces,
+    } = calculateUnlockFee({
+      fromDecimal: fromTokenDecimal,
+      toDecimal: toTokenDecimal,
+      inputAmountNoDecimalPlaces: inputAmount,
+      gasFeeWithDecimalPlaces: this.configService.get(EEnvKey.GASFEEMINA)!,
+      tipPercent: +config!.tip,
+    });
+    if (error) {
+      this.logger.error('Calculate error', error);
+    }
     const blockTimeOfBlockNumber = await this.ethBridgeContract.getBlockTimeByBlockNumber(event.blockNumber);
-    const eventUnlock = {
+    const eventUnlock: Partial<EventLog> = {
       senderAddress: event.returnValues.locker,
-      amountFrom: event.returnValues.amount,
+      amountFrom: inputAmount,
       tokenFromAddress: event.returnValues.token,
       networkFrom: ENetworkName.ETH,
       networkReceived: ENetworkName.MINA,
@@ -88,25 +111,17 @@ export class BlockchainEVMCrawler {
       blockTimeLock: Number(blockTimeOfBlockNumber.timestamp),
       event: EEventName.LOCK,
       returnValues: JSON.stringify(event.returnValues),
-      status: EEventStatus.WAITING,
+      status: success ? EEventStatus.WAITING : EEventStatus.PROCESSING,
       retry: 0,
-      fromTokenDecimal: null,
-      toTokenDecimal: null,
+      fromTokenDecimal,
+      toTokenDecimal,
+      gasFee: gasFeeWithDecimalPlaces,
+      tip: tipWithDecimalPlaces,
+      amountReceived: amountReceiveNoDecimalPlace,
+      protocolFee: protocolFeeNoDecimalPlace,
     };
 
-    const tokenPair = await this.tokenPairRepository.getTokenPair(
-      this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
-      this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
-    );
-    if (!tokenPair) {
-      eventUnlock.status = EEventStatus.NOTOKENPAIR;
-    } else {
-      eventUnlock.fromTokenDecimal = tokenPair.fromDecimal;
-      eventUnlock.toTokenDecimal = tokenPair.toDecimal;
-    }
-
-    const result = await queryRunner.manager.save(EventLog, eventUnlock);
-    assert(!!result.id && !!result.networkReceived, 'Cannot add job to signatures queue.');
+    await queryRunner.manager.save(EventLog, eventUnlock);
     return {
       success: true,
     };
@@ -147,7 +162,7 @@ export class BlockchainEVMCrawler {
     );
   }
 
-  private async getFromToBlock(): Promise<{ startBlockNumber; toBlock }> {
+  private async getFromToBlock(): Promise<{ startBlockNumber: number; toBlock: number }> {
     let startBlockNumber = this.ethBridgeContract.getStartBlock();
     let toBlock = await this.ethBridgeContract.getBlockNumber();
 
