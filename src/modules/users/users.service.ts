@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from 'log4js';
 import { DataSource } from 'typeorm';
 
 import { ENetworkName } from '../../constants/blockchain.constant.js';
@@ -15,11 +14,11 @@ import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exept
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
+import { GetHistoryDto, GetHistoryOfUserDto } from './dto/history-response.dto.js';
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
 
 @Injectable()
 export class UsersService {
-  private readonly logger: Logger;
   constructor(
     private readonly usersRepository: UserRepository,
     private readonly eventLogRepository: EventLogRepository,
@@ -27,9 +26,8 @@ export class UsersService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
-  ) {
-    this.logger = this.loggerService.getLogger('USER_SERVICE');
-  }
+  ) {}
+  private readonly logger = this.loggerService.getLogger('USER_SERVICE');
   async getProfile(userId: number) {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
@@ -40,12 +38,12 @@ export class UsersService {
     return user;
   }
 
-  async getHistoriesOfUser(address: string, options) {
+  async getHistoriesOfUser(address: string, options: GetHistoryOfUserDto) {
     const [data, count] = await this.eventLogRepository.getHistoriesOfUser(address, options);
     return toPageDto(data, options, count);
   }
 
-  async getHistories(options) {
+  async getHistories(options: GetHistoryDto) {
     const [data, count] = await this.eventLogRepository.getHistories(options);
     return toPageDto(data, options, count);
   }
@@ -82,14 +80,14 @@ export class UsersService {
     if (!tokenPair) {
       httpNotFound(EError.RESOURCE_NOT_FOUND);
     }
-    if (tokenPair.toChain == ENetworkName.MINA) {
+    if (tokenPair!.toChain == ENetworkName.MINA) {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-      gasFee = addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM), decimal);
+      gasFee = addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM)!, decimal);
     } else {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
-      gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA), decimal);
+      gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA)!, decimal);
     }
 
-    return { gasFee, tipRate: configTip.tip, decimal };
+    return { gasFee, tipRate: configTip!.tip, decimal };
   }
 }

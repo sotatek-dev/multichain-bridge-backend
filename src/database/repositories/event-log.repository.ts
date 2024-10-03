@@ -7,14 +7,14 @@ import { ETableName } from '../../constants/entity.constant.js';
 import { MAX_RETRIES } from '../../constants/service.constant.js';
 import { BaseRepository } from '../../core/base-repository.js';
 import { EventLog } from '../../modules/crawler/entities/event-logs.entity.js';
-import { GetHistoryDto } from '../../modules/users/dto/history-response.dto.js';
+import { GetHistoryDto, GetHistoryOfUserDto } from '../../modules/users/dto/history-response.dto.js';
 import { endOfDayUnix, nowUnix, startOfDayUnix } from '../../shared/utils/time.js';
 
 @EntityRepository(EventLog)
 export class EventLogRepository extends BaseRepository<EventLog> {
   protected alias: ETableName = ETableName.EVENT_LOGS;
 
-  public async getEventLockWithNetwork(network: ENetworkName, threshold?: number): Promise<EventLog> {
+  public async getEventLockWithNetwork(network: ENetworkName, threshold?: number): Promise<EventLog | null> {
     const qb = this.createQueryBuilder(`${this.alias}`);
     qb.innerJoinAndSelect(`${this.alias}.validator`, 'signature');
 
@@ -98,7 +98,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
       .execute();
   }
 
-  public async getHistoriesOfUser(address: string, options) {
+  public async getHistoriesOfUser(address: string, options: GetHistoryOfUserDto) {
     const queryBuilder = this.createQb();
     queryBuilder
       .where(`LOWER(${this.alias}.sender_address) = :address OR LOWER(${this.alias}.receive_address) = :address`, {
@@ -150,7 +150,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     return queryBuilder.getManyAndCount();
   }
 
-  public async sumAmountBridgeOfUserInDay(address) {
+  public async sumAmountBridgeOfUserInDay(address: string) {
     const qb = this.createQb();
     qb.select([`${this.alias}.sender_address`, `SUM(CAST(${this.alias}.amount_from as DECIMAL(100,2))) as totalamount`])
       .where(`${this.alias}.sender_address = :address`, { address })

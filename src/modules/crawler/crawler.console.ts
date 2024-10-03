@@ -80,8 +80,11 @@ export class CrawlerConsole {
   })
   async handleSenderETHBridgeUnlock() {
     this.logger.info('ETH_SENDER_JOB: started');
-    await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.EVM_SENDER_QUEUE, (data: IUnlockToken) => {
-      return this.senderEVMBridge.handleUnlockEVM(data.eventLogId);
+    await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.EVM_SENDER_QUEUE, async (data: IUnlockToken) => {
+      const result = await this.senderEVMBridge.handleUnlockEVM(data.eventLogId);
+      if (result.error) {
+        throw result.error;
+      }
     });
   }
 

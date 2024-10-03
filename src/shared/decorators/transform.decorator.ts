@@ -1,5 +1,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Transform } from 'class-transformer';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import pkg from 'lodash';
 
 const { castArray, isArray, isNil, map, trim } = pkg;
@@ -8,7 +10,7 @@ export function Trim(): PropertyDecorator {
     const value = params.value as string[] | string;
 
     if (isArray(value)) {
-      return map(value, v => trim(v).replace(/\s\s+/g, ' '));
+      return map(value, (v: any) => trim(v).replace(/\s\s+/g, ' '));
     }
 
     return trim(value).replace(/\s\s+/g, ' ');
@@ -30,7 +32,7 @@ export function ToBooleanArray(): PropertyDecorator {
   return Transform(
     params => {
       if (isArray(params.value)) {
-        return params.value.map(v => toBoolean(v));
+        return params.value.map((v: string | number | boolean) => toBoolean(v));
       }
     },
     { toClassOnly: true },

@@ -13,7 +13,7 @@ export const migrationDir = join(__dirname, 'database/migrations');
 export default {
   type: 'postgres',
   host: process.env[EEnvKey.DB_HOST],
-  port: +process.env[EEnvKey.DB_PORT],
+  port: +process.env[EEnvKey.DB_PORT]!,
   username: process.env[EEnvKey.DB_USERNAME],
   password: process.env[EEnvKey.DB_PASSWORD],
   database: process.env[EEnvKey.DB_DATABASE],
