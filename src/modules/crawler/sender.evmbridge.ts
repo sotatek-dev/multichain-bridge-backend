@@ -49,11 +49,11 @@ export class SenderEVMBridge {
     assert(dataLock.gasFee.toString(), 'invalid tips');
     assert(dataLock.amountReceived, 'invalida amount to unlock');
 
-    const { tokenReceivedAddress, txHashLock, receiveAddress, amountFrom } = dataLock;
+    const { tokenReceivedAddress, txHashLock, receiveAddress, amountReceived, protocolFee } = dataLock;
 
     const result = await this.ethBridgeContract.unlock(
       tokenReceivedAddress,
-      BigNumber(amountFrom).toString(),
+      BigNumber(amountReceived).plus(protocolFee).toString(),
       txHashLock,
       receiveAddress,
       BigNumber(dataLock.protocolFee).toString(),
@@ -83,7 +83,7 @@ export class SenderEVMBridge {
 
     const signTx = await this.getSignature(wallet, {
       token: tokenReceivedAddress,
-      amount: dataLock.amountFrom,
+      amount: BigNumber(dataLock.amountReceived).plus(dataLock.protocolFee).toString(),
       user: receiveAddress,
       hash: txHashLock,
       fee: dataLock.protocolFee,
