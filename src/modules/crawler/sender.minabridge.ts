@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
 import { BigNumber } from 'bignumber.js';
-import { isNumberString } from 'class-validator';
 import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
 import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signature, UInt64 } from 'o1js';
 
@@ -89,8 +88,8 @@ export class SenderMinaBridge {
       this.logger.warn(`Not found tx with id ${txId}`);
       return { error: null, success: false };
     }
-    assert(isNumberString(dataLock.tip.toString()), 'invalid gasFee');
-    assert(isNumberString(dataLock.gasFee.toString()), 'invalid tips');
+    assert(dataLock.tip.toString(), 'invalid gasFee');
+    assert(dataLock.gasFee.toString(), 'invalid tips');
     assert(dataLock.amountReceived, 'invalida amount to unlock');
 
     await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);

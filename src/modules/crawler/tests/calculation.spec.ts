@@ -2,11 +2,11 @@ import { calculateUnlockFee } from '../../../shared/utils/bignumber.js';
 
 describe('test amount fee calculation', () => {
   it('correct amount', () => {
-    const fromDecimal = 18,
-      toDecimal = 9,
+    const fromDecimal = 9,
+      toDecimal = 18,
       gasFeeWithDecimalPlaces = '0.000001',
-      inputAmountNoDecimalPlaces = '159719371259000000',
-      tipPercent = 5;
+      inputAmountNoDecimalPlaces = '200000',
+      tipPercent = 0.0001;
     const result = calculateUnlockFee({
       fromDecimal,
       gasFeeWithDecimalPlaces,
