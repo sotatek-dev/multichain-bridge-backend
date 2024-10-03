@@ -81,11 +81,11 @@ export class UsersService {
       httpNotFound(EError.RESOURCE_NOT_FOUND);
     }
     if (tokenPair!.toChain == ENetworkName.MINA) {
-      decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-      gasFee = addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM)!, decimal);
-    } else {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
       gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA)!, decimal);
+    } else {
+      decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
+      gasFee = addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM)!, decimal);
     }
 
     return { gasFee, tipRate: configTip!.tip, decimal };
