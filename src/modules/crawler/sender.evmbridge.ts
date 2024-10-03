@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
 import { BigNumber } from 'bignumber.js';
-import { isNumberString } from 'class-validator';
 import { ethers } from 'ethers';
 
 import { getEthBridgeAddress } from '../../config/common.config.js';
@@ -46,8 +45,9 @@ export class SenderEVMBridge {
       return { error: null, success: false };
     }
 
-    assert(isNumberString(dataLock.tip.toString()), 'invalid gasFee');
-    assert(isNumberString(dataLock.gasFee.toString()), 'invalid tips');
+    assert(dataLock.tip.toString(), 'invalid gasFee');
+    assert(dataLock.gasFee.toString(), 'invalid tips');
+    assert(dataLock.amountReceived, 'invalida amount to unlock');
 
     const { tokenReceivedAddress, txHashLock, receiveAddress, amountFrom } = dataLock;
 

@@ -50,12 +50,12 @@ export const calculateUnlockFee = ({
       .dividedBy(BigNumber(DECIMAL_BASE).pow(fromDecimal))
       .multipliedBy(BigNumber(DECIMAL_BASE).pow(toDecimal));
 
-    const gasFeeMina = addDecimal(gasFeeWithDecimalPlaces, toDecimal);
+    const gasFee = addDecimal(gasFeeWithDecimalPlaces, toDecimal);
 
-    const tip = calculateTip(amountReceiveConvert.toString(), gasFeeMina, tipPercent);
+    const tip = calculateTip(amountReceiveConvert.toString(), gasFee, tipPercent);
 
     // protocol fee = tip + gas_fee
-    const protocolFeeNoDecimalPlace = tip.plus(gasFeeMina);
+    const protocolFeeNoDecimalPlace = tip.plus(gasFee);
 
     // amount received= total amount - protocol fee
     const amountReceived = BigNumber(amountReceiveConvert).minus(protocolFeeNoDecimalPlace);
