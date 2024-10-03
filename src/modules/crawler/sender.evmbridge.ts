@@ -83,7 +83,7 @@ export class SenderEVMBridge {
 
     const signTx = await this.getSignature(wallet, {
       token: tokenReceivedAddress,
-      amount: dataLock.amountReceived,
+      amount: dataLock.amountFrom,
       user: receiveAddress,
       hash: txHashLock,
       fee: dataLock.protocolFee,
