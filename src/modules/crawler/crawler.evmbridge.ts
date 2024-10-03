@@ -90,7 +90,7 @@ export class BlockchainEVMCrawler {
       fromDecimal: fromTokenDecimal,
       toDecimal: toTokenDecimal,
       inputAmountNoDecimalPlaces: inputAmount,
-      gasFeeWithDecimalPlaces: this.configService.get(EEnvKey.GAS_FEE_EVM)!,
+      gasFeeWithDecimalPlaces: this.configService.get(EEnvKey.GASFEEMINA)!,
       tipPercent: +config!.tip,
     });
     if (error) {
