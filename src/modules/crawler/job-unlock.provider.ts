@@ -1,13 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import assert from 'assert';
+import { BigNumber } from 'bignumber.js';
 import { In } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity.js';
 
 import { ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EQueueName, getEvmValidatorQueueName, getMinaValidatorQueueName } from '../../constants/queue.constant.js';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { QueueService } from '../../shared/modules/queue/queue.service.js';
+import { addDecimal } from '../../shared/utils/bignumber.js';
 import { sleep } from '../../shared/utils/promise.js';
 import { getTimeInFutureInMinutes } from '../../shared/utils/time.js';
 import { EventLog } from './entities/event-logs.entity.js';
@@ -20,6 +25,7 @@ export class JobUnlockProvider {
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
     private readonly eventLogRepository: EventLogRepository,
+    private readonly commonConfigRepository: CommonConfigRepository,
   ) {}
   private logger = this.loggerService.getLogger('JOB_UNLOCK_PROVIDER');
 
@@ -72,7 +78,7 @@ export class JobUnlockProvider {
   }
   // helpers
   private updateIntervalStatusForTxs(ids: number[], isSignatureFullFilled: boolean) {
-    const payload: Partial<EventLog> = {};
+    const payload: QueryDeepPartialEntity<EventLog> = {};
     const nextTime = getTimeInFutureInMinutes(60 * 5).toString();
     if (isSignatureFullFilled) {
       payload.nextSendTxJobTime = nextTime;
@@ -146,5 +152,20 @@ export class JobUnlockProvider {
         jobId: `send-tx-${data.eventLogId}`,
       },
     );
+  }
+  // TODO: fix this
+  private async isPassDailyQuota(address: string, fromDecimal: number): Promise<boolean> {
+    const [dailyQuota, totalamount] = await Promise.all([
+      await this.commonConfigRepository.getCommonConfig(),
+      await this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
+    ]);
+    assert(!!dailyQuota, 'daily quota undefined');
+    if (
+      totalamount &&
+      BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(addDecimal(dailyQuota.dailyQuota, fromDecimal))
+    ) {
+      return false;
+    }
+    return true;
   }
 }

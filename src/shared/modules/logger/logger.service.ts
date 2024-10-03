@@ -22,7 +22,7 @@ const layouts: Record<string, Layout> = {
     tokens: {
       remoteAddr: function (logEvent) {
         let remoteAddr = logEvent.data.toString().split(' ', 1).pop();
-        remoteAddr = remoteAddr.replace(/^.*:/, '');
+        remoteAddr = remoteAddr?.replace(/^.*:/, '');
         remoteAddr = remoteAddr === '1' ? '127.0.0.1' : remoteAddr;
         return remoteAddr;
       },

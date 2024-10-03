@@ -1,9 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import Web3 from 'web3/lib/index.js';
 
 import { initializeEthContract } from '../../../config/common.config.js';
-import { ENetworkName } from '../../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../../constants/env.constant.js';
 import { ASYNC_CONNECTION } from '../../../constants/service.constant.js';
 import { sleep } from '../../utils/promise.js';
@@ -41,10 +42,10 @@ export interface IRpcService {
   getNonce: (walletAddress: string) => Promise<number>;
 }
 
-export const RpcFactory = async (configService: ConfigService, network?: ENetworkName): Promise<IRpcService> => {
+export const RpcFactory = async (configService: ConfigService): Promise<IRpcService> => {
   let rpcRound = 0;
-  const rpc = configService.get<string[]>(EEnvKey.ETH_BRIDGE_RPC_OPTIONS);
-  const privateKeys = configService.get<string>(EEnvKey.SIGNER_PRIVATE_KEY);
+  const rpc = configService.get<string[]>(EEnvKey.ETH_BRIDGE_RPC_OPTIONS)!;
+  const privateKeys = configService.get<string>(EEnvKey.SIGNER_PRIVATE_KEY)!;
 
   const getNextRPcRound = (): Web3 => {
     return new Web3(rpc[rpcRound++ % rpc.length]);

@@ -36,20 +36,21 @@ export class AuthService {
     const admin = await this.validateAdminAccount(data.address, true);
 
     // Generate access and refresh token
-    return this.getToken(admin);
+    return this.getToken(admin!);
   }
 
   async loginMina(data: LoginMinaDto) {
     try {
-      if (!(await this.validateSignatureMina(data.address, data.signature)))
-        throw new httpBadRequest(EError.INVALID_SIGNATURE);
+      if (!(await this.validateSignatureMina(data.address, data.signature))) {
+        httpBadRequest(EError.INVALID_SIGNATURE);
+      }
       const admin = await this.validateAdminAccount(data.address, false);
 
       // Generate access and refresh token
-      return this.getToken(admin);
+      return this.getToken(admin!);
     } catch (err) {
       this.logger.error('[err] auth.service.ts: ---', err);
-      throw new httpBadRequest(EError.USER_NOT_FOUND);
+      httpBadRequest(EError.USER_NOT_FOUND);
     }
   }
 
@@ -74,7 +75,7 @@ export class AuthService {
     try {
       const recover = await this.ethBridgeContract.recover(
         signature,
-        this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
+        this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN)!,
       );
       const checksumRecover = toChecksumAddress(recover);
       const checksumAddress = toChecksumAddress(address);
@@ -85,7 +86,7 @@ export class AuthService {
     }
   }
 
-  private async validateSignatureMina(address: string, signature) {
+  private async validateSignatureMina(address: string, signature: any) {
     let client = new Client({ network: EMinaChainEnviroment.MAINNET });
     if (process.env.NODE_ENV !== EEnvironments.PRODUCTION) {
       client = new Client({ network: EMinaChainEnviroment.TESTNET });
@@ -122,11 +123,11 @@ export class AuthService {
     }
 
     const user = await this.userRepository.findOne({
-      where: { id: jwtData.userId },
+      where: { id: jwtData!.userId },
     });
 
     if (!user) httpNotFound(EError.USER_NOT_FOUND);
 
-    return this.getToken(user);
+    return this.getToken(user!);
   }
 }

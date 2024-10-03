@@ -3,16 +3,18 @@ title Lock From Eth to Mina
 actor User
 boundary fe as "Frontend"
 control be as "Backend"
-boundary evm_crawler as "EVM crawler"
-boundary mina_validator as "Mina signature validators"
-boundary mina_sender as "Mina tx sender"
-boundary mina_crawler as "Mina crawler"
 participant Ethereum
-participant Mina
+control evm_crawler as "EVM crawler"
+control job_provider as "Job provider"
 database db as "Database"
+queue queue1 as "Queue"
+control mina_validator as "Mina signature validators"
+control mina_sender as "Mina tx sender"
+control mina_crawler as "Mina crawler"
+participant Mina
 autonumber
 
-group#LightGreen User lock token from Evm
+group#LightGreen (1) User lock token from Evm
 
     User -> fe : select network to bridge
 
@@ -35,7 +37,7 @@ group#LightGreen User lock token from Evm
 
 
 end
-group#LightGreen Crawler evm fetch lock tx
+group#LightGreen (2) Crawler evm fetch lock tx
     evm_crawler->Ethereum: fetch lock events
     activate Ethereum
     Ethereum --> evm_crawler: return locked tx events
@@ -46,27 +48,69 @@ group#LightGreen Crawler evm fetch lock tx
     db --> evm_crawler: saved tx with status waiting to be unlocked
     deactivate db
 end
-group#LightGreen System unlock token to Mina
+group#LightGreen (3) Job Provider create queued job
+    loop
+        par
+            job_provider->db: get pending transaction need signatures
+            activate db
+            db --> job_provider: list of pending transaction
+            deactivate db
+            job_provider -> queue1: send jobs to queue
+            activate queue1
+            queue1 --> job_provider: success
+            deactivate queue1
+            else
+            job_provider->db: get validated transaction ready to be sent
+            activate db
+            db --> job_provider: list of ready transaction
+            deactivate db
+            job_provider -> queue1: send jobs to queue
+            activate queue1
+            queue1 --> job_provider: success
+            deactivate queue1
+        end
+    end
+end
+group#LightGreen (4) Job Validator process generating signature for tx
 
-    mina_validator -> db: get pending unlock tx and verify theirs signature
+    queue1 -> mina_validator: trigger job
     activate mina_validator
+    mina_validator --> db: get data for needed for queued job
     activate db
-    db --> mina_validator: update signature
+    db --> mina_validator: needed data
     deactivate db
+
+    mina_validator -->mina_validator: generated the signature
+
+    mina_validator -> db: save the signature
+    activate db
+    db --> mina_validator: save success
+    deactivate db
+
+    mina_validator --> queue1: job completed
     deactivate mina_validator
+end
+group#LightGreen (5) Job Sender process sending tx to Mina network
 
-    mina_sender -> db: get signatured verified tx
-    activate db
+    queue1 -> mina_sender: trigger sender by queued job
     activate mina_sender
-    db -> mina_sender: return tx
+    mina_sender --> db: get data for needed for queued job
+    activate db
+    db --> mina_sender: needed data
     deactivate db
 
-    mina_sender -> Mina: prove, send tx
+    mina_sender --> mina_sender: build transaction
+
+    mina_sender -> Mina: Send the tx to Mina
     activate Mina
     Mina --> mina_sender: return tx hash
     deactivate Mina
+    mina_sender --> mina_sender: wait for the tx to be applied
+    mina_sender --> queue1: job completed
     deactivate mina_sender
 
+end
+group#LightGreen (6) Mina crawler confirms sent tx
     mina_crawler -> Mina: get unlock events
     activate mina_crawler
     activate Mina
@@ -78,6 +122,7 @@ group#LightGreen System unlock token to Mina
     deactivate mina_crawler
     deactivate db
 end
+
 
 @enduml
 

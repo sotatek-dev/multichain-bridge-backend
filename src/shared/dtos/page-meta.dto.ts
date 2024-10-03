@@ -23,10 +23,10 @@ export class PageMetaDto {
 
   constructor(pageOptionsDto: PageOptionsDto, itemCount: number) {
     this.total = itemCount;
-    this.totalOfPages = Math.ceil(this.total / pageOptionsDto.limit);
+    this.totalOfPages = Math.ceil(this.total / pageOptionsDto.limit!);
     this.perPage = pageOptionsDto.limit;
     this.currentPage = pageOptionsDto.page;
-    this.hasPreviousPage = pageOptionsDto.page > 1;
-    this.hasNextPage = pageOptionsDto.page < this.totalOfPages;
+    this.hasPreviousPage = pageOptionsDto.page! > 1;
+    this.hasNextPage = pageOptionsDto.page! < this.totalOfPages;
   }
 }

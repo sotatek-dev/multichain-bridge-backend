@@ -76,6 +76,7 @@
     "@types/jest": "^29.5.2",
     "@types/node": "^20.16.5",
     "@types/supertest": "^2.0.12",
+    "@types/web3": "^1.2.2",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.42.0",
@@ -91,5 +92,4 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   }
-  
 }

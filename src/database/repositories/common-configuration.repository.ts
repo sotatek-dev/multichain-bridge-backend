@@ -1,3 +1,4 @@
+import { UpdateCommonConfigBodyDto } from 'modules/users/dto/common-config-request.dto.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 
 import { ETableName } from '../../constants/entity.constant.js';
@@ -14,7 +15,7 @@ export class CommonConfigRepository extends BaseRepository<CommonConfig> {
       .getOne();
   }
 
-  public updateCommonConfig(id: number, updateConfig) {
+  public updateCommonConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {
     return this.createQueryBuilder(`${this.alias}`)
       .update(CommonConfig)
       .set(updateConfig)

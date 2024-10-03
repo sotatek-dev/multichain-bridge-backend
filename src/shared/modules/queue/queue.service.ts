@@ -14,7 +14,7 @@ export class QueueService {
     private readonly loggerService: LoggerService,
   ) {}
   private logger = this.loggerService.getLogger('IN_QUEUE');
-  private initQueueOnDemand(queueName: string) {
+  private initQueueOnDemand(queueName: string): Queue {
     // reduce connection to redis
     const redisConfig = {
       host: this.configService.get(EEnvKey.REDIS_HOST),
@@ -24,22 +24,23 @@ export class QueueService {
       this.logger.info('setup Queue', queueName);
       this.queues.set(queueName, BullLib.createNewQueue(queueName, redisConfig));
     }
+    return this.queues.get(queueName)!;
   }
   public async handleQueueJob<T>(queueName: string, handleFunction: CallableFunction, numOfJobs = 1) {
-    this.initQueueOnDemand(queueName);
-    await this.queues.get(queueName).process(numOfJobs, async (job: Job<T>, done: DoneCallback) => {
+    const queue = this.initQueueOnDemand(queueName);
+    await queue.process(numOfJobs, async (job: Job<T>, done: DoneCallback) => {
       try {
         this.logger.info('Handling job', job.data);
         await handleFunction(job.data);
         done();
       } catch (error) {
         this.logger.warn('Job failed', job.data, error);
-        done(error);
+        done(error as Error);
       }
     });
   }
   public addJobToQueue<T>(queueName: string, job: T, options: JobOptions = { attempts: 3, backoff: 5000 }) {
-    this.initQueueOnDemand(queueName);
-    return this.queues.get(queueName).add(job, options);
+    const queue = this.initQueueOnDemand(queueName);
+    return queue.add(job, options);
   }
 }
