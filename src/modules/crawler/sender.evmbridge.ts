@@ -45,28 +45,31 @@ export class SenderEVMBridge {
       return { error: null, success: false };
     }
 
-    assert(dataLock.tip.toString(), 'invalid gasFee');
-    assert(dataLock.gasFee.toString(), 'invalid tips');
-    assert(dataLock.amountReceived, 'invalida amount to unlock');
+    try {
+      assert(dataLock.tip.toString(), 'invalid gasFee');
+      assert(dataLock.gasFee.toString(), 'invalid tips');
+      assert(dataLock.amountReceived, 'invalida amount to unlock');
+      const { tokenReceivedAddress, txHashLock, receiveAddress, amountReceived, protocolFee } = dataLock;
+      const result = await this.ethBridgeContract.unlock(
+        tokenReceivedAddress,
+        BigNumber(amountReceived).plus(protocolFee).toString(),
+        txHashLock,
+        receiveAddress,
+        BigNumber(dataLock.protocolFee).toString(),
+        dataLock.validator.map(e => e.signature),
+      );
 
-    const { tokenReceivedAddress, txHashLock, receiveAddress, amountReceived, protocolFee } = dataLock;
+      assert(result.transactionHash, 'tx send failed id = ' + txId);
 
-    const result = await this.ethBridgeContract.unlock(
-      tokenReceivedAddress,
-      BigNumber(amountReceived).plus(protocolFee).toString(),
-      txHashLock,
-      receiveAddress,
-      BigNumber(dataLock.protocolFee).toString(),
-      dataLock.validator.map(e => e.signature),
-    );
-    // Update status eventLog when call function unlock
-    if (result.success) {
       await this.updateLogStatusWithRetry(dataLock, EEventStatus.PROCESSING);
-    } else if (!!result.error) {
-      this.logger.error(result.error);
-      await this.updateLogStatusWithRetry(dataLock, EEventStatus.FAILED, result.error.message);
+
+      return { error: null, success: true };
+    } catch (error) {
+      this.logger.error(error);
+      await this.updateLogStatusWithRetry(dataLock, EEventStatus.FAILED, error.message);
+      throw error;
     }
-    return result;
+    // Update status eventLog when call function unlock
   }
 
   async validateUnlockEVMTransaction(txId: number): Promise<{ error: Error | null; success: boolean }> {
