@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
 import { BigNumber } from 'bignumber.js';
-import { In } from 'typeorm';
+import { FindOptionsWhere, In, LessThan } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity.js';
 
 import { ENetworkName } from '../../constants/blockchain.constant.js';
@@ -14,7 +14,7 @@ import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { QueueService } from '../../shared/modules/queue/queue.service.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
 import { sleep } from '../../shared/utils/promise.js';
-import { getTimeInFutureInMinutes } from '../../shared/utils/time.js';
+import { getNextDayInUnix, getTimeInFutureInMinutes } from '../../shared/utils/time.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interfaces/job.interface.js';
 
@@ -59,13 +59,13 @@ export class JobUnlockProvider {
         }
         for (const tx of totalTxs) {
           if (isSignatureFullFilled) {
-            await this.handleSendTxJobs({ eventLogId: tx.id, network: tx.networkReceived });
+            await this.handleSendTxJobs(tx);
           } else {
-            await this.handleSignaturesJobs({ eventLogId: tx.id, network: tx.networkReceived });
+            await this.handleSignaturesJobs(tx);
           }
         }
         await this.updateIntervalStatusForTxs(
-          totalTxs.map(e => e.id),
+          totalTxs.map(e => e.eventLogId),
           isSignatureFullFilled,
         );
         // update interval status of tx
@@ -80,12 +80,15 @@ export class JobUnlockProvider {
   private updateIntervalStatusForTxs(ids: number[], isSignatureFullFilled: boolean) {
     const payload: QueryDeepPartialEntity<EventLog> = {};
     const nextTime = getTimeInFutureInMinutes(60 * 5).toString();
+    const query: FindOptionsWhere<EventLog> = {};
     if (isSignatureFullFilled) {
       payload.nextSendTxJobTime = nextTime;
+      query.nextSendTxJobTime = LessThan(nextTime);
     } else {
       payload.nextValidateSignatureTime = nextTime;
+      query.nextValidateSignatureTime = LessThan(nextTime);
     }
-    return this.eventLogRepository.update({ id: In(ids) }, payload);
+    return this.eventLogRepository.update({ id: In(ids), ...query }, payload);
   }
   private getNumOfValidators(network: ENetworkName) {
     switch (network) {
@@ -141,6 +144,11 @@ export class JobUnlockProvider {
 
   private async handleSendTxJobs(data: IJobUnlockPayload) {
     // check if there is enough threshhold -> then create an unlock job.
+    if (await this.isPassDailyQuota(data.senderAddress, data.network)) {
+      this.logger.warn('this tx exceed daily quota, skip until next day', data.eventLogId);
+      await this.eventLogRepository.update(data.eventLogId, { nextSendTxJobTime: getNextDayInUnix().toString() });
+      return;
+    }
     await this.queueService.addJobToQueue<IUnlockToken>(
       this.getSenderQueueName(data.network),
       {
@@ -154,16 +162,18 @@ export class JobUnlockProvider {
     );
   }
   // TODO: fix this
-  private async isPassDailyQuota(address: string, fromDecimal: number): Promise<boolean> {
+  private async isPassDailyQuota(address: string, networkReceived: ENetworkName): Promise<boolean> {
+    const fromDecimal = this.configService.get(
+      networkReceived === ENetworkName.MINA ? EEnvKey.DECIMAL_TOKEN_EVM : EEnvKey.DECIMAL_TOKEN_MINA,
+    );
     const [dailyQuota, totalamount] = await Promise.all([
       await this.commonConfigRepository.getCommonConfig(),
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
     ]);
     assert(!!dailyQuota, 'daily quota undefined');
-    if (
-      totalamount &&
-      BigNumber(totalamount.totalamount).isGreaterThanOrEqualTo(addDecimal(dailyQuota.dailyQuota, fromDecimal))
-    ) {
+    console.log(totalamount, addDecimal(dailyQuota.dailyQuota, fromDecimal));
+
+    if (totalamount && BigNumber(totalamount.totalamount).isLessThan(addDecimal(dailyQuota.dailyQuota, fromDecimal))) {
       return false;
     }
     return true;

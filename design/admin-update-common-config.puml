@@ -1,0 +1,42 @@
+@startuml 1
+title Lock From Eth to Mina
+actor User
+boundary fe as "Frontend"
+control be as "Backend"
+participant Ethereum
+control evm_crawler as "EVM crawler"
+control job_provider as "Job provider"
+database db as "Database"
+queue queue1 as "Queue"
+control mina_validator as "Mina signature validators"
+control mina_sender as "Mina tx sender"
+control mina_crawler as "Mina crawler"
+participant Mina
+autonumber
+
+group#LightGreen (1) User lock token from Evm
+
+    User -> fe : select network to bridge
+
+    activate fe
+    fe -> be : get list of token pairs
+    activate be
+    be --> fe : list of token pairs
+    deactivate be
+
+    User -> fe: select destination wallet, amount
+    fe --> User: display amount, tip, fee
+    User -> fe: perform bridge action
+    fe -> Ethereum: call lock tx using user's wallet
+    activate Ethereum
+    Ethereum --> fe: tx status success
+    deactivate Ethereum
+
+    fe --> User: show popup success
+    deactivate fe
+
+
+end
+
+@enduml
+

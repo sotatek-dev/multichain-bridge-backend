@@ -36,8 +36,7 @@ export class DefaultContract {
   public getStartBlock() {
     return this.startBlock;
   }
-  public async getBlockNumber() {
-    const safeBlock = parseInt(process.env?.SAFE_BLOCK ?? '0');
+  public async getBlockNumber(safeBlock: number) {
     const blockNumber: number = await this.wrapper(() => this.rpcService.web3.eth.getBlockNumber());
 
     return blockNumber - safeBlock;
@@ -93,41 +92,30 @@ export class DefaultContract {
     return gasLimit;
   }
 
-  public async write(
-    method: string,
-    param: Array<any>,
-  ): Promise<{ success: boolean; error: Error | null; data: TransactionReceipt | null }> {
-    try {
-      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
+  public async write(method: string, param: Array<any>): Promise<TransactionReceipt> {
+    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
 
-      const data = this.contract.methods[method](...param).encodeABI();
-      const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-      const nonce = await this.rpcService.getNonce(signer.address);
+    const data = this.contract.methods[method](...param).encodeABI();
+    const gasPrice = await this.rpcService.web3.eth.getGasPrice();
+    const nonce = await this.rpcService.getNonce(signer.address);
 
-      // gas estimation
-      const rawTx = {
-        nonce: nonce,
-        gasPrice: toHex(toBN(gasPrice)),
-        from: signer.address,
-        to: this.contractAddress,
-        data: data,
-      };
+    // gas estimation
+    const rawTx = {
+      nonce: nonce,
+      gasPrice: toHex(toBN(gasPrice)),
+      from: signer.address,
+      to: this.contractAddress,
+      data: data,
+    };
 
-      const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
+    const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
 
-      const signedTx = await signer.signTransaction({
-        ...rawTx,
-        gasLimit: toHex(toBN(gasLimit).add(toBN(10000))),
-      } as any);
+    const signedTx = await signer.signTransaction({
+      ...rawTx,
+      gasLimit: toHex(toBN(gasLimit).add(toBN(10000))),
+    } as any);
 
-      return {
-        success: true,
-        error: null,
-        data: await this.rpcService.web3.eth.sendSignedTransaction(signedTx.rawTransaction),
-      };
-    } catch (error: any) {
-      return { success: false, error, data: null };
-    }
+    return this.rpcService.web3.eth.sendSignedTransaction(signedTx.rawTransaction);
   }
   public async multiWrite(
     writeData: any[],
@@ -196,19 +184,19 @@ export class ETHBridgeContract extends DefaultContract {
     super(rpcETHService, EthBridgeAbi, address, _startBlock);
   }
 
-  public async getBaseURI() {
+  public getBaseURI() {
     return this.call('getBaseURI', []);
   }
-  public async latestIndex() {
+  public latestIndex() {
     return this.call('latestIndex', []);
   }
-  public async getValidatorThreshold() {
+  public getValidatorThreshold() {
     return this.call('threshold', []);
   }
-  public async mintNFT(toAddress: string) {
+  public mintNFT(toAddress: string) {
     return this.write('mint', [toAddress]);
   }
-  public async unlock(
+  public unlock(
     tokenReceivedAddress: string,
     amount: string,
     txHashLock: string,

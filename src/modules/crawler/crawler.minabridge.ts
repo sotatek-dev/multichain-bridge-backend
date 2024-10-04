@@ -4,17 +4,16 @@ import assert from 'assert';
 import dayjs from 'dayjs';
 import { Logger } from 'log4js';
 import { fetchLastBlock, Field, Mina, PublicKey, UInt32 } from 'o1js';
-import { DataSource, QueryRunner } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
-import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
-import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { calculateUnlockFee } from '../../shared/utils/bignumber.js';
+import { CommonConfig } from './entities/common-config.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
 
 interface IMinaLockTokenEventData {
@@ -44,9 +43,7 @@ export class SCBridgeMinaCrawler {
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
     private readonly crawlContractRepository: CrawlContractRepository,
-    private readonly tokenPairRepository: TokenPairRepository,
     private readonly loggerService: LoggerService,
-    private readonly commonConfigRepository: CommonConfigRepository,
   ) {
     this.logger = this.loggerService.getLogger('SC_BRIDGE_MINA_CRAWLER');
     const Network = Mina.Network({
@@ -67,37 +64,34 @@ export class SCBridgeMinaCrawler {
     const events = await zkapp.fetchEvents(startBlockNumber.add(1), toBlock);
     this.logger.info({ events });
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
     try {
-      this.logger.info(`[handleCrawlMinaBridge] Crawling from  ${startBlockNumber} to ${toBlock}`);
-      for (const event of events) {
-        switch (event.type) {
-          case 'Unlock':
-            await this.handlerUnLockEvent(event, queryRunner);
-            break;
-          case 'Lock':
-            await this.handlerLockEvent(event, queryRunner);
-            break;
-          default:
-            continue;
+      await this.dataSource.transaction(async entityManager => {
+        this.logger.info(`[handleCrawlMinaBridge] Crawling from  ${startBlockNumber} to ${toBlock}`);
+        for (const event of events) {
+          switch (event.type) {
+            case 'Unlock':
+              await this.handlerUnLockEvent(event, entityManager);
+              break;
+            case 'Lock':
+              await this.handlerLockEvent(event, entityManager);
+              break;
+            default:
+              continue;
+          }
         }
-      }
-      // udpate current latest block
-      await this.updateLatestBlockCrawl(Number(toBlock.toString()), queryRunner);
-      await queryRunner.commitTransaction();
+        // udpate current latest block
+        await this.updateLatestBlockCrawl(Number(toBlock.toString()), entityManager);
+      });
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      this.logger.error(error);
       throw error;
-    } finally {
-      await queryRunner.release();
     }
   }
 
-  public async handlerUnLockEvent(event: IMinaEvent, queryRunner: QueryRunner) {
+  public async handlerUnLockEvent(event: IMinaEvent, entityManager: EntityManager) {
+    const eventLogRepo = entityManager.getRepository(EventLog);
     const { id, tokenAddress } = event.event.data as IMinaLockTokenEventData;
-    const existLockTx = await queryRunner.manager.findOne(EventLog, {
+    const existLockTx = await eventLogRepo.findOne({
       where: { id: Number(id.toString()) },
     });
 
@@ -105,7 +99,7 @@ export class SCBridgeMinaCrawler {
       return;
     }
 
-    await queryRunner.manager.update(EventLog, existLockTx.id, {
+    await eventLogRepo.update(existLockTx.id, {
       status: EEventStatus.COMPLETED,
       txHashUnlock: event.event.transactionInfo.transactionHash,
       amountReceived: event.event.data.amount.toString(),
@@ -118,19 +112,21 @@ export class SCBridgeMinaCrawler {
     };
   }
 
-  public async handlerLockEvent(event: IMinaEvent, queryRunner: QueryRunner) {
+  public async handlerLockEvent(event: IMinaEvent, entityManager: EntityManager) {
+    const eventLogRepo = entityManager.getRepository(EventLog);
+    const configRepo = entityManager.getRepository(CommonConfig);
     const txHashLock = event.event.transactionInfo.transactionHash;
     const field = Field.from(event.event.data.receipt.toString());
     const receiveAddress = DEFAULT_ADDRESS_PREFIX + field.toBigInt().toString(16);
     const inputAmount = event.event.data.amount.toString();
-    const isExist = await queryRunner.manager.findOneBy(EventLog, { txHashLock });
+    const isExist = await eventLogRepo.findOneBy({ txHashLock });
     if (isExist) {
       this.logger.warn('Duplicated event', txHashLock);
       return;
     }
     const fromTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
       toTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-    const config = await this.commonConfigRepository.getCommonConfig();
+    const config = await configRepo.findOneBy({});
 
     assert(!!config?.tip, 'tip config undefined');
 
@@ -161,7 +157,7 @@ export class SCBridgeMinaCrawler {
       blockTimeLock: Number(Math.floor(dayjs().valueOf() / 1000)),
       event: EEventName.LOCK,
       returnValues: JSON.stringify(event),
-      status: success ? EEventStatus.WAITING : EEventStatus.CANNOT_PROCESS,
+      status: success ? EEventStatus.WAITING : EEventStatus.PROCESSING,
       retry: 0,
       fromTokenDecimal,
       toTokenDecimal,
@@ -173,16 +169,16 @@ export class SCBridgeMinaCrawler {
 
     this.logger.info({ eventUnlock });
 
-    const result = await queryRunner.manager.save(EventLog, eventUnlock);
+    const result = await eventLogRepo.save(eventUnlock);
     assert(!!result.id && !!result.networkReceived, 'Cannot add job to signatures queue.');
     return {
       success: true,
     };
   }
 
-  private updateLatestBlockCrawl(blockNumber: number, queryRunner: QueryRunner) {
-    return queryRunner.manager.update(
-      CrawlContract,
+  public async updateLatestBlockCrawl(blockNumber: number, entityManager: EntityManager) {
+    const crawlContractRepo = entityManager.getRepository(CrawlContract);
+    await crawlContractRepo.update(
       {
         contractAddress: this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS),
         networkName: ENetworkName.MINA,

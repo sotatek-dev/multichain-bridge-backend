@@ -32,9 +32,10 @@ export class CrawlerConsole {
     description: 'Crawl ETH Bridge contract',
   })
   async handleCrawlETHBridge() {
+    const safeBlock = +this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS);
     try {
       while (true) {
-        await this.blockchainEVMCrawler.handleEventCrawlBlock();
+        await this.blockchainEVMCrawler.handleEventCrawlBlock(safeBlock);
         await sleep(15);
       }
     } catch (error) {
