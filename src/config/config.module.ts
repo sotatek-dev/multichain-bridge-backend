@@ -50,6 +50,7 @@ import redisConfig from './redis.config.js';
         [EEnvKey.ETH_BRIDGE_DOMAIN_NAME]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_DOMAIN_VERSION]: Joi.string().required(),
         [EEnvKey.MINA_CRAWL_SAFE_BLOCK]: Joi.number().default(MINA_CRAWL_SAFE_BLOCK),
+        [EEnvKey.EVM_SAFE_BLOCK]: Joi.number().default(10),
         // mina validator
         [EEnvKey.MINA_VALIDATOR_THRESHHOLD]: Joi.number().required(),
         // fee

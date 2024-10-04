@@ -23,3 +23,4 @@ export const startOfDayUnix = (date: Date) => dayjs(date).startOf('day').valueOf
 
 export const endOfDayUnix = (date: Date) => dayjs(date).endOf('day').valueOf() / 1000;
 export const getTimeInFutureInMinutes = (minutes: number) => dayjs(new Date()).add(minutes, 'minutes').unix();
+export const getNextDayInUnix = () => dayjs().add(1, 'days').subtract(dayjs().hour()).unix();
