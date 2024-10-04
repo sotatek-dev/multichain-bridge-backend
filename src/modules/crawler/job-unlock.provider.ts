@@ -20,6 +20,8 @@ import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interface
 
 @Injectable()
 export class JobUnlockProvider {
+  private readonly signatureJobBackOff = 5 * 1000;
+  private readonly sendTxJobBackOff = 60 * 1000;
   constructor(
     private readonly queueService: QueueService,
     private readonly configService: ConfigService,
@@ -134,7 +136,7 @@ export class JobUnlockProvider {
         },
         {
           attempts: 5,
-          backoff: 5000,
+          backoff: this.signatureJobBackOff,
           jobId: `validate-signature-${data.eventLogId}-${i}`,
         },
       );
@@ -156,7 +158,7 @@ export class JobUnlockProvider {
       },
       {
         attempts: 5,
-        backoff: 5000,
+        backoff: this.sendTxJobBackOff,
         jobId: `send-tx-${data.eventLogId}`,
       },
     );
@@ -171,7 +173,6 @@ export class JobUnlockProvider {
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
     ]);
     assert(!!dailyQuota, 'daily quota undefined');
-    console.log(totalamount, addDecimal(dailyQuota.dailyQuota, fromDecimal));
 
     if (totalamount && BigNumber(totalamount.totalamount).isLessThan(addDecimal(dailyQuota.dailyQuota, fromDecimal))) {
       return false;
