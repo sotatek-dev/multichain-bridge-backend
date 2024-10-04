@@ -1,3 +1,4 @@
+import { IJobUnlockPayload } from 'modules/crawler/interfaces/job.interface.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 import { Brackets } from 'typeorm';
 
@@ -43,21 +44,26 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     network: ENetworkName,
     isSignatureFullFilled: boolean,
     numOfSignaturesNeeded: number,
-  ): Promise<Array<{ id: number; networkReceived: ENetworkName }>> {
+  ): Promise<Array<IJobUnlockPayload>> {
     const currentUnixTimestamp = nowUnix();
     const qb = this.createQueryBuilder(`${this.alias}`);
-    qb.select([`${this.alias}.id as "id"`, `${this.alias}.network_received as "networkReceived"`]);
+    qb.select([
+      `${this.alias}.id as "eventLogId"`,
+      `${this.alias}.network_received as "network"`,
+      `${this.alias}.sender_address as "senderAddress"`,
+    ]);
     qb.leftJoin(`${this.alias}.validator`, 'signature');
 
     qb.where(`${this.alias}.network_received = :network`, { network });
 
     qb.andWhere(`${this.alias}.status IN (:...status)`, {
-      status: [EEventStatus.WAITING], //  EEventStatus.PROCESSING add in future
+      status: [EEventStatus.WAITING, EEventStatus.FAILED], //  EEventStatus.PROCESSING add in future
     })
       .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: MAX_RETRIES })
       .orderBy(`${this.alias}.id`, EDirection.DESC)
       .groupBy(`${this.alias}.id`)
-      .addGroupBy(`${this.alias}.network_received`);
+      .addGroupBy(`${this.alias}.network_received`)
+      .addGroupBy(`${this.alias}.sender_address`);
     if (isSignatureFullFilled) {
       qb.andWhere(`${this.alias}.next_send_tx_job_time < :currentUnixTimestamp`, { currentUnixTimestamp });
       qb.having(`COUNT(signature.id) = :numOfSignaturesNeeded`, { numOfSignaturesNeeded });

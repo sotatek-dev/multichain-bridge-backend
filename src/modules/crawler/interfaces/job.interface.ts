@@ -18,4 +18,5 @@ export interface IUnlockToken {
 export interface IJobUnlockPayload {
   eventLogId: number;
   network: ENetworkName;
+  senderAddress: string;
 }

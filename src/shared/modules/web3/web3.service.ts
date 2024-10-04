@@ -36,8 +36,7 @@ export class DefaultContract {
   public getStartBlock() {
     return this.startBlock;
   }
-  public async getBlockNumber() {
-    const safeBlock = parseInt(process.env?.SAFE_BLOCK ?? '0');
+  public async getBlockNumber(safeBlock: number) {
     const blockNumber: number = await this.wrapper(() => this.rpcService.web3.eth.getBlockNumber());
 
     return blockNumber - safeBlock;
