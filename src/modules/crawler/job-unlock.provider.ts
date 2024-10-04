@@ -168,15 +168,17 @@ export class JobUnlockProvider {
     const fromDecimal = this.configService.get(
       networkReceived === ENetworkName.MINA ? EEnvKey.DECIMAL_TOKEN_EVM : EEnvKey.DECIMAL_TOKEN_MINA,
     );
-    const [dailyQuota, totalamount] = await Promise.all([
+    const [dailyQuota, todayData] = await Promise.all([
       await this.commonConfigRepository.getCommonConfig(),
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
     ]);
     assert(!!dailyQuota, 'daily quota undefined');
-
-    if (totalamount && BigNumber(totalamount.totalamount).isLessThan(addDecimal(dailyQuota.dailyQuota, fromDecimal))) {
-      return false;
+    if (
+      todayData?.totalamount &&
+      BigNumber(todayData.totalamount).isGreaterThan(addDecimal(dailyQuota.dailyQuota, fromDecimal))
+    ) {
+      return true;
     }
-    return true;
+    return false;
   }
 }
