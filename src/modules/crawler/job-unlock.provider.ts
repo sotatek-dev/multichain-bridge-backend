@@ -22,6 +22,7 @@ import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interface
 export class JobUnlockProvider {
   private readonly signatureJobBackOff = 5 * 1000;
   private readonly sendTxJobBackOff = 60 * 1000;
+  private readonly jobRemoveDueDate = 30 * 24 * 60 * 60; // 30 days in seconds
   constructor(
     private readonly queueService: QueueService,
     private readonly configService: ConfigService,
@@ -136,6 +137,9 @@ export class JobUnlockProvider {
         },
         {
           attempts: 5,
+          removeOnComplete: {
+            age: this.jobRemoveDueDate,
+          },
           backoff: this.signatureJobBackOff,
           jobId: `validate-signature-${data.eventLogId}-${i}`,
         },
@@ -158,6 +162,9 @@ export class JobUnlockProvider {
       },
       {
         attempts: 5,
+        removeOnComplete: {
+          age: this.jobRemoveDueDate,
+        },
         backoff: this.sendTxJobBackOff,
         jobId: `send-tx-${data.eventLogId}`,
       },
