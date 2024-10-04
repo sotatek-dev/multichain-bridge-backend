@@ -1,0 +1,35 @@
+@startuml 1
+title Admin config min max amount
+actor User
+boundary fe as "Frontend"
+participant wallet as "Metamask/ Auro Wallet"
+participant network as "Mina/Eth"
+autonumber
+group#LightGreen Admin change min max amount to bridge Evm/Mina
+
+    User -> fe : Logged in with Evm/Mina wallet
+    note right
+        Evm admin account can change Evm brige
+        configuration only and so does Mina admin account.
+    end note
+    activate fe
+    fe --> User : show Evm configuration screen
+    deactivate fe
+    User -> fe : enter new Min, Max value to Evm/Mina bridge
+    activate fe
+    fe -> wallet: trigger wallet for user confirmation
+    activate wallet
+    wallet --> User: show estimate fee dialog
+    User -> wallet: confirm transaction
+    wallet -> network: submit transaction
+    activate network
+    network --> wallet: status success
+    deactivate network
+    wallet --> fe: send tx success status
+    fe --> User: shop pop up success
+    deactivate fe
+    deactivate wallet
+end
+
+@enduml
+

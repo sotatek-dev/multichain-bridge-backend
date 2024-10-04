@@ -156,13 +156,13 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     return queryBuilder.getManyAndCount();
   }
 
-  public async sumAmountBridgeOfUserInDay(address: string) {
+  public async sumAmountBridgeOfUserInDay(address: string): Promise<{ totalamount: string }> {
     const qb = this.createQb();
     qb.select([`${this.alias}.sender_address`, `SUM(CAST(${this.alias}.amount_from as DECIMAL(100,2))) as totalamount`])
       .where(`${this.alias}.sender_address = :address`, { address })
       .andWhere(`${this.alias}.block_time_lock BETWEEN ${startOfDayUnix(new Date())} AND ${endOfDayUnix(new Date())}`)
       .groupBy(`${this.alias}.sender_address`);
-    return qb.getRawOne();
+    return qb.getRawOne() as any;
   }
 
   async getValidatorPendingSignature(validator: string, network: ENetworkName) {
