@@ -141,7 +141,6 @@ export class JobUnlockProvider {
             age: this.jobRemoveDueDate,
           },
           backoff: this.signatureJobBackOff,
-          jobId: `validate-signature-${data.eventLogId}-${i}`,
         },
       );
     }
@@ -166,7 +165,6 @@ export class JobUnlockProvider {
           age: this.jobRemoveDueDate,
         },
         backoff: this.sendTxJobBackOff,
-        jobId: `send-tx-${data.eventLogId}`,
       },
     );
   }
