@@ -46,9 +46,9 @@ export class SenderEVMBridge {
     }
 
     try {
-      assert(dataLock.tip.toString(), 'invalid gasFee');
-      assert(dataLock.gasFee.toString(), 'invalid tips');
-      assert(dataLock.amountReceived, 'invalida amount to unlock');
+      assert(dataLock?.tip, 'invalid tip');
+      assert(dataLock?.gasFee, 'invalid gasFee');
+      assert(dataLock?.amountReceived, 'invalida amount to unlock');
       const { tokenReceivedAddress, txHashLock, receiveAddress, amountReceived, protocolFee } = dataLock;
       const result = await this.ethBridgeContract.unlock(
         tokenReceivedAddress,
