@@ -1,102 +1,42 @@
 export const EthBridgeAbi = `[
   {
     "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "maxAmount",
-        "type": "uint256"
-      }
-    ],
+    "inputs": [{ "indexed": false, "internalType": "uint256", "name": "maxAmount", "type": "uint256" }],
     "name": "ChangeMaxAmount",
     "type": "event"
   },
   {
     "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "minAmount",
-        "type": "uint256"
-      }
-    ],
+    "inputs": [{ "indexed": false, "internalType": "uint256", "name": "minAmount", "type": "uint256" }],
     "name": "ChangeMinAmount",
     "type": "event"
   },
   {
     "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "minter",
-        "type": "address"
-      }
-    ],
+    "inputs": [{ "indexed": false, "internalType": "address", "name": "minter", "type": "address" }],
     "name": "ChangeMinter",
     "type": "event"
   },
   {
     "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "newThreshold",
-        "type": "uint256"
-      }
-    ],
+    "inputs": [{ "indexed": false, "internalType": "uint256", "name": "newThreshold", "type": "uint256" }],
     "name": "ChangeThreshold",
     "type": "event"
   },
   {
     "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "version",
-        "type": "uint8"
-      }
-    ],
+    "inputs": [{ "indexed": false, "internalType": "uint8", "name": "version", "type": "uint8" }],
     "name": "Initialized",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "locker",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "receipt",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "tokenName",
-        "type": "string"
-      }
+      { "indexed": false, "internalType": "address", "name": "locker", "type": "address" },
+      { "indexed": false, "internalType": "string", "name": "receipt", "type": "string" },
+      { "indexed": false, "internalType": "address", "name": "token", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "indexed": false, "internalType": "string", "name": "tokenName", "type": "string" }
     ],
     "name": "Lock",
     "type": "event"
@@ -104,18 +44,8 @@ export const EthBridgeAbi = `[
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
+      { "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" },
+      { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }
     ],
     "name": "OwnershipTransferred",
     "type": "event"
@@ -123,18 +53,8 @@ export const EthBridgeAbi = `[
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "whitelist",
-        "type": "bool"
-      }
+      { "indexed": false, "internalType": "address", "name": "token", "type": "address" },
+      { "indexed": false, "internalType": "bool", "name": "whitelist", "type": "bool" }
     ],
     "name": "SetWhitelistToken",
     "type": "event"
@@ -142,36 +62,11 @@ export const EthBridgeAbi = `[
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "hash",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
-      }
+      { "indexed": false, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "address", "name": "token", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "indexed": false, "internalType": "string", "name": "hash", "type": "string" },
+      { "indexed": false, "internalType": "uint256", "name": "fee", "type": "uint256" }
     ],
     "name": "Unlock",
     "type": "event"
@@ -179,61 +74,36 @@ export const EthBridgeAbi = `[
   {
     "inputs": [],
     "name": "UNLOCK_HASH",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_digest",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_signature",
-        "type": "bytes"
-      }
+      { "internalType": "bytes32", "name": "_digest", "type": "bytes32" },
+      { "internalType": "bytes", "name": "_signature", "type": "bytes" }
     ],
     "name": "_getSigner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_minter",
-        "type": "address"
-      }
-    ],
+    "inputs": [{ "internalType": "address[]", "name": "_validators", "type": "address[]" }],
+    "name": "addListValidator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_minter", "type": "address" }],
     "name": "changeMinter",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_newThreshold",
-        "type": "uint256"
-      }
-    ],
+    "inputs": [{ "internalType": "uint256", "name": "_newThreshold", "type": "uint256" }],
     "name": "changeThreshold",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -241,70 +111,24 @@ export const EthBridgeAbi = `[
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "hash",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
-      }
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "string", "name": "hash", "type": "string" },
+      { "internalType": "uint256", "name": "fee", "type": "uint256" }
     ],
     "name": "getUnlockHash",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_unlockHash",
-        "type": "bytes32"
-      }
-    ],
+    "outputs": [{ "internalType": "bytes32", "name": "_unlockHash", "type": "bytes32" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_minter",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_minAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_maxAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address[]",
-        "name": "_validators",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_threshold",
-        "type": "uint256"
-      }
+      { "internalType": "address", "name": "_minter", "type": "address" },
+      { "internalType": "uint256", "name": "_minAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "_maxAmount", "type": "uint256" },
+      { "internalType": "address[]", "name": "_validators", "type": "address[]" },
+      { "internalType": "uint256", "name": "_threshold", "type": "uint256" }
     ],
     "name": "initialize",
     "outputs": [],
@@ -312,41 +136,17 @@ export const EthBridgeAbi = `[
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "totalSig",
-        "type": "uint256"
-      }
-    ],
+    "inputs": [{ "internalType": "uint256", "name": "totalSig", "type": "uint256" }],
     "name": "isValidThreshold",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "receipt",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "string", "name": "receipt", "type": "string" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
     ],
     "name": "lock",
     "outputs": [],
@@ -356,83 +156,41 @@ export const EthBridgeAbi = `[
   {
     "inputs": [],
     "name": "maxAmount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "minAmount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "minter",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
+  { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
   {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "max",
-        "type": "uint256"
-      }
-    ],
+    "inputs": [{ "internalType": "uint256", "name": "max", "type": "uint256" }],
     "name": "setMaxAmount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "min",
-        "type": "uint256"
-      }
-    ],
+    "inputs": [{ "internalType": "uint256", "name": "min", "type": "uint256" }],
     "name": "setMinAmount",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -440,16 +198,18 @@ export const EthBridgeAbi = `[
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "whitelist",
-        "type": "bool"
-      }
+      { "internalType": "uint256", "name": "min", "type": "uint256" },
+      { "internalType": "uint256", "name": "max", "type": "uint256" }
+    ],
+    "name": "setMinMaxAmount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "bool", "name": "whitelist", "type": "bool" }
     ],
     "name": "setWhitelistToken",
     "outputs": [],
@@ -459,24 +219,12 @@ export const EthBridgeAbi = `[
   {
     "inputs": [],
     "name": "threshold",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
+    "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -484,36 +232,12 @@ export const EthBridgeAbi = `[
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "hash",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "_signatures",
-        "type": "bytes[]"
-      }
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "string", "name": "hash", "type": "string" },
+      { "internalType": "uint256", "name": "fee", "type": "uint256" },
+      { "internalType": "bytes[]", "name": "_signatures", "type": "bytes[]" }
     ],
     "name": "unlock",
     "outputs": [],
@@ -521,60 +245,32 @@ export const EthBridgeAbi = `[
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
+    "inputs": [{ "internalType": "string", "name": "", "type": "string" }],
     "name": "unlockHash",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "name": "validators",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "name": "whitelistTokens",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "amount", "type": "uint256" }],
+    "name": "withdrawETH",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
-]`;
+]
+`;
