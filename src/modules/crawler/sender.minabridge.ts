@@ -88,31 +88,38 @@ export class SenderMinaBridge {
       this.logger.warn(`Not found tx with id ${txId}`);
       return { error: null, success: false };
     }
-    assert(dataLock.tip.toString(), 'invalid gasFee');
-    assert(dataLock.gasFee.toString(), 'invalid tips');
-    assert(dataLock.amountReceived, 'invalida amount to unlock');
+    try {
+      assert(dataLock?.tip, 'invalid tip');
+      assert(dataLock?.gasFee, 'invalid gasFee');
+      assert(dataLock?.amountReceived, 'invalida amount to unlock');
 
-    await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
-    const { id, receiveAddress, amountReceived } = dataLock;
+      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
+      const { id, receiveAddress, amountReceived } = dataLock;
 
-    const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
-    // Update status eventLog when call function unlock
-    if (result.success) {
-      await this.eventLogRepository.updateStatusAndRetryEvenLog({
-        id: dataLock.id,
-        status: EEventStatus.PROCESSING,
-        errorDetail: result.error?.message,
-        txHashUnlock: result.data!,
-      });
-    } else {
+      const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
+      // Update status eventLog when call function unlock
+      if (result.success) {
+        await this.eventLogRepository.updateStatusAndRetryEvenLog({
+          id: dataLock.id,
+          status: EEventStatus.PROCESSING,
+          errorDetail: result.error?.message,
+          txHashUnlock: result.data!,
+        });
+      } else {
+        if (result.error) {
+          throw result.error;
+        }
+        throw new Error(`Tx ${txId} cannot be sent due to network error.`);
+      }
+      return result;
+    } catch (error) {
       await this.eventLogRepository.updateStatusAndRetryEvenLog({
         id: dataLock.id,
         status: EEventStatus.FAILED,
-        errorDetail: JSON.stringify(result.error),
+        errorDetail: JSON.stringify(error),
       });
-      throw new Error(`Tx ${txId} cannot be sent due to network error.`);
+      return { error, success: false };
     }
-    return result;
   }
 
   private async callUnlockFunction(
