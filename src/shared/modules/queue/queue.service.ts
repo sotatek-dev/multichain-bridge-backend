@@ -43,7 +43,10 @@ export class QueueService {
     const queue = this.initQueueOnDemand(queueName);
     if (!!options.jobId) {
       const canContinue = await this.removeExistedJobIfFailed(options.jobId, queue);
-      if (!canContinue) return false;
+      if (!canContinue) {
+        this.logger.warn('this job is existed in queue and not in failed status');
+        return false;
+      }
     }
     await queue.add(job, options);
     return true;
