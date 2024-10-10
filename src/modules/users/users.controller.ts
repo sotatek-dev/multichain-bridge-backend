@@ -5,7 +5,11 @@ import { ETableName } from '../../constants/entity.constant.js';
 import { GuardPublic } from '../../guards/guard.decorator.js';
 import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
-import { GetListTokenPairResponseDto, GetProtocolFeeResponseDto } from './dto/user-response.dto.js';
+import {
+  GetListTokenPairResponseDto,
+  GetProtocolFeeResponseDto,
+  GetTokensPriceResponseDto,
+} from './dto/user-response.dto.js';
 import { UsersService } from './users.service.js';
 
 @ApiTags('Users')
@@ -38,5 +42,12 @@ export class UsersController {
   @ApiOkResponse({ type: GetProtocolFeeResponseDto })
   getProtocolFee(@Body() body: GetProtocolFeeBodyDto) {
     return this.userService.getProtocolFee(body);
+  }
+
+  @Get('token/price-usd')
+  @GuardPublic()
+  @ApiOkResponse({ type: GetTokensPriceResponseDto })
+  getTokensPrices() {
+    return this.userService.getTokensPrices();
   }
 }

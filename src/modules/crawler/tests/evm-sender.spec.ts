@@ -19,7 +19,6 @@ import { EventLog } from '../entities/index.js';
 import { MultiSignature } from '../entities/multi-signature.entity.js';
 import { SenderEVMBridge } from '../sender.evmbridge.js';
 
-let newEthBridgeContract;
 let senderEVMBridge: SenderEVMBridge;
 let eventLogRepository: EventLogRepository;
 let commonConfigRepository: CommonConfigRepository;
@@ -47,7 +46,8 @@ beforeEach(async () => {
       {
         provide: ETHBridgeContract,
         useValue: {
-          getValidatorThreshold: jest.fn(),
+          getChainId: () => '0x123',
+          unlock: () => ({ success: true, error: null, transactionHash: '0x123...' }), // mock returned result from rpc
         },
       },
       { provide: JwtService, useValue: mockJwtService },
@@ -97,7 +97,6 @@ beforeEach(async () => {
     ],
   }).compile();
 
-  newEthBridgeContract = module.get<ETHBridgeContract>(ETHBridgeContract);
   senderEVMBridge = module.get<SenderEVMBridge>(SenderEVMBridge);
   eventLogRepository = module.get<EventLogRepository>(EventLogRepository);
   commonConfigRepository = module.get<CommonConfigRepository>(CommonConfigRepository);
@@ -138,28 +137,24 @@ describe('handleValidateUnlockTxEVM', () => {
     tip: '0.001',
     gasFee: '0.00001',
   };
-  // it('should handle validator signature generation', async () => {
-  //   const wallet = senderEVMBridge.getWallet();
+  it('should handle validator signature generation', async () => {
+    const wallet = senderEVMBridge.getWallet();
 
-  //   data.validator!.push({
-  //     validator: wallet.address,
-  //     txId: 18,
-  //     retry: 2,
-  //     signature:
-  //       '0xc096d8abb2af534fa09b62ca3825a202172239ee0ab3d8438680faca0f0e59153fef0bdc0681162d94cad9fe77b05d4c1945be9c46cb89f9b2821d8576fb28d31b',
-  //   } as MultiSignature);
-  //   jest.spyOn(eventLogRepository, 'getValidatorPendingSignature').mockResolvedValue(data as EventLog);
-  //   jest.spyOn(commonConfigRepository, 'getCommonConfig').mockResolvedValue(commonConfig);
-  //   jest.spyOn(tokenPairRepository, 'getTokenPair').mockResolvedValue(tokenPair);
-  //   jest.spyOn(multiSignatureRepository, 'findOne').mockResolvedValue(data.validator![0]!);
-  //   jest.spyOn(multiSignatureRepository, 'update').mockResolvedValue(true as any);
+    data.validator!.push({
+      validator: wallet.address,
+      txId: 18,
+      retry: 2,
+      signature:
+        '0xc096d8abb2af534fa09b62ca3825a202172239ee0ab3d8438680faca0f0e59153fef0bdc0681162d94cad9fe77b05d4c1945be9c46cb89f9b2821d8576fb28d31b',
+    } as MultiSignature);
+    jest.spyOn(eventLogRepository, 'findOneBy').mockResolvedValue(data as EventLog);
+    jest.spyOn(commonConfigRepository, 'getCommonConfig').mockResolvedValue(commonConfig);
+    jest.spyOn(multiSignatureRepository, 'findOneBy').mockResolvedValue(data.validator![0]!);
+    jest.spyOn(multiSignatureRepository, 'update').mockResolvedValue(true as any);
 
-  //   await senderEVMBridge.validateUnlockEVMTransaction(data.id!);
-
-  //   expect(eventLogRepository.getValidatorPendingSignature).toHaveBeenCalled();
-  //   expect(commonConfigRepository.getCommonConfig).toHaveBeenCalled();
-  //   expect(tokenPairRepository.getTokenPair).toHaveBeenCalled();
-  // });
+    const result = await senderEVMBridge.validateUnlockEVMTransaction(data.id!);
+    expect(result.success).toBeTruthy();
+  });
 
   it('should handle Unlock EVM and send to blockchain', async () => {
     jest.spyOn(commonConfigRepository, 'getCommonConfig').mockResolvedValue(commonConfig);
@@ -167,6 +162,7 @@ describe('handleValidateUnlockTxEVM', () => {
     jest.spyOn(eventLogRepository, 'updateLockEvenLog').mockResolvedValue(true as any);
     jest.spyOn(eventLogRepository, 'updateStatusAndRetryEvenLog').mockResolvedValue(true as any);
 
-    await senderEVMBridge.handleUnlockEVM(data.id!);
+    const result = await senderEVMBridge.handleUnlockEVM(data.id!);
+    expect(result.success).toBeTruthy();
   });
 });

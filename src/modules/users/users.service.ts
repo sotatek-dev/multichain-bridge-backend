@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 
+import { EAsset } from '../../constants/api.constant.js';
 import { ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
 import { toPageDto } from '../../core/paginate-typeorm.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
+import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 import { UserRepository } from '../../database/repositories/user.repository.js';
 import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
 import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exeption.js';
@@ -16,6 +18,7 @@ import { addDecimal } from '../../shared/utils/bignumber.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetHistoryDto, GetHistoryOfUserDto } from './dto/history-response.dto.js';
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
+import { GetTokensPriceResponseDto } from './dto/user-response.dto.js';
 
 @Injectable()
 export class UsersService {
@@ -26,6 +29,7 @@ export class UsersService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
+    private readonly tokenPriceRepository: TokenPriceRepository,
   ) {}
   private readonly logger = this.loggerService.getLogger('USER_SERVICE');
   async getProfile(userId: number) {
@@ -89,5 +93,22 @@ export class UsersService {
     }
 
     return { gasFee, tipRate: configTip!.tip, decimal };
+  }
+  async getTokensPrices(): Promise<GetTokensPriceResponseDto> {
+    const result = {
+      ethPriceInUsd: '0',
+      minaPriceInUsd: '0',
+    };
+    const tokenPrices = await this.tokenPriceRepository.createQueryBuilder().distinctOn(['symbol']).take(2).getMany();
+
+    tokenPrices.forEach(e => {
+      if (e.symbol === EAsset.ETH) {
+        result.ethPriceInUsd = e.priceUsd;
+      } else if (e.symbol === EAsset.MINA) {
+        result.minaPriceInUsd = e.priceUsd;
+      }
+    });
+
+    return result;
   }
 }

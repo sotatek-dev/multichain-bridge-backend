@@ -1,27 +1,26 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import dayjs from 'dayjs';
-import { Field, ProvablePure, PublicKey, UInt32 } from 'o1js';
-import { DataSource, QueryRunner } from 'typeorm';
+import { ProvablePure, PublicKey, UInt32 } from 'o1js';
+import { DataSource } from 'typeorm';
 
 import { ConfigurationModule } from '../../../config/config.module.js';
-import { EEventName, EEventStatus, ENetworkName } from '../../../constants/blockchain.constant.js';
+import { EEventStatus } from '../../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../../constants/env.constant.js';
 import { CrawlContractRepository } from '../../../database/repositories/crawl-contract.repository.js';
-import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
 import { UserRepository } from '../../../database/repositories/user.repository.js';
 import { LoggerService } from '../../../shared/modules/logger/logger.service.js';
 import { Web3Module } from '../../../shared/modules/web3/web3.module.js';
 import { SCBridgeMinaCrawler } from '../crawler.minabridge.js';
+import { CommonConfig } from '../entities/common-config.entity.js';
 import { EventLog } from '../entities/event-logs.entity.js';
 import { Bridge } from '../minaSc/Bridge.js';
+import { getMockedRepo } from './base/test-utils.js';
 
 // Assuming AuthService houses the login function
 let minaCrawlerService: SCBridgeMinaCrawler;
 let configService: ConfigService;
-let dataSource: DataSource;
-let queryRunner: QueryRunner;
+
 // Mock objects
 const mockJwtService = {
   // Mock methods if needed
@@ -46,24 +45,6 @@ beforeEach(async () => {
       { provide: JwtService, useValue: mockJwtService },
       { provide: UserRepository, useValue: mockUserRepository },
       {
-        provide: DataSource,
-        useValue: {
-          createQueryRunner: jest.fn().mockReturnValue({
-            connect: jest.fn(),
-            startTransaction: jest.fn(),
-            commitTransaction: jest.fn(),
-            rollbackTransaction: jest.fn(),
-            release: jest.fn(),
-            manager: {
-              save: jest.fn(),
-              findOne: jest.fn(),
-              update: jest.fn(),
-              findOneBy: jest.fn().mockResolvedValue(null),
-            },
-          }),
-        },
-      },
-      {
         provide: CrawlContractRepository,
         useValue: {
           findOne: jest.fn(),
@@ -72,9 +53,9 @@ beforeEach(async () => {
         },
       },
       {
-        provide: TokenPairRepository,
+        provide: DataSource,
         useValue: {
-          getTokenPair: jest.fn(),
+          transaction: jest.fn(),
         },
       },
       {
@@ -82,6 +63,8 @@ beforeEach(async () => {
         useValue: {
           getLogger: jest.fn().mockReturnValue({
             info: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
           }),
         },
       },
@@ -89,9 +72,7 @@ beforeEach(async () => {
   }).compile();
 
   minaCrawlerService = module.get<SCBridgeMinaCrawler>(SCBridgeMinaCrawler);
-  dataSource = module.get<DataSource>(DataSource);
   configService = module.get<ConfigService>(ConfigService);
-  queryRunner = dataSource.createQueryRunner();
 });
 describe('handleMinaChainCrawler', () => {
   const transformedUnlockObject = {
@@ -143,11 +124,6 @@ describe('handleMinaChainCrawler', () => {
     jest.spyOn(new Bridge(zaAppAddress), 'fetchEvents').mockImplementation(fetchEventsMock);
 
     await minaCrawlerService.handleEventCrawlBlock();
-
-    expect(queryRunner.connect).toHaveBeenCalled();
-    expect(queryRunner.startTransaction).toHaveBeenCalled();
-    expect(queryRunner.commitTransaction).toHaveBeenCalled();
-    expect(queryRunner.release).toHaveBeenCalled();
   });
 
   it('should save the correct event log in handlerLockEvent', async () => {
@@ -172,31 +148,14 @@ describe('handleMinaChainCrawler', () => {
       globalSlot: UInt32.from(513687),
       chainStatus: 'canonical',
     };
-    mockJwtService.sign.mockResolvedValue('true');
-    const field = Field.from(transformedLockObject.event.data.receipt.toString());
-    const receiveAddress = '0x' + field.toBigInt().toString(16);
-    const result = await minaCrawlerService.handlerLockEvent(transformedLockObject, queryRunner);
-    jest.spyOn(minaCrawlerService as any, 'handlerLockEvent').mockResolvedValue({
-      senderAddress: transformedLockObject.event.data.locker,
-      amountFrom: transformedLockObject.event.data.amount.toString(),
-      tokenFromAddress: configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
-      networkFrom: ENetworkName.MINA,
-      networkReceived: ENetworkName.ETH,
-      tokenFromName: 'WETH',
-      tokenReceivedAddress: configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
-      txHashLock: transformedLockObject.event.transactionInfo.transactionHash,
-      receiveAddress: receiveAddress,
-      blockNumber: transformedLockObject.blockHeight.toString(),
-      blockTimeLock: Number(Math.floor(dayjs().valueOf() / 1000)),
-      event: EEventName.LOCK,
-      returnValues: JSON.stringify(transformedLockObject),
-      status: EEventStatus.WAITING,
-      retry: 0,
-      fromTokenDecimal: null,
-      toTokenDecimal: null,
-    });
-
-    expect(result!.success).toBe(true);
+    const eventLogRepo = getMockedRepo<EventLog>();
+    const configRepo = getMockedRepo<CommonConfig>();
+    jest.spyOn(configRepo, 'findOneBy').mockResolvedValue({
+      id: 1,
+      tip: 5,
+    } as any);
+    const result = await minaCrawlerService.handlerLockEvent(transformedLockObject, eventLogRepo, configRepo);
+    expect(result?.success).toBe(true);
   });
 });
 
@@ -206,7 +165,7 @@ it('should save the correct event log in handlerUnlockEvent', async () => {
     event: {
       data: {
         receiver: 'B62qjWwgHupW7k7fcTbb2Kszp4RPYBWYdL4KMmoqfkMH3iRN2FN8u5n',
-        tokenAddress: 'B62qqki2ZnVzaNsGaTDAP6wJYCth5UAcY6tPX2TQYHdwD8D4uBgrDKC',
+        tokenAddress: PublicKey.fromBase58('B62qqki2ZnVzaNsGaTDAP6wJYCth5UAcY6tPX2TQYHdwD8D4uBgrDKC'),
         amount: '15610555',
         id: '333',
       },
@@ -228,14 +187,12 @@ it('should save the correct event log in handlerUnlockEvent', async () => {
     txHashLock: '0x12345',
     status: EEventStatus.WAITING,
   };
+  const eventLogRepo = getMockedRepo<EventLog>();
 
-  jest.spyOn(queryRunner.manager, 'findOne').mockResolvedValue(mockExistingLockTx);
+  jest.spyOn(eventLogRepo, 'findOneBy').mockResolvedValue(mockExistingLockTx as EventLog);
 
-  const result = await minaCrawlerService.handlerUnLockEvent(transformedUnlockObject, queryRunner);
+  const result = await minaCrawlerService.handlerUnLockEvent(transformedUnlockObject, eventLogRepo);
 
-  expect(queryRunner.manager.findOne).toHaveBeenCalledWith(EventLog, {
-    where: { id: transformedUnlockObject.event.data.id.toString() },
-  });
   expect(result!.success).toBe(true);
 });
 

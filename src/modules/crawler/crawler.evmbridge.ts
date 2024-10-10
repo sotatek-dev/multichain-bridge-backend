@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
 import { Logger } from 'log4js';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
 import { EAsset } from '../../constants/api.constant.js';
@@ -41,19 +41,23 @@ export class BlockchainEVMCrawler {
     const events = await this.ethBridgeContract.getEvent(startBlockNumber, toBlock);
     try {
       await this.dataSource.transaction(async (entityManager: EntityManager) => {
+        const configRepo = entityManager.getRepository(CommonConfig);
+        const eventLogRepo = entityManager.getRepository(EventLog);
+        const crawlContractRepo = entityManager.getRepository(CrawlContract);
+
         for (const event of events) {
           switch (event.event) {
             case 'Lock':
-              await this.handlerLockEvent(event, entityManager);
+              await this.handlerLockEvent(event, eventLogRepo, configRepo);
               break;
             case 'Unlock':
-              await this.handlerUnLockEvent(event, entityManager);
+              await this.handlerUnLockEvent(event, eventLogRepo);
               break;
             default:
               continue;
           }
         }
-        await this.updateLatestBlockCrawl(toBlock, entityManager);
+        await this.updateLatestBlockCrawl(toBlock, crawlContractRepo);
       });
     } catch (error) {
       this.logger.error(error);
@@ -63,14 +67,15 @@ export class BlockchainEVMCrawler {
     }
   }
 
-  public async handlerLockEvent(event: EventData, entityManager: EntityManager): Promise<void> {
-    const eventLogRepo = entityManager.getRepository(EventLog);
-    const configRepo = entityManager.getRepository(CommonConfig);
-
+  public async handlerLockEvent(
+    event: EventData,
+    eventLogRepo: Repository<EventLog>,
+    configRepo: Repository<CommonConfig>,
+  ): Promise<{ success: boolean }> {
     const isExist = await eventLogRepo.findOneBy({ txHashLock: event.transactionHash });
     if (isExist) {
       this.logger.warn('Duplicated event', event.transactionHash);
-      return;
+      return { success: false };
     }
 
     const inputAmount = event.returnValues.amount;
@@ -121,15 +126,15 @@ export class BlockchainEVMCrawler {
     });
 
     await eventLogRepo.save(eventUnlock);
+    return { success: true };
   }
 
-  public async handlerUnLockEvent(event: EventData, entityManager: EntityManager) {
-    const eventLogRepo = entityManager.getRepository(EventLog);
-    const existLockTx = await eventLogRepo.findOne({
-      where: { txHashLock: event.returnValues.hash },
+  public async handlerUnLockEvent(event: EventData, eventLogRepo: Repository<EventLog>): Promise<{ success: boolean }> {
+    const existLockTx = await eventLogRepo.findOneBy({
+      txHashLock: event.returnValues.hash,
     });
     if (!existLockTx) {
-      return;
+      return { success: false };
     }
 
     await eventLogRepo.update(existLockTx.id, {
@@ -146,8 +151,7 @@ export class BlockchainEVMCrawler {
     };
   }
 
-  public async updateLatestBlockCrawl(blockNumber: number, entityManager: EntityManager) {
-    const crawlContractRepo = entityManager.getRepository(CrawlContract);
+  public async updateLatestBlockCrawl(blockNumber: number, crawlContractRepo: Repository<CrawlContract>) {
     await crawlContractRepo.update(
       {
         contractAddress: this.configService.get(EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS),

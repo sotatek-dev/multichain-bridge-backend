@@ -6,7 +6,7 @@ describe('test amount fee calculation', () => {
       toDecimal = 18,
       gasFeeWithDecimalPlaces = '0.000001',
       inputAmountNoDecimalPlaces = '200000',
-      tipPercent = 0.0001;
+      tipPercent = 5;
     const result = calculateUnlockFee({
       fromDecimal,
       gasFeeWithDecimalPlaces,

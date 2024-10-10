@@ -58,4 +58,5 @@ export enum EEnvironments {
   TEST = 'test',
   UAT = 'uat',
   PRODUCTION = 'production',
+  JEST_TESTING = 'jest',
 }
