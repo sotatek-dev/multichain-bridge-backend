@@ -1,19 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
-import { BigNumber } from 'bignumber.js';
 import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
 import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signature, UInt64 } from 'o1js';
 
-import { DECIMAL_BASE, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
+import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
-import { addDecimal, calculateFee } from '../../shared/utils/bignumber.js';
-import { TokenPair } from '../users/entities/tokenpair.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
 import { Manager } from './minaSc/Manager.js';
@@ -59,28 +56,6 @@ export class SenderMinaBridge {
       this.isContractCompiled = true;
     }
   }
-  private getAmountReceivedAndFee(
-    tokenPair: TokenPair,
-    tip: number,
-    gasFee: number,
-    amountFrom: string,
-  ): { amountReceived: string; protocolFeeAmount: string } {
-    // convert decimal from ETH to MINA
-    const amountReceiveConvert = BigNumber(amountFrom)
-      .dividedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.fromDecimal))
-      .multipliedBy(BigNumber(DECIMAL_BASE).pow(tokenPair.toDecimal))
-      .toString();
-    const gasFeeMina = addDecimal(gasFee, this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)!);
-    // calc fee follow MINA decimal.
-    const protocolFeeAmount = BigNumber(calculateFee(amountReceiveConvert, gasFeeMina, tip))
-      .toFixed(0)
-      .toString();
-    const amountReceived = BigNumber(amountReceiveConvert).minus(protocolFeeAmount).toFixed(0).toString();
-    return {
-      amountReceived,
-      protocolFeeAmount,
-    };
-  }
   public async handleUnlockMina(txId: number): Promise<{ error: Error | null; success: boolean }> {
     const dataLock = await this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.MINA });
 
@@ -95,7 +70,6 @@ export class SenderMinaBridge {
 
       await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
       const { id, receiveAddress, amountReceived } = dataLock;
-
       const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
       // Update status eventLog when call function unlock
       if (result.success) {
@@ -128,6 +102,7 @@ export class SenderMinaBridge {
     receiveAddress: string,
   ): Promise<{ success: boolean; error: Error | null; data: string | null }> {
     try {
+      this.logger.info(`Bridge: ${this.bridgeKey.toPublicKey().toBase58()}\nToken: ${this.tokenPublicKey.toBase58}`);
       const generatedSignatures = await this.multiSignatureRepository.findBy({
         txId,
       });
@@ -167,15 +142,9 @@ export class SenderMinaBridge {
         if (!hasAccount) AccountUpdate.fundNewAccount(feePayerPublicKey);
         await zkBridge.unlock(typedAmount, receiverPublicKey, UInt64.from(txId), this.tokenPublicKey, ...signatureData);
       });
-      this.logger.info('Proving tx.');
-      await tx.prove();
-      this.logger.info('send transaction...');
-      const sentTx = await tx.sign([this.feePayerKey, this.bridgeKey]).send();
 
-      this.logger.info('Transaction waiting to be applied with txhash: ', sentTx.hash);
-      await sentTx?.wait({ maxAttempts: 300 });
+      const sentTx = await this.handleSendTxMina(tx);
 
-      assert(sentTx?.hash, 'transaction failed');
       return { success: true, error: null, data: sentTx.hash };
     } catch (error) {
       this.logger.error(error);
@@ -232,5 +201,20 @@ export class SenderMinaBridge {
     await this.multiSignatureRepository.save(multiSignature);
     // notice the job unlock provider here
     return { error: null, success: true };
+  }
+  public async handleSendTxMina(tx: Mina.Transaction<false, false>) {
+    this.logger.info('Proving tx.');
+    await tx.prove();
+
+    this.logger.info('send transaction...');
+    await tx.sign([this.feePayerKey, this.bridgeKey]);
+
+    const sentTx = await tx.send();
+
+    this.logger.info('Transaction waiting to be applied with txhash: ', sentTx.hash);
+    await sentTx?.wait({ maxAttempts: 300 });
+
+    assert(sentTx?.hash, 'transaction failed');
+    return sentTx;
   }
 }

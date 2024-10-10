@@ -8,6 +8,7 @@ import { ECoinMarketCapTokenId } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { sleep } from '../../shared/utils/promise.js';
 import { TokenPrice } from './entities/index.js';
 
 @Injectable()
@@ -19,6 +20,17 @@ export class BatchJobGetPriceToken {
   ) {}
   private readonly logger = this.loggerService.getLogger('CRAWL_TOKEN_PRICE');
 
+  public async handleCrawlInterval() {
+    while (true) {
+      try {
+        await this.handleGetPriceToken();
+      } catch (error) {
+        this.logger.error(error);
+      } finally {
+        await sleep(60);
+      }
+    }
+  }
   public async handleGetPriceToken() {
     const apiKey = this.configService.get(EEnvKey.COINMARKET_KEY);
     const apiUrl = this.configService.get(EEnvKey.COINMARKET_URL);

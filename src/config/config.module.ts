@@ -7,11 +7,19 @@ import { MINA_CRAWL_SAFE_BLOCK } from '../constants/entity.constant.js';
 import { EEnvironments, EEnvKey } from '../constants/env.constant.js';
 import redisConfig from './redis.config.js';
 
+const getEnvFile = () => {
+  if (process.env[EEnvKey.NODE_ENV] === EEnvironments.JEST_TESTING) {
+    return process.cwd() + '/test.env';
+  }
+  // fallback to default setting
+  return undefined;
+};
 @Global()
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: getEnvFile(),
       validationSchema: Joi.object({
         [EEnvKey.NODE_ENV]: Joi.string()
           .valid(...Object.values(EEnvironments))

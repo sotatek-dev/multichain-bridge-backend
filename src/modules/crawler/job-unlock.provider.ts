@@ -15,6 +15,7 @@ import { QueueService } from '../../shared/modules/queue/queue.service.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
 import { sleep } from '../../shared/utils/promise.js';
 import { getNextDayInUnix, getTimeInFutureInMinutes } from '../../shared/utils/time.js';
+import { BatchJobGetPriceToken } from './batch.tokenprice.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interfaces/job.interface.js';
 
@@ -29,11 +30,16 @@ export class JobUnlockProvider {
     private readonly loggerService: LoggerService,
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
+    private tokenPriceCrawler: BatchJobGetPriceToken,
   ) {}
   private logger = this.loggerService.getLogger('JOB_UNLOCK_PROVIDER');
 
   public async handleJob() {
-    await Promise.all([this.getPendingTx(true), this.getPendingTx(false)]);
+    await Promise.all([
+      this.getPendingTx(true),
+      this.getPendingTx(false),
+      this.tokenPriceCrawler.handleCrawlInterval(),
+    ]);
   }
 
   private async getPendingTx(isSignatureFullFilled: boolean) {

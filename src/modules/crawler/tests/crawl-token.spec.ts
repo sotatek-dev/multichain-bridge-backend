@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigurationModule } from '../../../config/config.module.js';
 import { EAsset } from '../../../constants/api.constant.js';
 import { TokenPriceRepository } from '../../../database/repositories/token-price.repository.js';
-import { LoggerService } from '../../../shared/modules/logger/logger.service.js';
+import { LoggingModule } from '../../../shared/modules/logger/logger.module.js';
 import { BatchJobGetPriceToken } from '../batch.tokenprice.js';
 
 describe('BlockchainEVMCraler', () => {
@@ -17,6 +17,7 @@ describe('BlockchainEVMCraler', () => {
           isGlobal: true,
         }),
         ConfigurationModule,
+        LoggingModule,
       ],
       providers: [
         BatchJobGetPriceToken,
@@ -25,15 +26,6 @@ describe('BlockchainEVMCraler', () => {
           useValue: {
             getTokenPriceBySymbol: jest.fn(),
             save: jest.fn(),
-          },
-        },
-        {
-          provide: LoggerService,
-          useValue: {
-            getLogger: jest.fn().mockReturnValue({
-              info: jest.fn(),
-              warn: jest.fn(),
-            }),
           },
         },
       ],
@@ -51,8 +43,8 @@ describe('BlockchainEVMCraler', () => {
       expect(result0).toBeTruthy();
     });
     it('should fail to update the token price', async () => {
-      const result1 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, null);
-      const result2 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, undefined);
+      const result1 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, null as any);
+      const result2 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, undefined as any);
       const result3 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, '');
       const result4 = await tokenCrawlService.updateTokenPrice(EAsset.ETH, '1,2');
 

@@ -58,3 +58,10 @@ export class GetProtocolFeeResponseDto {
   @ApiProperty()
   amount: string;
 }
+export class GetTokensPriceResponseDto {
+  @ApiProperty({ example: '2345' })
+  ethPriceInUsd: string;
+
+  @ApiProperty({ example: '1.23s' })
+  minaPriceInUsd: string;
+}
