@@ -134,6 +134,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
         `${this.alias}.gasFee`,
         `${this.alias}.status`,
         `${this.alias}.createdAt`,
+        `${this.alias}.updatedAt`,
       ]);
 
     this.queryBuilderAddPagination(queryBuilder, options);
