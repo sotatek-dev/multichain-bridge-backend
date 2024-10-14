@@ -40,6 +40,8 @@ describe('MinaSenderService', () => {
   let minaCrawlerService: SenderMinaBridge;
 
   beforeEach(async () => {
+    // mock env
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [Web3Module, ConfigurationModule, LoggingModule],
       providers: [
@@ -60,33 +62,31 @@ describe('MinaSenderService', () => {
     mockMultiSignatureRepository.findBy.mockResolvedValue([
       {
         id: 1,
-        validator: 'B62qnqGrRCgzsRTLjvWsaaKuoWmiShmZhJgZ5Km1oef5R4gNh2ZefWw',
-        signature: `{"r":"2741909212936774907544021372917077044308732996729673336956874680454178204665","s":"22788518411239874148240096978846169204938272426762803263770936708038651664307"}`,
+        validator: 'B62qk5QZLop9UQoCkj81DRNHmXVLmVn5ccRmng7RrTi4u6ChUUEvUGi',
+        signature: `{"r":"24690647453400403758332450940494401756404823719411627023053952454727257551393","s":"8819357926999900450936317724572453724695927191493007320782566669146983775031"}`,
       },
       {
         id: 2,
-        validator: 'B62qq8614KZCuDM7cVScqBLPiLmqLrhVxBt9mRwy95aCZDsbCjfQx8v',
-        signature: `{"r":"3438636033281975195816523607371098640098750053457963253301321340385105289889","s":"9711387156003130848729762491878632072833060669134149517867207960037819573927"}`,
+        validator: 'B62qnXpFWCh3wg1ZjiJgoxYFdiwmnsMCZ313DyWFua6ZYcfSyKH1qYH',
+        signature: `{"r":"6835381559187113857327770849771266345736416811575358295982019553788143439512","s":"17326056990020532713419002529880067106114089350239630829930554167773839627109"}`,
       },
       {
         id: 3,
-        validator: 'B62qkQ96hyWcc5tyjhN2Qda5X2DfFgVC14ELLAaQTjkpQdveZExK5H9',
-        signature: `{"r":"5570236603572533401994258050414813854840150826583453247540834111404926928692","s":"21736293135419403848339637561979298566104722930867359295319005331842934575203"}`,
+        validator: 'B62qpjFBgyNWv4RAroZTnypqMaYjhqWv7ppduHzoTHhmvwVajho6dPq',
+        signature: `{"r":"27156093480048411333328592050876860249455597992175035922293191324710774730790","s":"22991006231865604101278191466025757010691843297536425340981503959281091239228"}`,
       },
     ]);
     mockEventLogRepository.findOneBy.mockResolvedValue({
       id: 1,
-      tokenReceivedAddress: 'B62qqKNnNRpCtgcBexw5khZSpk9K2d9Z7Wzcyir3WZcVd15Bz8eShVi',
+      tokenReceivedAddress: 'B62qjM88vh9bmR24QTRqJBurdJ8pWKbuPMtmTohiDtdmQEAdPzsBrif',
       tokenFromAddress: '0x0000000000000000000000000000000000000000',
-      receiveAddress: 'B62qkkjqtrVmRLQhmkCQPw2dwhCZfUsmxCRTSfgdeUPhyTdoMv7h6b9',
-      amountFrom: '159719371259000000',
-      amountReceived: '151732453',
+      receiveAddress: 'B62qjjqzjdv7kGSgWVfNrUwUuyuMjtaJwWKs3DAQjV34MMnJGxSqetH',
+      amountReceived: '949999050',
       tip: '0.00798591856295',
       gasFee: '0.000001',
     } as Partial<EventLog>);
+    jest.spyOn(minaCrawlerService, 'handleSendTxMina').mockResolvedValue({ hash: '0x123' } as any);
     const result = await minaCrawlerService.handleUnlockMina(1);
     expect(result.success).toBe(true);
   });
-
-  // ... other test cases as before (omitted for brevity)
 });

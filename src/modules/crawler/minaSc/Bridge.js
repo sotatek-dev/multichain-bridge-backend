@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
   var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
   if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -85,7 +84,7 @@ export class Bridge extends SmartContract {
   }
   async unlock(amount, receiver, id, tokenAddr, useSig1, validator1, sig1, useSig2, validator2, sig2, useSig3, validator3, sig3) {
       const managerZkapp = new Manager(this.manager.getAndRequireEquals());
-      managerZkapp.isAdmin(this.sender.getAndRequireSignature());
+      managerZkapp.isMinter(this.sender.getAndRequireSignature());
       const msg = [
           ...receiver.toFields(),
           ...amount.toFields(),

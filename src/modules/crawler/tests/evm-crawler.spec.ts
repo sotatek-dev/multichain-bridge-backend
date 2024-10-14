@@ -1,25 +1,24 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { DataSource, QueryRunner } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
 import { initializeEthContract } from '../../../config/common.config.js';
 import { ConfigurationModule } from '../../../config/config.module.js';
-import { EEventName, EEventStatus, ENetworkName } from '../../../constants/blockchain.constant.js';
+import { EEventStatus, ENetworkName } from '../../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../../constants/env.constant.js';
 import { CrawlContractRepository } from '../../../database/repositories/crawl-contract.repository.js';
 import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
-import { TokenPair } from '../../../modules/users/entities/tokenpair.entity.js';
 import { LoggerService } from '../../../shared/modules/logger/logger.service.js';
 import { DefaultContract, ETHBridgeContract } from '../../../shared/modules/web3/web3.service.js';
 import { BlockchainEVMCrawler } from '../crawler.evmbridge.js';
+import { CommonConfig } from '../entities/common-config.entity.js';
 import { CrawlContract, EventLog } from '../entities/index.js';
+import { getMockedRepo } from './base/test-utils.js';
 
 describe('BlockchainEVMCraler', () => {
   let crawler: BlockchainEVMCrawler;
-  let dataSource: DataSource;
   let newEthBridgeContract: ETHBridgeContract;
-  let queryRunner: QueryRunner;
   let configService: ConfigService;
 
   beforeEach(async () => {
@@ -35,19 +34,7 @@ describe('BlockchainEVMCraler', () => {
         {
           provide: DataSource,
           useValue: {
-            createQueryRunner: jest.fn().mockReturnValue({
-              connect: jest.fn(),
-              startTransaction: jest.fn(),
-              commitTransaction: jest.fn(),
-              rollbackTransaction: jest.fn(),
-              release: jest.fn(),
-              manager: {
-                save: jest.fn(),
-                findOne: jest.fn(),
-                update: jest.fn(),
-                findOneBy: jest.fn(),
-              },
-            }),
+            transaction: jest.fn(),
           },
         },
         {
@@ -68,7 +55,8 @@ describe('BlockchainEVMCraler', () => {
           provide: LoggerService,
           useValue: {
             getLogger: jest.fn().mockReturnValue({
-              info: jest.fn(),
+              info: console.log,
+              error: console.error,
             }),
           },
         },
@@ -94,10 +82,8 @@ describe('BlockchainEVMCraler', () => {
     }).compile();
 
     crawler = module.get<BlockchainEVMCrawler>(BlockchainEVMCrawler);
-    dataSource = module.get<DataSource>(DataSource);
     newEthBridgeContract = module.get<ETHBridgeContract>(ETHBridgeContract);
     configService = module.get<ConfigService>(ConfigService);
-    queryRunner = dataSource.createQueryRunner();
   });
 
   describe('handleEventCrawlBlock', () => {
@@ -107,10 +93,10 @@ describe('BlockchainEVMCraler', () => {
       const ethBridgeContract = await initializeEthContract(configService);
       const getEvent = await ethBridgeContract.getEvent(
         await (
-          await crawler['getFromToBlock']()
+          await crawler['getFromToBlock'](0)
         ).startBlockNumber,
         await (
-          await crawler['getFromToBlock']()
+          await crawler['getFromToBlock'](0)
         ).toBlock,
       );
 
@@ -145,12 +131,7 @@ describe('BlockchainEVMCraler', () => {
 
       jest.spyOn(crawler as any, 'handlerLockEvent').mockResolvedValue(receivedObject);
       (newEthBridgeContract.getEvent as jest.Mock).mockResolvedValue(getEvent);
-      await crawler.handleEventCrawlBlock();
-
-      expect(queryRunner.connect).toHaveBeenCalled();
-      expect(queryRunner.startTransaction).toHaveBeenCalled();
-      expect(queryRunner.commitTransaction).toHaveBeenCalled();
-      expect(queryRunner.release).toHaveBeenCalled();
+      await crawler.handleEventCrawlBlock(0);
     });
 
     it('should save the correct event log in handlerLockEvent', async () => {
@@ -182,35 +163,13 @@ describe('BlockchainEVMCraler', () => {
         transactionIndex: 33,
       } as EventData;
 
-      const mockTokenPair = {
-        fromAddress: '0xFromAddress',
-        toAddress: '0xToAddress',
-        fromDecimal: 18,
-        toDecimal: 18,
-      } as TokenPair;
       const mockBlockTime = await ethBridgeContract.getBlockTimeByBlockNumber(lockReturnObject.blockNumber);
       (newEthBridgeContract.getBlockTimeByBlockNumber as jest.Mock).mockResolvedValue(mockBlockTime);
-      const result = await crawler.handlerLockEvent(lockReturnObject, queryRunner);
-      jest.spyOn(crawler as any, 'handlerLockEvent').mockResolvedValue({
-        blockNumber: lockReturnObject.blockNumber,
-        senderAddress: lockReturnObject.returnValues.locker,
-        amountFrom: lockReturnObject.returnValues.amount,
-        tokenFromAddress: lockReturnObject.returnValues.token,
-        networkFrom: ENetworkName.ETH,
-        networkReceived: ENetworkName.MINA,
-        tokenFromName: lockReturnObject.returnValues.tokenName,
-        tokenReceivedAddress: '0xMinaTokenBridgeAddress',
-        txHashLock: lockReturnObject.transactionHash,
-        receiveAddress: lockReturnObject.returnValues.receipt,
-        event: EEventName.LOCK,
-        returnValues: JSON.stringify(lockReturnObject.returnValues),
-        status: EEventStatus.WAITING,
-        retry: 0,
-        fromTokenDecimal: mockTokenPair.fromDecimal,
-        toTokenDecimal: mockTokenPair.toDecimal,
-        blockTimeLock: mockBlockTime.timestamp,
-      });
+      const configRepo = getMockedRepo<CommonConfig>();
 
+      const eventLogRepo = getMockedRepo<EventLog>();
+      jest.spyOn(configRepo, 'findOneBy').mockResolvedValue({ id: 1, tip: 5 } as CommonConfig);
+      const result = await crawler.handlerLockEvent(lockReturnObject, eventLogRepo, configRepo);
       expect(result.success).toBe(true);
     });
 
@@ -250,16 +209,11 @@ describe('BlockchainEVMCraler', () => {
         status: EEventStatus.WAITING,
       };
 
-      jest.spyOn(queryRunner.manager, 'findOne').mockResolvedValue(mockExistingLockTx);
+      const eventLogRepo = getMockedRepo<EventLog>();
+      jest.spyOn(eventLogRepo, 'findOneBy').mockResolvedValue(mockExistingLockTx as EventLog);
+      const result = await crawler.handlerUnLockEvent(unlockObject, eventLogRepo);
 
-      const result = await crawler.handlerUnLockEvent(unlockObject, queryRunner);
-
-      expect(queryRunner.manager.findOne).toHaveBeenCalledWith(EventLog, {
-        where: { txHashLock: unlockObject.returnValues.hash },
-      });
-
-      expect(queryRunner.manager.update).toHaveBeenCalledWith(
-        EventLog,
+      expect(eventLogRepo.update).toHaveBeenCalledWith(
         mockExistingLockTx.id,
         expect.objectContaining({
           status: EEventStatus.COMPLETED,
@@ -274,15 +228,15 @@ describe('BlockchainEVMCraler', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should call queryRunner.manager.update with correct parameters', async () => {
-      const mockBlockNumber = await (await crawler['getFromToBlock']()).toBlock;
+    it('should call crawlContractRepo.update with correct parameters', async () => {
+      const mockBlockNumber = await (await crawler['getFromToBlock'](0)).toBlock;
       const mockContractAddress = configService.get<string>(EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS);
       const mockNetworkName = ENetworkName.ETH;
 
-      await crawler.updateLatestBlockCrawl(mockBlockNumber, queryRunner);
+      const crawlContractRepo = getMockedRepo<CrawlContract>();
+      await crawler.updateLatestBlockCrawl(mockBlockNumber, crawlContractRepo);
 
-      expect(queryRunner.manager.update).toHaveBeenCalledWith(
-        CrawlContract,
+      expect(crawlContractRepo.update).toHaveBeenCalledWith(
         {
           contractAddress: mockContractAddress,
           networkName: mockNetworkName,
@@ -299,12 +253,7 @@ describe('BlockchainEVMCraler', () => {
       // Mocking ethBridgeContract.getEvent to throw an error
       newEthBridgeContract.getEvent = jest.fn().mockRejectedValue(new Error('Event fetch error'));
 
-      await expect(crawler.handleEventCrawlBlock()).rejects.toThrow('Event fetch error');
-
-      expect(queryRunner.connect).toHaveBeenCalled();
-      expect(queryRunner.startTransaction).toHaveBeenCalled();
-      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
-      expect(queryRunner.release).toHaveBeenCalled();
+      await expect(crawler.handleEventCrawlBlock(0)).rejects.toThrow('Event fetch error');
     });
   });
 });

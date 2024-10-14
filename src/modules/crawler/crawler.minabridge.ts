@@ -4,7 +4,7 @@ import assert from 'assert';
 import dayjs from 'dayjs';
 import { Logger } from 'log4js';
 import { fetchLastBlock, Field, Mina, PublicKey, UInt32 } from 'o1js';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { DEFAULT_ADDRESS_PREFIX, EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
@@ -67,13 +67,16 @@ export class SCBridgeMinaCrawler {
     try {
       await this.dataSource.transaction(async entityManager => {
         this.logger.info(`[handleCrawlMinaBridge] Crawling from  ${startBlockNumber} to ${toBlock}`);
+        const configRepo = entityManager.getRepository(CommonConfig);
+        const eventLogRepo = entityManager.getRepository(EventLog);
+
         for (const event of events) {
           switch (event.type) {
             case 'Unlock':
-              await this.handlerUnLockEvent(event, entityManager);
+              await this.handlerUnLockEvent(event, eventLogRepo);
               break;
             case 'Lock':
-              await this.handlerLockEvent(event, entityManager);
+              await this.handlerLockEvent(event, eventLogRepo, configRepo);
               break;
             default:
               continue;
@@ -88,13 +91,11 @@ export class SCBridgeMinaCrawler {
     }
   }
 
-  public async handlerUnLockEvent(event: IMinaEvent, entityManager: EntityManager) {
-    const eventLogRepo = entityManager.getRepository(EventLog);
+  public async handlerUnLockEvent(event: IMinaEvent, eventLogRepo: Repository<EventLog>) {
     const { id, tokenAddress } = event.event.data as IMinaLockTokenEventData;
-    const existLockTx = await eventLogRepo.findOne({
-      where: { id: Number(id.toString()) },
+    const existLockTx = await eventLogRepo.findOneBy({
+      id: Number(id.toString()),
     });
-
     if (!existLockTx) {
       return;
     }
@@ -112,9 +113,11 @@ export class SCBridgeMinaCrawler {
     };
   }
 
-  public async handlerLockEvent(event: IMinaEvent, entityManager: EntityManager) {
-    const eventLogRepo = entityManager.getRepository(EventLog);
-    const configRepo = entityManager.getRepository(CommonConfig);
+  public async handlerLockEvent(
+    event: IMinaEvent,
+    eventLogRepo: Repository<EventLog>,
+    configRepo: Repository<CommonConfig>,
+  ) {
     const txHashLock = event.event.transactionInfo.transactionHash;
     const field = Field.from(event.event.data.receipt.toString());
     const receiveAddress = DEFAULT_ADDRESS_PREFIX + field.toBigInt().toString(16);
@@ -167,10 +170,8 @@ export class SCBridgeMinaCrawler {
       protocolFee: protocolFeeNoDecimalPlace,
     };
 
-    this.logger.info({ eventUnlock });
-
     const result = await eventLogRepo.save(eventUnlock);
-    assert(!!result.id && !!result.networkReceived, 'Cannot add job to signatures queue.');
+    this.logger.info(result);
     return {
       success: true,
     };
