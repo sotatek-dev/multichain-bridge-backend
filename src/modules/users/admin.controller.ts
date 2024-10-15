@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/com
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { GuardPublic } from '../../guards/guard.decorator.js';
 import { AuthAdminGuard } from '../../shared/decorators/http.decorator.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetCommonConfigResponseDto } from './dto/common-config-response.dto.js';
@@ -31,8 +30,8 @@ export class AdminController {
   }
 
   @Put('update-common-config/:id')
-  @GuardPublic()
-  // @UseGuards(AuthGuard('jwt'))
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
   updateCommonConfig(@Param('id') id: number, @Body() updateConfig: UpdateCommonConfigBodyDto) {
     return this.userService.updateCommonConfig(id, updateConfig);
   }
