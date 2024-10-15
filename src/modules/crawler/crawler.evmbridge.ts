@@ -94,7 +94,7 @@ export class BlockchainEVMCrawler {
       fromDecimal: fromTokenDecimal,
       toDecimal: toTokenDecimal,
       inputAmountNoDecimalPlaces: inputAmount,
-      gasFeeWithDecimalPlaces: this.configService.get(EEnvKey.GASFEEMINA)!,
+      gasFeeWithDecimalPlaces: config.feeUnlockMina,
       tipPercent: +config!.tip,
     });
     if (error) {
