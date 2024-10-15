@@ -74,10 +74,8 @@ export class SenderEVMBridge {
 
   async validateUnlockEVMTransaction(txId: number): Promise<{ error: Error | null; success: boolean }> {
     const wallet = this.getWallet();
-    const [dataLock] = await Promise.all([
-      this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.ETH }),
-      this.commonConfigRepository.getCommonConfig(),
-    ]);
+    const dataLock = await this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.ETH });
+
     if (!dataLock) {
       this.logger.warn('no data found tx', txId);
       return { error: null, success: false };
@@ -117,7 +115,7 @@ export class SenderEVMBridge {
       },
       value,
     );
-
+    this.logger.info(`params ${value}`);
     return { success: true, signature, payload: { data: value } };
   }
 
