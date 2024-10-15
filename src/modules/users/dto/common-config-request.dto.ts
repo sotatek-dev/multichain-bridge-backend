@@ -12,4 +12,16 @@ export class UpdateCommonConfigBodyDto {
     required: false,
   })
   dailyQuota: number;
+
+  @NumberField({
+    example: 500,
+    required: false,
+  })
+  feeUnlockMina: string;
+
+  @NumberField({
+    example: 500,
+    required: false,
+  })
+  feeUnlockEth: string;
 }

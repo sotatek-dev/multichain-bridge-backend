@@ -25,6 +25,18 @@ export class CommonConfig extends BaseEntityIncludeTime {
   })
   tip: number;
 
+  @Column({
+    name: 'fee_unlock_mina',
+    type: 'varchar',
+  })
+  feeUnlockMina: string;
+
+  @Column({
+    name: 'fee_unlock_eth',
+    type: 'varchar',
+  })
+  feeUnlockEth: string;
+
   @Column({ name: 'asset', type: 'varchar', nullable: true })
   asset: string;
 

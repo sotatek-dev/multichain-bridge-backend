@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import assert from 'assert';
 import { DataSource } from 'typeorm';
 
 import { EAsset } from '../../constants/api.constant.js';
@@ -57,7 +58,8 @@ export class UsersService {
   }
 
   async updateCommonConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {
-    return this.commonConfigRepository.updateCommonConfig(id, updateConfig);
+    await this.commonConfigRepository.updateCommonConfig(id, updateConfig);
+    return updateConfig;
   }
 
   async getDailyQuotaOfUser(address: string) {
@@ -75,7 +77,7 @@ export class UsersService {
 
   async getProtocolFee({ pairId }: GetProtocolFeeBodyDto) {
     let gasFee, decimal;
-    const [tokenPair, configTip] = await Promise.all([
+    const [tokenPair, config] = await Promise.all([
       this.dataSource.getRepository(TokenPair).findOne({
         where: { id: pairId },
       }),
@@ -84,15 +86,16 @@ export class UsersService {
     if (!tokenPair) {
       httpNotFound(EError.RESOURCE_NOT_FOUND);
     }
+    assert(config, 'system common config not found!');
     if (tokenPair!.toChain == ENetworkName.MINA) {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
-      gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA)!, decimal);
+      gasFee = addDecimal(config.feeUnlockMina, decimal);
     } else {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-      gasFee = addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM)!, decimal);
+      gasFee = addDecimal(config.feeUnlockMina, decimal);
     }
 
-    return { gasFee, tipRate: configTip!.tip, decimal };
+    return { gasFee, tipRate: config.tip, decimal };
   }
   async getTokensPrices(): Promise<GetTokensPriceResponseDto> {
     const result = {
