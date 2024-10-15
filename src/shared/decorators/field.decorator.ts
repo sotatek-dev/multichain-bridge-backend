@@ -112,20 +112,23 @@ export function StringField(options: Omit<ApiPropertyOptions, 'type'> & IStringF
   if (toUpperCase) {
     decorators.push(ToUpperCase());
   }
-
-  if (number) {
-    decorators.push(IsNumberString());
-    if (typeof number === 'object') {
-      decorators.push(
-        IsDecimal(
-          { decimal_digits: '0,' + number.maxDecimalPlaces },
-          { message: ctx => `${ctx.property}: max decimal places allowed is ${number.maxDecimalPlaces}` },
-        ),
-      );
-    }
+  // strings, number string validation
+  if (typeof number == 'object') {
+    decorators.push(
+      IsDecimal(
+        { decimal_digits: '0,' + number.maxDecimalPlaces },
+        {
+          each: isArray,
+          message: ctx => `${ctx.property} must be a number with max decimal places equals ${number.maxDecimalPlaces}`,
+        },
+      ),
+    );
+  } else if (typeof number === 'boolean') {
+    decorators.push(IsNumberString({}, { each: isArray }));
   } else {
     decorators.push(IsString({ each: isArray }));
   }
+  //
   if (isEmail) {
     decorators.push(IsEmail());
   }
