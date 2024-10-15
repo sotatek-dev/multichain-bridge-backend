@@ -1,4 +1,5 @@
-import { NumberField } from '../../../shared/decorators/field.decorator.js';
+import { EEnvKey } from '../../../constants/env.constant.js';
+import { NumberField, StringField } from '../../../shared/decorators/field.decorator.js';
 
 export class UpdateCommonConfigBodyDto {
   @NumberField({
@@ -13,14 +14,20 @@ export class UpdateCommonConfigBodyDto {
   })
   dailyQuota: number;
 
-  @NumberField({
+  @StringField({
     example: 500,
+    number: {
+      maxDecimalPlaces: +process.env[EEnvKey.DECIMAL_TOKEN_MINA]!,
+    },
     required: false,
   })
   feeUnlockMina: string;
 
-  @NumberField({
+  @StringField({
     example: 500,
+    number: {
+      maxDecimalPlaces: +process.env[EEnvKey.DECIMAL_TOKEN_EVM]!,
+    },
     required: false,
   })
   feeUnlockEth: string;
