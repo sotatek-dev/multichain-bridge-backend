@@ -1,109 +1,26 @@
-import { ConfigModule } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import { Test, TestingModule } from '@nestjs/testing';
-import { DataSource } from 'typeorm';
-
-import { ConfigurationModule } from '../../../config/config.module.js';
 import { EAsset } from '../../../constants/api.constant.js';
 import { EEventName, EEventStatus, ENetworkName } from '../../../constants/blockchain.constant.js';
-import { CommonConfigRepository } from '../../../database/repositories/common-configuration.repository.js';
-import { CrawlContractRepository } from '../../../database/repositories/crawl-contract.repository.js';
+import { EError } from '../../../constants/error.constant.js';
 import { EventLogRepository } from '../../../database/repositories/event-log.repository.js';
-import { MultiSignatureRepository } from '../../../database/repositories/multi-signature.repository.js';
-import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
-import { LoggerService } from '../../../shared/modules/logger/logger.service.js';
-import { Web3Module } from '../../../shared/modules/web3/web3.module.js';
+import { initModuleTest } from '../../../shared/__test__/base/test.lib.js';
 import { ETHBridgeContract } from '../../../shared/modules/web3/web3.service.js';
 import { EventLog } from '../entities/index.js';
 import { MultiSignature } from '../entities/multi-signature.entity.js';
 import { SenderEVMBridge } from '../sender.evmbridge.js';
 
 let senderEVMBridge: SenderEVMBridge;
-let eventLogRepository: EventLogRepository;
-let multiSignatureRepository: MultiSignatureRepository;
-// Mock objects
-const mockJwtService = {
-  // Mock methods if needed
-  sign: jest.fn(),
-};
-
+let ethContract: jest.Mocked<ETHBridgeContract>;
+let eventLogRepository: jest.Mocked<EventLogRepository>;
 beforeEach(async () => {
-  const module: TestingModule = await Test.createTestingModule({
-    imports: [
-      Web3Module,
-      ConfigurationModule,
-      ConfigModule.forRoot({
-        isGlobal: true,
-      }),
-    ],
-    providers: [
-      SenderEVMBridge, // Include the AuthService provider
-      EventLogRepository,
-      CommonConfigRepository,
-      MultiSignatureRepository,
-      {
-        provide: ETHBridgeContract,
-        useValue: {
-          getChainId: () => '0x123',
-          unlock: () => ({ success: true, error: null, transactionHash: '0x123...' }), // mock returned result from rpc
-        },
-      },
-      { provide: JwtService, useValue: mockJwtService },
-      {
-        provide: DataSource,
-
-        useValue: {
-          createQueryRunner: jest.fn().mockReturnValue({
-            connect: jest.fn(),
-            startTransaction: jest.fn(),
-            commitTransaction: jest.fn(),
-            rollbackTransaction: jest.fn(),
-            release: jest.fn(),
-            manager: {
-              save: jest.fn(),
-              findOne: jest.fn(),
-              update: jest.fn(),
-              findOneBy: jest.fn(),
-            },
-          }),
-        },
-      },
-      {
-        provide: CrawlContractRepository,
-        useValue: {
-          findOne: jest.fn(),
-          create: jest.fn(),
-          save: jest.fn(),
-        },
-      },
-      {
-        provide: TokenPairRepository,
-        useValue: {
-          getTokenPair: jest.fn(),
-        },
-      },
-      {
-        provide: LoggerService,
-        useValue: {
-          getLogger: jest.fn().mockReturnValue({
-            info: jest.fn(),
-            log: jest.fn(),
-            error: jest.fn(),
-          }),
-        },
-      },
-    ],
-  }).compile();
-
-  senderEVMBridge = module.get<SenderEVMBridge>(SenderEVMBridge);
-  eventLogRepository = module.get<EventLogRepository>(EventLogRepository);
-  multiSignatureRepository = module.get<MultiSignatureRepository>(MultiSignatureRepository);
+  const { unit, unitRef } = await initModuleTest(SenderEVMBridge);
+  senderEVMBridge = unit;
+  eventLogRepository = unitRef.get<EventLogRepository>(EventLogRepository);
+  ethContract = unitRef.get(ETHBridgeContract);
 });
 
 describe('handleValidateUnlockTxEVM', () => {
   const data: Partial<EventLog> = {
     id: 18,
-    deletedAt: undefined,
     senderAddress: 'B62qjWwgHupW7k7fcTbb2Kszp4RPYBWYdL4KMmoqfkMH3iRN2FN8u5n',
     amountFrom: '2',
     tokenFromAddress: 'B62qqki2ZnVzaNsGaTDAP6wJYCth5UAcY6tPX2TQYHdwD8D4uBgrDKC',
@@ -127,20 +44,29 @@ describe('handleValidateUnlockTxEVM', () => {
     tip: '0.001',
     gasFee: '0.00001',
   };
-  it('should handle validator signature generation', async () => {
+  test('should handle validator signature generation', async () => {
+    // mock pending tx in event_logs table to generate signatures.
     jest.spyOn(eventLogRepository, 'findOneBy').mockResolvedValue(data as EventLog);
-    jest.spyOn(multiSignatureRepository, 'findOneBy').mockResolvedValue(data.validator![0]!);
-    jest.spyOn(multiSignatureRepository, 'save').mockResolvedValue({} as any);
+    ethContract.getChainId.mockResolvedValue('0x123');
     const result = await senderEVMBridge.validateUnlockEVMTransaction(data.id!);
     expect(result.success).toBeTruthy();
   });
 
-  it('should handle Unlock EVM and send to blockchain', async () => {
+  test('should handle Unlock EVM and send to blockchain', async () => {
+    // mock pending tx in eventlogs that has all valid signature then unlock
     jest.spyOn(eventLogRepository, 'findOne').mockResolvedValue(data as EventLog);
-    jest.spyOn(eventLogRepository, 'updateLockEvenLog').mockResolvedValue(true as any);
-    jest.spyOn(eventLogRepository, 'updateStatusAndRetryEvenLog').mockResolvedValue(true as any);
-
+    ethContract.unlock.mockResolvedValue({ transactionHash: '0x123' } as any);
     const result = await senderEVMBridge.handleUnlockEVM(data.id!);
     expect(result.success).toBeTruthy();
+  });
+
+  test('should handle Unlock EVM and send to blockchain', async () => {
+    // mock pending tx in eventlogs that has all valid signature then unlock
+    const sentData = { ...data, status: EEventStatus.PROCESSING };
+    jest.spyOn(eventLogRepository, 'findOne').mockResolvedValue(sentData as EventLog);
+
+    const result = await senderEVMBridge.handleUnlockEVM(data.id!);
+    // since sentData status is processing, senderEVMBridge won't process this.
+    expect(result.error?.message).toEqual(EError.DUPLICATED_ACTION);
   });
 });
