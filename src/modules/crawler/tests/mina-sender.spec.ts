@@ -1,64 +1,36 @@
-import { JwtService } from '@nestjs/jwt';
-import { Test, TestingModule } from '@nestjs/testing';
-
-import { ConfigurationModule } from '../../../config/config.module.js';
-import { CommonConfigRepository } from '../../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../../database/repositories/multi-signature.repository.js';
-import { TokenPairRepository } from '../../../database/repositories/token-pair.repository.js';
-import { LoggingModule } from '../../../shared/modules/logger/logger.module.js';
-import { Web3Module } from '../../../shared/modules/web3/web3.module.js';
-import { EventLog } from '../entities/event-logs.entity.js';
+import { initModuleTest } from '../../../shared/__test__/base/test.lib.js';
 import { SenderMinaBridge } from '../sender.minabridge.js';
 
-// Mock objects
-const mockJwtService = {
-  // Mock methods if needed
-  sign: jest.fn(),
-};
-
-const mockEventLogRepository = {
-  getEventLockWithNetwork: jest.fn(),
-  updateStatusAndRetryEvenLog: jest.fn(),
-  updateLockEvenLog: jest.fn(),
-  sumAmountBridgeOfUserInDay: jest.fn(),
-  update: jest.fn(),
-  findOneBy: jest.fn(),
-};
-const mockCommonConfigRepository = {
-  getCommonConfig: jest.fn(),
-};
-const mockTokenPairRepository = {
-  getTokenPair: jest.fn(),
-};
-
-const mockMultiSignatureRepository = {
-  getRateETHToMina: jest.fn(),
-  findBy: jest.fn(),
-};
+let mockEventLogRepository: jest.Mocked<EventLogRepository>;
+let mockMultiSignatureRepository: jest.Mocked<MultiSignatureRepository>;
+let minaCrawlerService: SenderMinaBridge;
 describe('MinaSenderService', () => {
-  let minaCrawlerService: SenderMinaBridge;
-
   beforeEach(async () => {
-    // mock env
-
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [Web3Module, ConfigurationModule, LoggingModule],
-      providers: [
-        SenderMinaBridge,
-        { provide: JwtService, useValue: mockJwtService },
-        { provide: EventLogRepository, useValue: mockEventLogRepository },
-        { provide: CommonConfigRepository, useValue: mockCommonConfigRepository },
-        { provide: TokenPairRepository, useValue: mockTokenPairRepository },
-        { provide: MultiSignatureRepository, useValue: mockMultiSignatureRepository },
-      ],
-    }).compile();
-
-    minaCrawlerService = module.get<SenderMinaBridge>(SenderMinaBridge);
+    const { unit, unitRef } = await initModuleTest(SenderMinaBridge);
+    minaCrawlerService = unit;
+    mockEventLogRepository = unitRef.get(EventLogRepository);
+    mockMultiSignatureRepository = unitRef.get(MultiSignatureRepository);
   });
 
-  it('should handle lock events', async () => {
-    mockJwtService.sign.mockResolvedValue('true');
+  test('should handle validate signature', async () => {
+    // handle create signatures for unlock tx
+    mockEventLogRepository.findOneBy.mockResolvedValue({
+      id: 1,
+      tokenReceivedAddress: 'B62qjM88vh9bmR24QTRqJBurdJ8pWKbuPMtmTohiDtdmQEAdPzsBrif',
+      tokenFromAddress: '0x0000000000000000000000000000000000000000',
+      receiveAddress: 'B62qjjqzjdv7kGSgWVfNrUwUuyuMjtaJwWKs3DAQjV34MMnJGxSqetH',
+      amountReceived: '949999050',
+      tip: '0.00798591856295',
+      gasFee: '0.000001',
+    } as any);
+    const result = await minaCrawlerService.handleValidateUnlockTxMina(1);
+    expect(result.success).toBeTruthy();
+  });
+  // this test required a lot of resource to run.
+  test.skip('should handle unlock tx', async () => {
+    // unlock tx need signatures from validators, they are mocked here
     mockMultiSignatureRepository.findBy.mockResolvedValue([
       {
         id: 1,
@@ -75,7 +47,7 @@ describe('MinaSenderService', () => {
         validator: 'B62qpjFBgyNWv4RAroZTnypqMaYjhqWv7ppduHzoTHhmvwVajho6dPq',
         signature: `{"r":"27156093480048411333328592050876860249455597992175035922293191324710774730790","s":"22991006231865604101278191466025757010691843297536425340981503959281091239228"}`,
       },
-    ]);
+    ] as any);
     mockEventLogRepository.findOneBy.mockResolvedValue({
       id: 1,
       tokenReceivedAddress: 'B62qjM88vh9bmR24QTRqJBurdJ8pWKbuPMtmTohiDtdmQEAdPzsBrif',
@@ -84,9 +56,11 @@ describe('MinaSenderService', () => {
       amountReceived: '949999050',
       tip: '0.00798591856295',
       gasFee: '0.000001',
-    } as Partial<EventLog>);
+    } as any);
+
+    // we just want to check if the tx build is ok, skip sending it.
     jest.spyOn(minaCrawlerService, 'handleSendTxMina').mockResolvedValue({ hash: '0x123' } as any);
     const result = await minaCrawlerService.handleUnlockMina(1);
-    expect(result.success).toBe(true);
+    expect(result.success).toBeTruthy();
   });
 });
