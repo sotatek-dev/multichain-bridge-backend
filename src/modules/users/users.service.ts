@@ -92,7 +92,7 @@ export class UsersService {
       gasFee = addDecimal(config.feeUnlockMina, decimal);
     } else {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-      gasFee = addDecimal(config.feeUnlockMina, decimal);
+      gasFee = addDecimal(config.feeUnlockEth, decimal);
     }
 
     return { gasFee, tipRate: config.tip, decimal };
