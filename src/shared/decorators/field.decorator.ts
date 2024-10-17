@@ -4,6 +4,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsDecimal,
   IsEmail,
   IsEnum,
   IsInt,
@@ -30,7 +31,11 @@ interface IStringFieldOptions {
   maxLength?: number;
   toLowerCase?: boolean;
   toUpperCase?: boolean;
-  number?: boolean;
+  number?:
+    | boolean
+    | {
+        maxDecimalPlaces: number;
+      };
   isEmail?: boolean;
   isEthereumAddress?: boolean;
 }
@@ -107,12 +112,23 @@ export function StringField(options: Omit<ApiPropertyOptions, 'type'> & IStringF
   if (toUpperCase) {
     decorators.push(ToUpperCase());
   }
-
-  if (number) {
-    decorators.push(IsNumberString());
+  // strings, number string validation
+  if (typeof number == 'object') {
+    decorators.push(
+      IsDecimal(
+        { decimal_digits: '0,' + number.maxDecimalPlaces },
+        {
+          each: isArray,
+          message: ctx => `${ctx.property} must be a number with max decimal places equals ${number.maxDecimalPlaces}`,
+        },
+      ),
+    );
+  } else if (typeof number === 'boolean') {
+    decorators.push(IsNumberString({}, { each: isArray }));
   } else {
     decorators.push(IsString({ each: isArray }));
   }
+  //
   if (isEmail) {
     decorators.push(IsEmail());
   }

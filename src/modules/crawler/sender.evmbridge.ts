@@ -7,6 +7,7 @@ import { ethers } from 'ethers';
 import { getEthBridgeAddress } from '../../config/common.config.js';
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
+import { EError } from '../../constants/error.constant.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
@@ -42,7 +43,10 @@ export class SenderEVMBridge {
 
     if (!dataLock) {
       this.logger.warn('data not found with tx', txId);
-      return { error: null, success: false };
+      return { error: new Error(EError.RESOURCE_NOT_FOUND), success: false };
+    } else if (dataLock.status === EEventStatus.PROCESSING) {
+      this.logger.warn('this tx is processed before', txId);
+      return { error: new Error(EError.DUPLICATED_ACTION), success: false };
     }
 
     try {
@@ -74,10 +78,8 @@ export class SenderEVMBridge {
 
   async validateUnlockEVMTransaction(txId: number): Promise<{ error: Error | null; success: boolean }> {
     const wallet = this.getWallet();
-    const [dataLock] = await Promise.all([
-      this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.ETH }),
-      this.commonConfigRepository.getCommonConfig(),
-    ]);
+    const dataLock = await this.eventLogRepository.findOneBy({ id: txId, networkReceived: ENetworkName.ETH });
+
     if (!dataLock) {
       this.logger.warn('no data found tx', txId);
       return { error: null, success: false };
@@ -117,7 +119,7 @@ export class SenderEVMBridge {
       },
       value,
     );
-
+    this.logger.info(`params ${JSON.stringify(value)}`);
     return { success: true, signature, payload: { data: value } };
   }
 

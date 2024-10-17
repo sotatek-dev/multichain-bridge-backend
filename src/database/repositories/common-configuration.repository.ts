@@ -10,9 +10,7 @@ export class CommonConfigRepository extends BaseRepository<CommonConfig> {
   protected alias: ETableName = ETableName.COMMON_CONFIGURATION;
 
   public getCommonConfig() {
-    return this.createQueryBuilder(`${this.alias}`)
-      .select([`${this.alias}.id`, `${this.alias}.tip`, `${this.alias}.dailyQuota`, `${this.alias}.asset`])
-      .getOne();
+    return this.createQueryBuilder(`${this.alias}`).select().getOne();
   }
 
   public updateCommonConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {

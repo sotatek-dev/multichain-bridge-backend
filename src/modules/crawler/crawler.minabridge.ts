@@ -143,8 +143,8 @@ export class SCBridgeMinaCrawler {
       fromDecimal: fromTokenDecimal,
       toDecimal: toTokenDecimal,
       inputAmountNoDecimalPlaces: inputAmount,
-      gasFeeWithDecimalPlaces: this.configService.get(EEnvKey.GAS_FEE_EVM)!,
-      tipPercent: +config!.tip,
+      gasFeeWithDecimalPlaces: config.feeUnlockEth,
+      tipPercent: Number(config.tip).valueOf(),
     });
     const eventUnlock: Partial<EventLog> = {
       senderAddress: JSON.parse(JSON.stringify(event.event.data.locker)),

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DataSource } from 'typeorm';
+import assert from 'assert';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { ENetworkName } from '../../constants/blockchain.constant.js';
@@ -9,9 +9,9 @@ import { EError } from '../../constants/error.constant.js';
 import { toPageDto } from '../../core/paginate-typeorm.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
+import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 import { UserRepository } from '../../database/repositories/user.repository.js';
-import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
 import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exeption.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
@@ -26,10 +26,10 @@ export class UsersService {
     private readonly usersRepository: UserRepository,
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
-    private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
     private readonly tokenPriceRepository: TokenPriceRepository,
+    private readonly tokenPairRepostitory: TokenPairRepository,
   ) {}
   private readonly logger = this.loggerService.getLogger('USER_SERVICE');
   async getProfile(userId: number) {
@@ -57,7 +57,8 @@ export class UsersService {
   }
 
   async updateCommonConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {
-    return this.commonConfigRepository.updateCommonConfig(id, updateConfig);
+    await this.commonConfigRepository.updateCommonConfig(id, updateConfig);
+    return updateConfig;
   }
 
   async getDailyQuotaOfUser(address: string) {
@@ -70,29 +71,30 @@ export class UsersService {
   }
 
   async getListTokenPair() {
-    return this.dataSource.getRepository(TokenPair).find();
+    return this.tokenPairRepostitory.find();
   }
 
   async getProtocolFee({ pairId }: GetProtocolFeeBodyDto) {
     let gasFee, decimal;
-    const [tokenPair, configTip] = await Promise.all([
-      this.dataSource.getRepository(TokenPair).findOne({
-        where: { id: pairId },
+    const [tokenPair, config] = await Promise.all([
+      this.tokenPairRepostitory.findOneBy({
+        id: pairId,
       }),
       this.commonConfigRepository.getCommonConfig(),
     ]);
     if (!tokenPair) {
       httpNotFound(EError.RESOURCE_NOT_FOUND);
     }
+    assert(config, 'system common config not found!');
     if (tokenPair!.toChain == ENetworkName.MINA) {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
-      gasFee = addDecimal(this.configService.get(EEnvKey.GASFEEMINA)!, decimal);
+      gasFee = addDecimal(config.feeUnlockMina, decimal);
     } else {
       decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-      gasFee = addDecimal(this.configService.get(EEnvKey.GAS_FEE_EVM)!, decimal);
+      gasFee = addDecimal(config.feeUnlockEth, decimal);
     }
 
-    return { gasFee, tipRate: configTip!.tip, decimal };
+    return { gasFee, tipRate: config.tip, decimal };
   }
   async getTokensPrices(): Promise<GetTokensPriceResponseDto> {
     const result = {
