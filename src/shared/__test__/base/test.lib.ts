@@ -46,9 +46,12 @@ export const initModuleTest = async (
     .mock(LoggerService) // we want to log extra info
     .using({
       getLogger: jest.fn(() => ({
-        error: jest.fn(),
-        info: jest.fn(),
-        warn: jest.fn(),
+        // error: jest.fn(),
+        // info: jest.fn(),
+        // warn: jest.fn(),
+        error: console.log,
+        info: console.log,
+        warn: console.log,
       })),
     })
     .mock(ConfigService) // we want to read env file.
