@@ -6,11 +6,13 @@ import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signatu
 
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
+import { EError } from '../../constants/error.constant.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { canTxRetry } from '../../shared/utils/unlock.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
 import { Manager } from './minaSc/Manager.js';
@@ -63,12 +65,15 @@ export class SenderMinaBridge {
       this.logger.warn(`Not found tx with id ${txId}`);
       return { error: null, success: false };
     }
+    if (!canTxRetry(dataLock.status)) {
+      this.logger.warn(`Tx cannot be retries ${txId}`);
+      return { error: new Error(EError.DUPLICATED_ACTION), success: false };
+    }
     try {
       assert(dataLock?.tip, 'invalid tip');
       assert(dataLock?.gasFee, 'invalid gasFee');
       assert(dataLock?.amountReceived, 'invalida amount to unlock');
 
-      await this.eventLogRepository.updateLockEvenLog(dataLock.id, EEventStatus.PROCESSING);
       const { id, receiveAddress, amountReceived } = dataLock;
       const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
       // Update status eventLog when call function unlock
@@ -96,7 +101,7 @@ export class SenderMinaBridge {
     }
   }
 
-  private async callUnlockFunction(
+  public async callUnlockFunction(
     amount: string,
     txId: number,
     receiveAddress: string,
@@ -143,7 +148,7 @@ export class SenderMinaBridge {
         await zkBridge.unlock(typedAmount, receiverPublicKey, UInt64.from(txId), this.tokenPublicKey, ...signatureData);
       });
 
-      const sentTx = await this.handleSendTxMina(tx);
+      const sentTx = await this.handleSendTxMina(txId, tx);
 
       return { success: true, error: null, data: sentTx.hash };
     } catch (error) {
@@ -202,13 +207,17 @@ export class SenderMinaBridge {
     // notice the job unlock provider here
     return { error: null, success: true };
   }
-  public async handleSendTxMina(tx: Mina.Transaction<false, false>) {
+  public async handleSendTxMina(txId: number, tx: Mina.Transaction<false, false>) {
     this.logger.info('Proving tx.');
     await tx.prove();
 
     this.logger.info('send transaction...');
     await tx.sign([this.feePayerKey, this.bridgeKey]);
 
+    // update the tx status as processing. it won't be retries
+
+    const updateResult = await this.eventLogRepository.updateLockEvenLog(txId, EEventStatus.PROCESSING);
+    this.logger.log('Tx status is updated=', updateResult.affected);
     const sentTx = await tx.send();
 
     this.logger.info('Transaction waiting to be applied with txhash: ', sentTx.hash);

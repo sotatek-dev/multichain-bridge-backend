@@ -1,3 +1,5 @@
+import { EEventStatus } from '../../../constants/blockchain.constant.js';
+import { EError } from '../../../constants/error.constant.js';
 import { EventLogRepository } from '../../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../../database/repositories/multi-signature.repository.js';
 import { initModuleTest } from '../../../shared/__test__/base/test.lib.js';
@@ -29,7 +31,7 @@ describe('MinaSenderService', () => {
     expect(result.success).toBeTruthy();
   });
   // this test required a lot of resource to run.
-  test.skip('should handle unlock tx', async () => {
+  test('should handle unlock tx', async () => {
     // unlock tx need signatures from validators, they are mocked here
     mockMultiSignatureRepository.findBy.mockResolvedValue([
       {
@@ -56,11 +58,29 @@ describe('MinaSenderService', () => {
       amountReceived: '949999050',
       tip: '0.00798591856295',
       gasFee: '0.000001',
+      status: EEventStatus.WAITING,
+    } as any);
+
+    // we just want to check if the assertion is ok, skip building and sending it.
+    jest.spyOn(minaCrawlerService, 'callUnlockFunction').mockResolvedValue({ data: '0x123', success: true } as any);
+    const result = await minaCrawlerService.handleUnlockMina(1);
+    expect(result.success).toBeTruthy();
+  });
+  test('should not retry tx', async () => {
+    // unlock tx need signatures from validators, they are mocked here
+    mockEventLogRepository.findOneBy.mockResolvedValueOnce({
+      id: 1,
+      tokenReceivedAddress: 'B62qjM88vh9bmR24QTRqJBurdJ8pWKbuPMtmTohiDtdmQEAdPzsBrif',
+      tokenFromAddress: '0x0000000000000000000000000000000000000000',
+      receiveAddress: 'B62qjjqzjdv7kGSgWVfNrUwUuyuMjtaJwWKs3DAQjV34MMnJGxSqetH',
+      amountReceived: '949999050',
+      tip: '0.00798591856295',
+      gasFee: '0.000001',
+      status: EEventStatus.PROCESSING,
     } as any);
 
     // we just want to check if the tx build is ok, skip sending it.
-    jest.spyOn(minaCrawlerService, 'handleSendTxMina').mockResolvedValue({ hash: '0x123' } as any);
     const result = await minaCrawlerService.handleUnlockMina(1);
-    expect(result.success).toBeTruthy();
+    expect(result.error?.message).toEqual(EError.DUPLICATED_ACTION);
   });
 });
