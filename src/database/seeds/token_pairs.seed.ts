@@ -1,13 +1,13 @@
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
-import { Seeder, SeederFactoryManager } from 'typeorm-extension';
+import { Seeder } from 'typeorm-extension';
 
 import { EAsset } from '../../constants/api.constant.js';
 import { ENetworkName, ETokenPairStatus } from '../../constants/blockchain.constant.js';
 import { TokenPair } from '../../modules/users/entities/tokenpair.entity.js';
 
 export default class TokenPairsSeeder implements Seeder {
-  public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {
+  public async run(dataSource: DataSource): Promise<any> {
     dotenv.config();
     const repository = dataSource.getRepository(TokenPair);
     const listToken = [
@@ -36,6 +36,7 @@ export default class TokenPairsSeeder implements Seeder {
         toScAddress: process.env.ETH_BRIDGE_CONTRACT_ADDRESS,
       },
     ];
+    await repository.delete({});
     for (const token of listToken) {
       const newToken = new TokenPair({
         fromChain: token.fromChain,
