@@ -14,6 +14,7 @@ import { MultiSignatureRepository } from '../../database/repositories/multi-sign
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
+import { canTxRetry } from '../../shared/utils/unlock.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 
@@ -44,7 +45,9 @@ export class SenderEVMBridge {
     if (!dataLock) {
       this.logger.warn('data not found with tx', txId);
       return { error: new Error(EError.RESOURCE_NOT_FOUND), success: false };
-    } else if (dataLock.status === EEventStatus.PROCESSING) {
+    }
+
+    if (!canTxRetry(dataLock.status)) {
       this.logger.warn('this tx is processed before', txId);
       return { error: new Error(EError.DUPLICATED_ACTION), success: false };
     }

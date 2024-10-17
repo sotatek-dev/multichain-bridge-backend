@@ -1,12 +1,12 @@
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
-import { Seeder, SeederFactoryManager } from 'typeorm-extension';
+import { Seeder } from 'typeorm-extension';
 
 import { ERole } from '../../constants/api.constant.js';
 import { User } from '../../modules/users/entities/user.entity.js';
 
 export default class SuperAdminSeeder implements Seeder {
-  public async run(dataSource: DataSource, factoryManager: SeederFactoryManager): Promise<any> {
+  public async run(dataSource: DataSource): Promise<any> {
     dotenv.config();
     const repository = dataSource.getRepository(User);
     const listAdmin = [
@@ -19,7 +19,7 @@ export default class SuperAdminSeeder implements Seeder {
         name: ERole.MINA_ADMIN,
       },
     ];
-
+    await repository.delete({});
     for (const admin of listAdmin) {
       const newUser = new User({
         walletAddress: admin.walletAddress,
