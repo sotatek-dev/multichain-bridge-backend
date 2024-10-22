@@ -100,14 +100,20 @@ export class UsersService {
     const result = {
       ethPriceInUsd: '0',
       minaPriceInUsd: '0',
+      ethPriceUpdatedAt: new Date(0),
+      minaPriceUpdatedAt: new Date(0),
     };
     const tokenPrices = await this.tokenPriceRepository.createQueryBuilder().distinctOn(['symbol']).take(2).getMany();
+
+    assert(tokenPrices.length >= 2, 'token price data is invalid');
 
     tokenPrices.forEach(e => {
       if (e.symbol === EAsset.ETH) {
         result.ethPriceInUsd = e.priceUsd;
+        result.ethPriceUpdatedAt = e.updatedAt;
       } else if (e.symbol === EAsset.MINA) {
         result.minaPriceInUsd = e.priceUsd;
+        result.minaPriceUpdatedAt = e.updatedAt;
       }
     });
 
