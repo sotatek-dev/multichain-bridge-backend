@@ -26,4 +26,11 @@ describe('test dto', () => {
     expect(errors.find(e => e.property === 'feeUnlockEth')).toBeDefined();
     expect(errors.find(e => e.property === 'feeUnlockMina')).toBeDefined();
   });
+  test('wrong decimal format', async () => {
+    const maxDecimalLimit = {
+      feeUnlockEth: 1e-10,
+    };
+    const { errors } = await validateAndTransform(maxDecimalLimit, UpdateCommonConfigBodyDto);
+    expect(errors.find(e => e.property === 'feeUnlockEth')).toBeDefined();
+  });
 });
