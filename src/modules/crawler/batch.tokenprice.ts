@@ -18,6 +18,13 @@ export class BatchJobGetPriceToken {
     private readonly tokenPriceRepository: TokenPriceRepository,
     private loggerService: LoggerService,
   ) {}
+  private readonly apiKey = this.configService.get(EEnvKey.COINMARKET_KEY);
+  private readonly apiUrl = this.configService.get(EEnvKey.COINMARKET_URL);
+  private readonly headers = {
+    headers: {
+      'X-CMC_PRO_API_KEY': this.apiKey,
+    },
+  };
   private readonly logger = this.loggerService.getLogger('CRAWL_TOKEN_PRICE');
 
   public async handleCrawlInterval() {
@@ -32,13 +39,7 @@ export class BatchJobGetPriceToken {
     }
   }
   public async handleGetPriceToken() {
-    const apiKey = this.configService.get(EEnvKey.COINMARKET_KEY);
-    const apiUrl = this.configService.get(EEnvKey.COINMARKET_URL);
-    const headers = {
-      'X-CMC_PRO_API_KEY': apiKey,
-    };
-
-    const result = await axios.get(apiUrl, { headers });
+    const result = await axios.get(this.apiUrl, this.headers);
 
     const minaNewPrice = String(result.data.data?.[ECoinMarketCapTokenId.MINA]?.quote?.USD.price).valueOf();
     const ethNewPrice = String(result.data.data?.[ECoinMarketCapTokenId.ETH]?.quote?.USD.price).valueOf();
