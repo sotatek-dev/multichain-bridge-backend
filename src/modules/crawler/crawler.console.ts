@@ -33,13 +33,14 @@ export class CrawlerConsole {
   })
   async handleCrawlETHBridge() {
     const safeBlock = +this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS);
-    try {
-      while (true) {
+    while (true) {
+      try {
         await this.blockchainEVMCrawler.handleEventCrawlBlock(safeBlock);
+      } catch (error) {
+        this.logger.error(error);
+      } finally {
         await sleep(15);
       }
-    } catch (error) {
-      this.logger.error(error);
     }
   }
 
@@ -84,6 +85,7 @@ export class CrawlerConsole {
     await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.EVM_SENDER_QUEUE, async (data: IUnlockToken) => {
       const result = await this.senderEVMBridge.handleUnlockEVM(data.eventLogId);
       if (result.error) {
+        // catch in queueService
         throw result.error;
       }
     });
@@ -94,13 +96,14 @@ export class CrawlerConsole {
     description: 'crawl Mina Bridge Contract',
   })
   async handleCrawlMinaBridge() {
-    try {
-      while (true) {
+    while (true) {
+      try {
         await this.scBridgeMinaCrawler.handleEventCrawlBlock();
+      } catch (error) {
+        this.logger.error(error);
+      } finally {
         await sleep(15);
       }
-    } catch (error) {
-      this.logger.error(error);
     }
   }
 
