@@ -205,6 +205,8 @@ export class SenderMinaBridge {
     });
     await this.multiSignatureRepository.save(multiSignature);
     // notice the job unlock provider here
+    this.logger.info('Done for tx ', txId);
+
     return { error: null, success: true };
   }
   public async handleSendTxMina(txId: number, tx: Mina.Transaction<false, false>) {
