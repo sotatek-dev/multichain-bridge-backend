@@ -4,7 +4,7 @@ import assert from 'assert';
 import { BigNumber } from 'bignumber.js';
 
 import { EAsset } from '../../constants/api.constant.js';
-import { ENetworkName } from '../../constants/blockchain.constant.js';
+import { DECIMAL_BASE, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
 import { toPageDto } from '../../core/paginate-typeorm.js';
@@ -123,8 +123,12 @@ export class UsersService {
   async getProofOfAssets(): Promise<GetProofOfAssetsResponseDto> {
     const config = await this.commonConfigRepository.findOneBy({});
     assert(config, 'invalid config, please seed the value');
+    const totalWethInCirculation = new BigNumber(config.totalWethMinted)
+      .minus(config.totalWethBurnt)
+      .div(BigNumber(DECIMAL_BASE).pow(+this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)))
+      .toString();
     return {
-      totalWethInCirculation: new BigNumber(config.totalWethMinted).minus(config.totalWethBurnt).toString(),
+      totalWethInCirculation,
     };
   }
 }
