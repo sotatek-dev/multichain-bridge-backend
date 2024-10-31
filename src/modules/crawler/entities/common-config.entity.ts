@@ -40,6 +40,12 @@ export class CommonConfig extends BaseEntityIncludeTime {
   @Column({ name: 'asset', type: 'varchar', nullable: true })
   asset: string;
 
+  @Column({ name: 'total_weth_minted', type: 'varchar', default: '0' })
+  totalWethMinted: string;
+
+  @Column({ name: 'total_weth_burnt', type: 'varchar', default: '0' })
+  totalWethBurnt: string;
+
   constructor(value: Partial<CommonConfig>) {
     super();
     Object.assign(this, value);

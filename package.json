@@ -25,7 +25,7 @@
     "migration:run": "npm run typeorm -- -d dist/database/data-source.js migration:run",
     "migration:run-dist": "npm run typeorm -- -d dist/database/data-source.js migration:run",
     "migration:run:js": "node ./node_modules/typeorm/cli.js -d dist/database/data-source.js migration:run",
-    "migration:revert": "npm run typeorm -- -d src/database/data-source.ts migration:revert",
+    "migration:revert": "node ./node_modules/typeorm/cli.js -d dist/database/data-source.js migration:revert",
     "seed:run": "node ./node_modules/typeorm-extension/bin/cli.cjs seed:run -d dist/database/data-source.js",
     "console:dev": "node --loader ts-node/esm src/console.ts",
     "console": "node dist/console.js"

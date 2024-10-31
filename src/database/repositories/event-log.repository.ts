@@ -187,4 +187,15 @@ export class EventLogRepository extends BaseRepository<EventLog> {
 
     return qb.getOne();
   }
+
+  async getTotalTokenSupply() {
+    const qb = this.createQb();
+
+    qb.select(['sum(CAST(amount_from as INT8))', 'sum(CAST(amount_received as INT8))', 'network_received']);
+
+    qb.where('status = :status', { status: EEventStatus.COMPLETED });
+    qb.groupBy('network_received');
+
+    return qb.execute();
+  }
 }

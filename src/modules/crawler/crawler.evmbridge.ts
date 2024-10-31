@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
+import { BigNumber } from 'bignumber.js';
 import { Logger } from 'log4js';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
@@ -51,7 +52,7 @@ export class BlockchainEVMCrawler {
               await this.handlerLockEvent(event, eventLogRepo, configRepo);
               break;
             case 'Unlock':
-              await this.handlerUnLockEvent(event, eventLogRepo);
+              await this.handlerUnLockEvent(event, eventLogRepo, configRepo);
               break;
             default:
               continue;
@@ -129,7 +130,11 @@ export class BlockchainEVMCrawler {
     return { success: true };
   }
 
-  public async handlerUnLockEvent(event: EventData, eventLogRepo: Repository<EventLog>): Promise<{ success: boolean }> {
+  public async handlerUnLockEvent(
+    event: EventData,
+    eventLogRepo: Repository<EventLog>,
+    configRepo: Repository<CommonConfig>,
+  ): Promise<{ success: boolean }> {
     const existLockTx = await eventLogRepo.findOneBy({
       txHashLock: event.returnValues.hash,
     });
@@ -145,7 +150,11 @@ export class BlockchainEVMCrawler {
       tokenReceivedAddress: event.returnValues.token,
       tokenReceivedName: EAsset.ETH,
     });
-
+    // update total weth burned.
+    const currentConfig = await configRepo.findOneBy({});
+    assert(currentConfig, 'comomn config not exist');
+    const newTotalEthBurnt = new BigNumber(currentConfig.totalWethBurnt).plus(existLockTx.amountFrom).toString();
+    await configRepo.update(currentConfig.id, { totalWethBurnt: newTotalEthBurnt });
     return {
       success: true,
     };

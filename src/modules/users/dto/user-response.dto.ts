@@ -65,3 +65,7 @@ export class GetTokensPriceResponseDto {
   @ApiProperty({ example: '1.23s' })
   minaPriceInUsd: string;
 }
+export class GetProofOfAssetsResponseDto {
+  @ApiProperty({ example: '2345' })
+  totalWethInCirculation: string;
+}
