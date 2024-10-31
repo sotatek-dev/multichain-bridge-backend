@@ -12,6 +12,7 @@ import { IGenerateSignature, IUnlockToken } from './interfaces/job.interface.js'
 import { JobUnlockProvider } from './job-unlock.provider.js';
 import { SenderEVMBridge } from './sender.evmbridge.js';
 import { SenderMinaBridge } from './sender.minabridge.js';
+import { POASync } from './services/token-poa-sync.service.js';
 
 @Console()
 export class CrawlerConsole {
@@ -24,6 +25,7 @@ export class CrawlerConsole {
     private readonly loggerService: LoggerService,
     private readonly queueService: QueueService,
     private readonly unlockProviderService: JobUnlockProvider,
+    private readonly poaSyncer: POASync,
   ) {}
   private readonly logger = this.loggerService.getLogger('CRAWLER_CONSOLE');
 
@@ -124,5 +126,14 @@ export class CrawlerConsole {
   async handleUnlockJobProvider() {
     this.logger.info('JOB_UNLOCK_PROVIDER: started');
     await this.unlockProviderService.handleJob();
+  }
+
+  @Command({
+    command: 'sync-token-proof-of-assets',
+    description: 'handle all network unlock.',
+  })
+  async handleSyncPOA() {
+    this.logger.info('SYNC_POA: started');
+    await this.poaSyncer.handleSyncPOA();
   }
 }

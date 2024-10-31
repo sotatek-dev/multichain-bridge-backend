@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
+import { BigNumber } from 'bignumber.js';
 import dayjs from 'dayjs';
 import { Logger } from 'log4js';
 import { fetchLastBlock, Field, Mina, PublicKey, UInt32 } from 'o1js';
@@ -69,11 +70,10 @@ export class SCBridgeMinaCrawler {
         this.logger.info(`[handleCrawlMinaBridge] Crawling from  ${startBlockNumber} to ${toBlock}`);
         const configRepo = entityManager.getRepository(CommonConfig);
         const eventLogRepo = entityManager.getRepository(EventLog);
-
         for (const event of events) {
           switch (event.type) {
             case 'Unlock':
-              await this.handlerUnLockEvent(event, eventLogRepo);
+              await this.handlerUnLockEvent(event, eventLogRepo, configRepo);
               break;
             case 'Lock':
               await this.handlerLockEvent(event, eventLogRepo, configRepo);
@@ -91,7 +91,11 @@ export class SCBridgeMinaCrawler {
     }
   }
 
-  public async handlerUnLockEvent(event: IMinaEvent, eventLogRepo: Repository<EventLog>) {
+  public async handlerUnLockEvent(
+    event: IMinaEvent,
+    eventLogRepo: Repository<EventLog>,
+    configRepo: Repository<CommonConfig>,
+  ) {
     const { id, tokenAddress } = event.event.data as IMinaLockTokenEventData;
     const existLockTx = await eventLogRepo.findOneBy({
       id: Number(id.toString()),
@@ -108,6 +112,11 @@ export class SCBridgeMinaCrawler {
       tokenReceivedName: EAsset.WETH,
     });
 
+    // update total weth minted
+    const currentConfig = await configRepo.findOneBy({});
+    assert(currentConfig, 'comomn config not exist');
+    const newTotalEthMinted = new BigNumber(currentConfig.totalWethMinted).plus(existLockTx.amountReceived).toString();
+    await configRepo.update(currentConfig.id, { totalWethMinted: newTotalEthMinted });
     return {
       success: true,
     };

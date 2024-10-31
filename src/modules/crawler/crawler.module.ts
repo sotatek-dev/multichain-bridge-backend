@@ -14,6 +14,7 @@ import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
 import { JobUnlockProvider } from './job-unlock.provider.js';
 import { SenderEVMBridge } from './sender.evmbridge.js';
 import { SenderMinaBridge } from './sender.minabridge.js';
+import { POASync } from './services/token-poa-sync.service.js';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SenderMinaBridge } from './sender.minabridge.js';
     SenderMinaBridge,
     BatchJobGetPriceToken,
     JobUnlockProvider,
+    POASync,
   ],
 })
 export class CrawlerModule {}

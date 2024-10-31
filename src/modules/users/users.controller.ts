@@ -7,6 +7,7 @@ import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
 import {
   GetListTokenPairResponseDto,
+  GetProofOfAssetsResponseDto,
   GetProtocolFeeResponseDto,
   GetTokensPriceResponseDto,
 } from './dto/user-response.dto.js';
@@ -49,5 +50,12 @@ export class UsersController {
   @ApiOkResponse({ type: GetTokensPriceResponseDto })
   getTokensPrices() {
     return this.userService.getTokensPrices();
+  }
+
+  @Get('proof-of-assets')
+  @GuardPublic()
+  @ApiOkResponse({ type: GetProofOfAssetsResponseDto })
+  getProofOfAssets() {
+    return this.userService.getProofOfAssets();
   }
 }
