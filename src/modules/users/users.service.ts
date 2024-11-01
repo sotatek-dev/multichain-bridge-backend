@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
+import { BigNumber } from 'bignumber.js';
 
 import { EAsset } from '../../constants/api.constant.js';
-import { ENetworkName } from '../../constants/blockchain.constant.js';
+import { DECIMAL_BASE, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
 import { toPageDto } from '../../core/paginate-typeorm.js';
@@ -18,7 +19,7 @@ import { addDecimal } from '../../shared/utils/bignumber.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetHistoryDto, GetHistoryOfUserDto } from './dto/history-response.dto.js';
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
-import { GetTokensPriceResponseDto } from './dto/user-response.dto.js';
+import { GetProofOfAssetsResponseDto, GetTokensPriceResponseDto } from './dto/user-response.dto.js';
 
 @Injectable()
 export class UsersService {
@@ -118,5 +119,16 @@ export class UsersService {
     });
 
     return result;
+  }
+  async getProofOfAssets(): Promise<GetProofOfAssetsResponseDto> {
+    const config = await this.commonConfigRepository.findOneBy({});
+    assert(config, 'invalid config, please seed the value');
+    const totalWethInCirculation = new BigNumber(config.totalWethMinted)
+      .minus(config.totalWethBurnt)
+      .div(BigNumber(DECIMAL_BASE).pow(+this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)))
+      .toString();
+    return {
+      totalWethInCirculation,
+    };
   }
 }

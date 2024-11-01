@@ -1,4 +1,3 @@
-import { IJobUnlockPayload } from 'modules/crawler/interfaces/job.interface.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
 import { Brackets } from 'typeorm';
 
@@ -8,6 +7,7 @@ import { ETableName } from '../../constants/entity.constant.js';
 import { MAX_RETRIES } from '../../constants/service.constant.js';
 import { BaseRepository } from '../../core/base-repository.js';
 import { EventLog } from '../../modules/crawler/entities/event-logs.entity.js';
+import { IJobUnlockPayload } from '../../modules/crawler/interfaces/job.interface.js';
 import { GetHistoryDto, GetHistoryOfUserDto } from '../../modules/users/dto/history-response.dto.js';
 import { endOfDayUnix, nowUnix, startOfDayUnix } from '../../shared/utils/time.js';
 
@@ -186,5 +186,21 @@ export class EventLogRepository extends BaseRepository<EventLog> {
       .addOrderBy(`${this.alias}.retry`, EDirection.ASC);
 
     return qb.getOne();
+  }
+
+  async getTotalAmoutFromNetworkReceived(
+    networkReceived: ENetworkName,
+  ): Promise<{ amountFromTotal: string; amountReceivedTotal: string }> {
+    const qb = this.createQb();
+
+    qb.select([
+      'sum(CAST(amount_from as INT8)) as "amountFromTotal"',
+      'sum(CAST(amount_received as INT8)) as "amountReceivedTotal"',
+    ]);
+
+    qb.where('status = :status', { status: EEventStatus.COMPLETED });
+    qb.andWhere('network_received = :networkReceived', { networkReceived });
+
+    return qb.getRawOne() as any;
   }
 }
