@@ -96,8 +96,15 @@ describe('BlockchainEVMCraler', () => {
       };
 
       const eventLogRepo = getMockedRepo<EventLog>();
+      const configRepo = getMockedRepo<CommonConfig>();
+      configRepo.findOneBy.mockResolvedValue({
+        id: 1,
+        asset: 'ETH',
+        totalWethBurnt: '123',
+        totalWethMinted: '123',
+      } as CommonConfig);
       jest.spyOn(eventLogRepo, 'findOneBy').mockResolvedValue(mockExistingLockTx as EventLog);
-      const result = await crawler.handlerUnLockEvent(unlockObject, eventLogRepo);
+      const result = await crawler.handlerUnLockEvent(unlockObject, eventLogRepo, configRepo);
 
       expect(eventLogRepo.update).toHaveBeenCalledWith(
         mockExistingLockTx.id,

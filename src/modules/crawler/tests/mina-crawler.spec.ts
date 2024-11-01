@@ -81,11 +81,16 @@ it('should update pending unlock tx', async () => {
     status: EEventStatus.WAITING,
   };
   const eventLogRepo = getMockedRepo<EventLog>();
-
+  const configRepo = getMockedRepo<CommonConfig>();
   eventLogRepo.findOneBy.mockResolvedValue(mockExistingLockTx as EventLog);
-
+  configRepo.findOneBy.mockResolvedValue({
+    id: 1,
+    asset: 'ETH',
+    totalWethBurnt: '123',
+    totalWethMinted: '123',
+  } as CommonConfig);
   // expect mockExistingLockTx status updated to COMPLETED.
-  const result = await minaCrawlerService.handlerUnLockEvent(transformedUnlockObject, eventLogRepo);
+  const result = await minaCrawlerService.handlerUnLockEvent(transformedUnlockObject, eventLogRepo, configRepo);
   expect(result!.success).toBe(true);
 });
 
