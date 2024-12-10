@@ -116,6 +116,10 @@ export class SCBridgeMinaCrawler {
     const currentConfig = await configRepo.findOneBy({});
     assert(currentConfig, 'comomn config not exist');
     const newTotalEthMinted = new BigNumber(currentConfig.totalWethMinted).plus(existLockTx.amountReceived).toString();
+
+    this.logger.info(`Current total minted ${currentConfig.totalWethMinted}`);
+    this.logger.info(`New total minted ${newTotalEthMinted}`);
+
     await configRepo.update(currentConfig.id, { totalWethMinted: newTotalEthMinted });
     return {
       success: true,
