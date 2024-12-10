@@ -88,7 +88,9 @@ export class JobUnlockProvider {
   // helpers
   private updateIntervalStatusForTxs(ids: number[], isSignatureFullFilled: boolean) {
     const payload: QueryDeepPartialEntity<EventLog> = {};
-    const nextTime = getTimeInFutureInMinutes(60 * 5).toString();
+    const nextTime = getTimeInFutureInMinutes(
+      this.configService.get<number>(EEnvKey.JOB_PROVIDER_BACKOFF_IN_MINUTES)!,
+    ).toString();
     const query: FindOptionsWhere<EventLog> = {};
     if (isSignatureFullFilled) {
       payload.nextSendTxJobTime = nextTime;

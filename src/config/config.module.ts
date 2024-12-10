@@ -63,6 +63,7 @@ const getEnvFile = () => {
         [EEnvKey.MINA_VALIDATOR_THRESHHOLD]: Joi.number().required(),
         // fee
         [EEnvKey.BASE_MINA_BRIDGE_FEE]: Joi.number().default(1 * Math.pow(10, 8)),
+        [EEnvKey.JOB_PROVIDER_BACKOFF_IN_MINUTES]: Joi.number().default(1 * 60), // default 1 hours
       }).custom(value => {
         value[EEnvKey.ETH_BRIDGE_START_BLOCK] = isNumber(value[EEnvKey.ETH_BRIDGE_START_BLOCK])
           ? value[EEnvKey.ETH_BRIDGE_START_BLOCK]
