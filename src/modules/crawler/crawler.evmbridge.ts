@@ -154,6 +154,10 @@ export class BlockchainEVMCrawler {
     const currentConfig = await configRepo.findOneBy({});
     assert(currentConfig, 'comomn config not exist');
     const newTotalEthBurnt = new BigNumber(currentConfig.totalWethBurnt).plus(existLockTx.amountFrom).toString();
+
+    this.logger.info(`Current total burnt ${currentConfig.totalWethBurnt}`);
+    this.logger.info(`New total burnt ${newTotalEthBurnt}`);
+
     await configRepo.update(currentConfig.id, { totalWethBurnt: newTotalEthBurnt });
     return {
       success: true,
