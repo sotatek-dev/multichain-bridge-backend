@@ -21,9 +21,6 @@ import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interface
 
 @Injectable()
 export class JobUnlockProvider {
-  private readonly signatureJobBackOff = 5 * 1000;
-  private readonly sendTxJobBackOff = 60 * 1000;
-  private readonly jobRemoveDueDate = 30 * 24 * 60 * 60; // 30 days in seconds
   constructor(
     private readonly queueService: QueueService,
     private readonly configService: ConfigService,
@@ -37,8 +34,8 @@ export class JobUnlockProvider {
   public async handleJob() {
     await Promise.all([
       this.getPendingTx(true),
-      this.getPendingTx(false),
-      this.tokenPriceCrawler.handleCrawlInterval(),
+      // this.getPendingTx(false),
+      // this.tokenPriceCrawler.handleCrawlInterval(),
     ]);
   }
 
@@ -144,11 +141,9 @@ export class JobUnlockProvider {
           eventLogId: data.eventLogId,
         },
         {
-          attempts: 5,
-          removeOnComplete: {
-            age: this.jobRemoveDueDate,
-          },
-          backoff: this.signatureJobBackOff,
+          jobId: `signature-validate-${data.eventLogId}`,
+          removeOnComplete: true,
+          removeOnFail: true,
         },
       );
     }
@@ -168,11 +163,9 @@ export class JobUnlockProvider {
         eventLogId: data.eventLogId,
       },
       {
-        attempts: 5,
-        removeOnComplete: {
-          age: this.jobRemoveDueDate,
-        },
-        backoff: this.sendTxJobBackOff,
+        jobId: `send-unlock-${data.eventLogId}`,
+        removeOnComplete: true,
+        removeOnFail: true,
       },
     );
   }

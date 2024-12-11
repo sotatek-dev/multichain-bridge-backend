@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Bull, { DoneCallback, Job, JobOptions, Queue } from 'bull';
+import { DoneCallback, Job, JobOptions, Queue } from 'bull';
 
 import { EEnvKey } from '../../../constants/env.constant.js';
 import { BullLib } from '../../../shared/utils/queue.js';
@@ -39,29 +39,7 @@ export class QueueService {
       }
     });
   }
-  public async addJobToQueue<T>(queueName: string, job: T, options: JobOptions = { attempts: 3, backoff: 5000 }) {
-    const queue = this.initQueueOnDemand(queueName);
-    if (!!options.jobId) {
-      const canContinue = await this.removeExistedJobIfFailed(options.jobId, queue);
-      if (!canContinue) {
-        this.logger.warn('this job is existed in queue and not in failed status');
-        return false;
-      }
-    }
-    await queue.add(job, options);
-    return true;
-  }
-  public async removeExistedJobIfFailed(jobId: Bull.JobId, queue: Queue): Promise<boolean> {
-    try {
-      const existedJob = await queue.getJob(jobId);
-      if (existedJob) {
-        await existedJob.remove();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      this.logger.error(error);
-      return false;
-    }
+  public async addJobToQueue<T>(queueName: string, job: T, options: JobOptions) {
+    return this.initQueueOnDemand(queueName).add(job, options);
   }
 }
