@@ -34,8 +34,8 @@ export class JobUnlockProvider {
   public async handleJob() {
     await Promise.all([
       this.getPendingTx(true),
-      // this.getPendingTx(false),
-      // this.tokenPriceCrawler.handleCrawlInterval(),
+      this.getPendingTx(false),
+      this.tokenPriceCrawler.handleCrawlInterval(),
     ]);
   }
 
