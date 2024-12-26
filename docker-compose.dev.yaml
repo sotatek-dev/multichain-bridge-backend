@@ -52,12 +52,42 @@ services:
     networks:
       - myNetwork
     user: node
-  sender-mina:
+  sender-mina-1:
     image: mina-bridge:1.0.0
     command: >
       sh -c "npm run console sender-mina-bridge-unlock"
     tty: true
     restart: always
+    environment:
+      SIGNER_MINA_PRIVATE_KEY : ${SIGNER_MINA_PRIVATE_KEY_1}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - myNetwork
+    user: node
+  sender-mina-2:
+    image: mina-bridge:1.0.0
+    command: >
+      sh -c "npm run console sender-mina-bridge-unlock"
+    tty: true
+    restart: always
+    environment:
+      SIGNER_MINA_PRIVATE_KEY : ${SIGNER_MINA_PRIVATE_KEY_2}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - myNetwork
+    user: node
+  sender-mina-3:
+    image: mina-bridge:1.0.0
+    command: >
+      sh -c "npm run console sender-mina-bridge-unlock"
+    tty: true
+    restart: always
+    environment:
+      SIGNER_MINA_PRIVATE_KEY : ${SIGNER_MINA_PRIVATE_KEY_3}
     depends_on:
       - postgres
       - redis
