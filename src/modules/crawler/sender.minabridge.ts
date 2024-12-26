@@ -41,12 +41,13 @@ export class SenderMinaBridge {
       archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
     });
     Mina.setActiveInstance(network);
+    this.getContractsInfo();
   }
   private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   private getContractsInfo() {
-    this.logger.log('Bridge', this.bridgeKey.toPublicKey().toBase58());
-    this.logger.log('FeePayer', this.feePayerKey.toPublicKey().toBase58());
-    this.logger.log('Token', this.tokenPublicKey.toBase58());
+    this.logger.log('Bridge: ' + this.bridgeKey.toPublicKey().toBase58());
+    this.logger.log('FeePayer: ' + this.feePayerKey.toPublicKey().toBase58());
+    this.logger.log('Token: ' + this.tokenPublicKey.toBase58());
   }
   private async compileContract() {
     if (!this.isContractCompiled) {
@@ -107,7 +108,7 @@ export class SenderMinaBridge {
     receiveAddress: string,
   ): Promise<{ success: boolean; error: Error | null; data: string | null }> {
     try {
-      this.logger.info(`Bridge: ${this.bridgeKey.toPublicKey().toBase58()}\nToken: ${this.tokenPublicKey.toBase58}`);
+      this.logger.info(`Bridge: ${this.bridgeKey.toPublicKey().toBase58()}\nToken: ${this.tokenPublicKey.toBase58()}`);
       const generatedSignatures = await this.multiSignatureRepository.findBy({
         txId,
       });
