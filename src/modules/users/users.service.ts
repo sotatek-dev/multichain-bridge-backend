@@ -135,8 +135,8 @@ export class UsersService {
   }
   calcWaitingTime(receivedNetwork: ENetworkName, currentPendingTx: number): number {
     const receivedNetworkEstWaiting = {
-      [ENetworkName.MINA]: 10 * 60 * currentPendingTx,
-      [ENetworkName.ETH]: 10 * currentPendingTx,
+      [ENetworkName.MINA]: 10 * 60 * (1 + currentPendingTx),
+      [ENetworkName.ETH]: 10 * (1 + currentPendingTx),
     };
     // total waiting tx * time_process_each + crawler delays from both lock and unlock
     return receivedNetworkEstWaiting[receivedNetwork] + 60 + 60 * 15;
