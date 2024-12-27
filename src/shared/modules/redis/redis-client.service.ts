@@ -36,7 +36,7 @@ export class RedisClientService implements OnModuleInit, OnModuleDestroy {
     const res = await this.client.get(`waiting_tx_${network}`);
     return Number(res).valueOf();
   }
-  public async initCountWaitingTx(network: ENetworkName, initValue: number) {
+  public async setCountWaitingTx(network: ENetworkName, initValue: number) {
     return this.client.set(`waiting_tx_${network}`, initValue);
   }
   public async incrCountWaitingTx(network: ENetworkName): Promise<number> {
