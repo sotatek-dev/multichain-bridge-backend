@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+import { ENetworkName } from '../../../constants/blockchain.constant.js';
+
 export class GetProfileResponseDto {
   @ApiProperty()
   id: number;
@@ -68,4 +70,12 @@ export class GetTokensPriceResponseDto {
 export class GetProofOfAssetsResponseDto {
   @ApiProperty({ example: '2345' })
   totalWethInCirculation: string;
+}
+
+export class EstimateBridgeResponseDto {
+  @ApiProperty()
+  receivedNetwork: ENetworkName;
+
+  @ApiProperty({ description: 'time to wait in seconds' })
+  completeTimeEstimated: number;
 }

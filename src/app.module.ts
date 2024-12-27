@@ -13,6 +13,7 @@ import { CustomAuthorizationHeaderMiddleware } from './shared/middleware/custom-
 import { LoggerHttpRequestMiddleware } from './shared/middleware/logger-http-request.middleware.js';
 import { LoggingModule } from './shared/modules/logger/logger.module.js';
 import { QueueModule } from './shared/modules/queue/queue.module.js';
+import { RedisModule } from './shared/modules/redis/redis.module.js';
 import { Web3Module } from './shared/modules/web3/web3.module.js';
 import { isDevelopmentEnvironment } from './shared/utils/util.js';
 
@@ -21,6 +22,7 @@ const modules = [
   DatabaseModule,
   ScheduleModule.forRoot(),
   LoggingModule,
+  RedisModule,
   GuardModule,
   Web3Module,
   QueueModule,
