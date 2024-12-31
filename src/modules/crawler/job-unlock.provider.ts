@@ -35,9 +35,9 @@ export class JobUnlockProvider {
 
   public async handleJob() {
     await Promise.all([
-      this.getPendingTx(true),
-      this.getPendingTx(false),
-      this.tokenPriceCrawler.handleCrawlInterval(),
+      // this.getPendingTx(true),
+      // this.getPendingTx(false),
+      // this.tokenPriceCrawler.handleCrawlInterval(),
       this.updateTotalPendingTxCount(),
     ]);
   }
@@ -86,17 +86,18 @@ export class JobUnlockProvider {
     }
   }
   private async updateTotalPendingTxCount() {
+    const ttl = 60;
     while (true) {
       try {
         const counts = await this.eventLogRepository.getNumOfPendingTx();
         this.logger.info(`SET_PENDING_TX_COUNT: ${JSON.stringify(counts)}`);
         for (const { network, count } of counts) {
-          await this.redisClient.setCountWaitingTx(network, Number(count).valueOf());
+          await this.redisClient.setCountWaitingTx(network, Number(count).valueOf(), ttl);
         }
       } catch (error) {
         this.logger.warn('SET_PENDING_TX_COUNT', error);
       } finally {
-        await sleep(60);
+        await sleep(ttl);
       }
     }
   }
