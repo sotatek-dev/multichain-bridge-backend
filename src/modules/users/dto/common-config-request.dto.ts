@@ -6,7 +6,7 @@ export class UpdateCommonConfigBodyDto {
     example: 50,
     required: false,
   })
-  tip: number;
+  bridgeFee: number;
 
   @NumberField({
     example: 500,
@@ -21,7 +21,7 @@ export class UpdateCommonConfigBodyDto {
     },
     required: false,
   })
-  feeUnlockMina: string;
+  mintingFee: string;
 
   @StringField({
     example: 500,
@@ -30,5 +30,5 @@ export class UpdateCommonConfigBodyDto {
     },
     required: false,
   })
-  feeUnlockEth: string;
+  unlockingFee: string;
 }

@@ -4,7 +4,7 @@ import assert from 'assert';
 import { BigNumber } from 'bignumber.js';
 
 import { EAsset } from '../../constants/api.constant.js';
-import { DECIMAL_BASE, ENetworkName } from '../../constants/blockchain.constant.js';
+import { DECIMAL_BASE, ENetworkName, ETokenPairStatus } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
 import { toPageDto } from '../../core/paginate-typeorm.js';
@@ -52,11 +52,7 @@ export class UsersService {
     return toPageDto(data, options, count);
   }
 
-  async getCommonConfig() {
-    return this.commonConfigRepository.getCommonConfig();
-  }
-
-  async updateCommonConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {
+  async updateTokenConfig(id: number, updateConfig: UpdateCommonConfigBodyDto) {
     await this.commonConfigRepository.updateCommonConfig(id, updateConfig);
     return updateConfig;
   }
@@ -71,7 +67,11 @@ export class UsersService {
   }
 
   async getListTokenPair() {
-    return this.commonConfigRepository.find();
+    return this.commonConfigRepository.find({
+      where: {
+        status: ETokenPairStatus.ENABLE,
+      },
+    });
   }
 
   async getProtocolFee(dto: GetProtocolFeeBodyDto) {
