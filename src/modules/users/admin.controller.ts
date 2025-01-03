@@ -27,19 +27,19 @@ export class AdminController {
     return this.userService.getHistories(query);
   }
 
-  @Get('common-config')
+  @Get('tokens')
   @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse({ type: GetCommonConfigResponseDto })
   getCommonConfig() {
-    return this.userService.getCommonConfig();
+    return this.adminService.getListToken();
   }
 
-  @Put('update-common-config/:id')
+  @Put('token/:id')
   @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
   updateCommonConfig(@Param('id') id: number, @Body() updateConfig: UpdateCommonConfigBodyDto) {
-    return this.userService.updateCommonConfig(id, updateConfig);
+    return this.userService.updateTokenConfig(id, updateConfig);
   }
   @Post('new-token')
   @GuardPublic()

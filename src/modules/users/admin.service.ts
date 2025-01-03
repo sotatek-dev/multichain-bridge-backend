@@ -4,6 +4,7 @@ import { DataSource, EntityManager } from 'typeorm';
 
 import { ENetworkName, ETokenPairStatus } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { CommonConfig } from '../crawler/entities/common-config.entity.js';
 import { CreateTokenReqDto } from './dto/admin-request.dto.js';
 
@@ -12,6 +13,7 @@ export class AdminService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly commonConfigRepo: CommonConfigRepository,
   ) {}
   createNewToken(payload: CreateTokenReqDto) {
     // get erc20 metadata: decimal...
@@ -34,5 +36,8 @@ export class AdminService {
       newCommonConfig.status = ETokenPairStatus.CREATED;
       return newCommonConfig.save();
     });
+  }
+  getListToken() {
+    return this.commonConfigRepo.find();
   }
 }
