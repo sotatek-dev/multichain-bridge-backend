@@ -1,3 +1,5 @@
+import { ENetworkName } from 'constants/blockchain.constant.js';
+import { EEnvKey } from 'constants/env.constant.js';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { Seeder } from 'typeorm-extension';
@@ -12,11 +14,19 @@ export default class CommonConfigSeeder implements Seeder {
     await repository.delete({});
     await repository.insert(
       new CommonConfig({
-        tip: COMMOM_CONFIG_TIP,
+        bridgeFee: COMMOM_CONFIG_TIP,
         dailyQuota: COMMON__CONFIG_DAILY_QUOTA,
-        feeUnlockEth: '0.0001',
-        feeUnlockMina: '0.00001',
+        unlockingFee: '0.0001',
+        mintingFee: '0.00001',
         asset: EAsset.ETH,
+        fromAddress: '0x0000000000000000000000000000000000000000',
+        toAddress: process.env[EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS],
+        fromDecimal: 18,
+        toDecimal: 9,
+        fromSymbol: 'ETH',
+        toSymbol: 'WETH',
+        fromChain: ENetworkName.ETH,
+        toChain: ENetworkName.MINA,
       }),
     );
   }

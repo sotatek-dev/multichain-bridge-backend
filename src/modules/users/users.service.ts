@@ -10,13 +10,11 @@ import { EError } from '../../constants/error.constant.js';
 import { toPageDto } from '../../core/paginate-typeorm.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
-import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 import { UserRepository } from '../../database/repositories/user.repository.js';
-import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exeption.js';
+import { httpBadRequest } from '../../shared/exceptions/http-exeption.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
-import { addDecimal } from '../../shared/utils/bignumber.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetHistoryDto, GetHistoryOfUserDto } from './dto/history-response.dto.js';
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
@@ -31,7 +29,6 @@ export class UsersService {
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
     private readonly tokenPriceRepository: TokenPriceRepository,
-    private readonly tokenPairRepostitory: TokenPairRepository,
     private readonly redisClientService: RedisClientService,
   ) {}
   private readonly logger = this.loggerService.getLogger('USER_SERVICE');
@@ -74,30 +71,31 @@ export class UsersService {
   }
 
   async getListTokenPair() {
-    return this.tokenPairRepostitory.find();
+    return this.commonConfigRepository.find();
   }
 
-  async getProtocolFee({ pairId }: GetProtocolFeeBodyDto) {
-    let gasFee, decimal;
-    const [tokenPair, config] = await Promise.all([
-      this.tokenPairRepostitory.findOneBy({
-        id: pairId,
-      }),
-      this.commonConfigRepository.getCommonConfig(),
-    ]);
-    if (!tokenPair) {
-      httpNotFound(EError.RESOURCE_NOT_FOUND);
-    }
-    assert(config, 'system common config not found!');
-    if (tokenPair!.toChain == ENetworkName.MINA) {
-      decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
-      gasFee = addDecimal(config.feeUnlockMina, decimal);
-    } else {
-      decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-      gasFee = addDecimal(config.feeUnlockEth, decimal);
-    }
+  async getProtocolFee(dto: GetProtocolFeeBodyDto) {
+    // let gasFee, decimal;
+    // const [tokenPair, config] = await Promise.all([
+    //   this.commonConfigRepository.findOneBy({
+    //     id: pairId,
+    //   }),
+    //   this.commonConfigRepository.getCommonConfig(),
+    // ]);
+    // if (!tokenPair) {
+    //   httpNotFound(EError.RESOURCE_NOT_FOUND);
+    // }
+    // assert(config, 'system common config not found!');
+    // if (tokenPair!.toChain == ENetworkName.MINA) {
+    //   decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
+    //   gasFee = addDecimal(config.mintingFee, decimal);
+    // } else {
+    //   decimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
+    //   gasFee = addDecimal(config.unlockingFee, decimal);
+    // }
 
-    return { gasFee, tipRate: config.tip, decimal };
+    // return { gasFee, tipRate: config.tip, decimal };
+    return 'use fees returned from pair detail';
   }
   async getTokensPrices(): Promise<GetTokensPriceResponseDto> {
     const result = {
@@ -133,9 +131,9 @@ export class UsersService {
       totalWethInCirculation,
     };
   }
-  calcWaitingTime(receivedNetwork: ENetworkName, currentPendingTx: number): number {
+  private calcWaitingTime(receivedNetwork: ENetworkName, currentPendingTx: number): number {
     const receivedNetworkEstWaiting = {
-      [ENetworkName.MINA]: 10 * 60 * (1 + currentPendingTx),
+      [ENetworkName.MINA]: 10 * 60 * (1 + +currentPendingTx),
       [ENetworkName.ETH]: 10 * (1 + currentPendingTx),
     };
     // total waiting tx * time_process_each + crawler delays from both lock and unlock

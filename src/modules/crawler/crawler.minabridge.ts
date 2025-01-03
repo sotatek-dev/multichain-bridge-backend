@@ -142,9 +142,9 @@ export class SCBridgeMinaCrawler {
     }
     const fromTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
       toTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-    const config = await configRepo.findOneBy({});
+    const config = await configRepo.findOneBy({ fromAddress: event.event.data.tokenAddress.toBase58() });
 
-    assert(!!config?.tip, 'tip config undefined');
+    assert(!!config?.bridgeFee, 'tip config undefined');
 
     const {
       tipWithDecimalPlaces,
@@ -156,8 +156,8 @@ export class SCBridgeMinaCrawler {
       fromDecimal: fromTokenDecimal,
       toDecimal: toTokenDecimal,
       inputAmountNoDecimalPlaces: inputAmount,
-      gasFeeWithDecimalPlaces: config.feeUnlockEth,
-      tipPercent: Number(config.tip).valueOf(),
+      gasFeeWithDecimalPlaces: config.unlockingFee,
+      tipPercent: Number(config.bridgeFee).valueOf(),
     });
     const eventUnlock: Partial<EventLog> = {
       senderAddress: JSON.parse(JSON.stringify(event.event.data.locker)),
