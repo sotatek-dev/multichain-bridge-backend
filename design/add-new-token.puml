@@ -1,0 +1,41 @@
+@startuml
+actor admin as "Admin"
+boundary admin_site as "Admin Site"
+queue bull_queue
+boundary metamask
+boundary aurowallet
+control api
+database db
+actor user as "User"
+boundary user_site as "User Site"
+
+group Admin create new pair on web ui
+
+    admin -> admin_site: enter create pair page
+    admin -> admin_site: fill in form
+    admin -> admin_site: click create button
+    admin_site -> api: create pair in database
+
+    api -> bull_queue: create job new pair
+    api --> admin_site: pair created ok
+
+
+end
+group Job deploy token
+    bull_queue -> job: trigger job
+    job -> mina: create token
+    job -> eth: whitelist token
+end
+group Crawler confirm new pair
+    mina -> crawler: event from mina bridge
+    eth -> crawler: event from eth bridge
+    crawler --> crawler: process event
+    crawler -> db: save pair status
+end
+group User see new pair
+    user -> user_site: view pair list page
+    user_site -> api: list of pairs
+    api-> user_site: pairs include new pair
+    user_site --> user: display pairs
+end
+@enduml

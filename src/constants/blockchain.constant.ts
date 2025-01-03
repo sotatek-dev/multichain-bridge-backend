@@ -21,6 +21,8 @@ export enum EEventStatus {
 export enum ETokenPairStatus {
   ENABLE = 'enable',
   DISABLE = 'disable',
+  CREATED = 'created',
+  DEPLOYING = 'deploying',
 }
 
 export enum EMinaChainEnviroment {

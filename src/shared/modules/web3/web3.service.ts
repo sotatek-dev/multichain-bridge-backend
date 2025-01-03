@@ -11,12 +11,12 @@ import { IRpcService } from './web3.module.js';
 const { toBN, toHex } = pkg;
 export class DefaultContract {
   private readonly logger = new Logger('CONTRACT');
-  private contract: Contract;
+  protected contract: Contract;
   private readonly contractAddress: string;
   private readonly abi: any;
   private readonly startBlock: number;
   constructor(
-    private rpcService: IRpcService,
+    protected rpcService: IRpcService,
     _abi: any,
     _contractAddress: any,
     _startBlock: number,
@@ -177,6 +177,17 @@ export class DefaultContract {
       this.logger.error('Error getting gas price:', error);
     }
   }
+  public async pollingTxStatus(txHash: string) {
+    const maxTries = 20;
+    for (let i = 0; i < maxTries; i++) {
+      const hash = await this.rpcService.web3.eth.getTransactionReceipt(txHash);
+      if (hash) {
+        return;
+      }
+      await sleep(5);
+    }
+    throw new Error(`polling for tx ${txHash} exceed max tries.`);
+  }
 }
 
 export class ETHBridgeContract extends DefaultContract {
@@ -192,6 +203,17 @@ export class ETHBridgeContract extends DefaultContract {
   }
   public getValidatorThreshold() {
     return this.call('threshold', []);
+  }
+  public async whitelistToken(tokenAddress: string): Promise<{ isWhitelisted: boolean; tokenAddress: string }> {
+    const isWhitelisted = await this.call('check', [tokenAddress]);
+    if (isWhitelisted) {
+      return { isWhitelisted: true, tokenAddress };
+    }
+    const res = await this.write('whitelistToken', [tokenAddress]);
+    // pooling tx hash
+    await this.pollingTxStatus(res.transactionHash);
+
+    return { isWhitelisted: true, tokenAddress };
   }
   public mintNFT(toAddress: string) {
     return this.write('mint', [toAddress]);
@@ -219,3 +241,5 @@ export class ETHBridgeContract extends DefaultContract {
     return this.call('tokenURI', [tokenId]);
   }
 }
+
+export class Erc20Contract extends DefaultContract {}

@@ -8,7 +8,6 @@ import { getEthBridgeAddress } from '../../config/common.config.js';
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
-import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
@@ -22,7 +21,6 @@ import { MultiSignature } from './entities/multi-signature.entity.js';
 export class SenderEVMBridge {
   constructor(
     private readonly eventLogRepository: EventLogRepository,
-    private readonly commonConfigRepository: CommonConfigRepository,
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly multiSignatureRepository: MultiSignatureRepository,
     private readonly ethBridgeContract: ETHBridgeContract,

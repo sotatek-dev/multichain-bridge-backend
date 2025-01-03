@@ -7,10 +7,8 @@ import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signatu
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
-import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
-import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { canTxRetry } from '../../shared/utils/unlock.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
@@ -27,8 +25,6 @@ export class SenderMinaBridge {
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
-    private readonly commonConfigRepository: CommonConfigRepository,
-    private readonly tokenPairRepository: TokenPairRepository,
     private readonly multiSignatureRepository: MultiSignatureRepository,
     private readonly loggerService: LoggerService,
   ) {

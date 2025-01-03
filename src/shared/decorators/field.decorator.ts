@@ -7,6 +7,7 @@ import {
   IsDecimal,
   IsEmail,
   IsEnum,
+  IsEthereumAddress,
   IsInt,
   IsNotEmpty,
   isNumber,
@@ -95,7 +96,16 @@ export function NumberField(options: Omit<ApiPropertyOptions, 'type'> & INumberF
 export function StringField(options: Omit<ApiPropertyOptions, 'type'> & IStringFieldOptions = {}): PropertyDecorator {
   const decorators = [Trim(), ...initSharedDecorator(options, String)];
 
-  const { minLength, maxLength, toLowerCase, toUpperCase, number, isEmail, isArray = false } = options;
+  const {
+    minLength,
+    maxLength,
+    toLowerCase,
+    toUpperCase,
+    number,
+    isEmail,
+    isEthereumAddress,
+    isArray = false,
+  } = options;
 
   if (minLength) {
     decorators.push(MinLength(minLength));
@@ -108,7 +118,9 @@ export function StringField(options: Omit<ApiPropertyOptions, 'type'> & IStringF
   if (toLowerCase) {
     decorators.push(ToLowerCase());
   }
-
+  if (isEthereumAddress) {
+    decorators.push(IsEthereumAddress());
+  }
   if (toUpperCase) {
     decorators.push(ToUpperCase());
   }
