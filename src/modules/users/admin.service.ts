@@ -4,9 +4,11 @@ import { DataSource, EntityManager } from 'typeorm';
 
 import { ENetworkName, ETokenPairStatus } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
+import { toPageDto } from '../../core/paginate-typeorm.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { CommonConfig } from '../crawler/entities/common-config.entity.js';
 import { CreateTokenReqDto } from './dto/admin-request.dto.js';
+import { GetTokensReqDto } from './dto/user-request.dto.js';
 
 @Injectable()
 export class AdminService {
@@ -37,7 +39,8 @@ export class AdminService {
       return newCommonConfig.save();
     });
   }
-  getListToken() {
-    return this.commonConfigRepo.find();
+  async getListToken(payload: GetTokensReqDto) {
+    const [tokens, count] = await this.commonConfigRepo.getManyAndPagination(payload);
+    return toPageDto(tokens, payload, count);
   }
 }

@@ -1,10 +1,10 @@
-import { ENetworkName } from 'constants/blockchain.constant.js';
-import { EEnvKey } from 'constants/env.constant.js';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import { Seeder } from 'typeorm-extension';
 
 import { COMMOM_CONFIG_TIP, COMMON__CONFIG_DAILY_QUOTA, EAsset } from '../../constants/api.constant.js';
+import { ENetworkName } from '../../constants/blockchain.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
 import { CommonConfig } from '../../modules/crawler/entities/common-config.entity.js';
 
 export default class CommonConfigSeeder implements Seeder {
