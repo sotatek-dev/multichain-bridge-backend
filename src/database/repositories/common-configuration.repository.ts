@@ -1,7 +1,7 @@
-import { isArray } from 'class-validator';
+import { isArray, isNotEmpty } from 'class-validator';
 import { UpdateCommonConfigBodyDto } from 'modules/users/dto/common-config-request.dto.js';
 import { EntityRepository } from 'nestjs-typeorm-custom-repository';
-import { In } from 'typeorm';
+import { Brackets, ILike, In } from 'typeorm';
 
 import { ETableName } from '../../constants/entity.constant.js';
 import { BaseRepository } from '../../core/base-repository.js';
@@ -21,6 +21,17 @@ export class CommonConfigRepository extends BaseRepository<CommonConfig> {
     qb.select();
     if (isArray(dto.statuses)) {
       qb.andWhere({ status: In(dto.statuses) });
+    }
+    if (isNotEmpty(dto.assetName)) {
+      qb.andWhere({ asset: ILike(`${dto.assetName}%`) });
+    }
+    if (isNotEmpty(dto.tokenAddress)) {
+      qb.andWhere(
+        new Brackets(qb => {
+          qb.orWhere({ fromAddress: ILike(dto.tokenAddress) });
+          qb.orWhere({ toAddress: ILike(dto.tokenAddress) });
+        }),
+      );
     }
     this.queryBuilderAddPagination(qb, dto);
     return qb.getManyAndCount();

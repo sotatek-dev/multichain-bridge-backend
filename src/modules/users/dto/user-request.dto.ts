@@ -32,4 +32,10 @@ export class GetProtocolFeeBodyDto {
 export class GetTokensReqDto extends BasePaginationRequestDto {
   @StringField({ isArray: true, example: ETokenPairStatus.CREATED, required: false })
   statuses: ETokenPairStatus[];
+
+  @StringField({ required: false })
+  assetName: string;
+
+  @StringField({ required: false })
+  tokenAddress: string;
 }
