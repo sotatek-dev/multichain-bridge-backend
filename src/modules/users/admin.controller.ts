@@ -9,6 +9,7 @@ import { CreateTokenReqDto } from './dto/admin-request.dto.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetCommonConfigResponseDto } from './dto/common-config-response.dto.js';
 import { GetHistoryDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';
+import { GetTokensReqDto } from './dto/user-request.dto.js';
 import { UsersService } from './users.service.js';
 
 @ApiTags('Admins')
@@ -28,11 +29,12 @@ export class AdminController {
   }
 
   @Get('tokens')
-  @AuthAdminGuard()
-  @UseGuards(AuthGuard('jwt'))
+  @GuardPublic()
+  // @AuthAdminGuard()
+  // @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse({ type: GetCommonConfigResponseDto })
-  getCommonConfig() {
-    return this.adminService.getListToken();
+  getCommonConfig(@Query() query: GetTokensReqDto) {
+    return this.adminService.getListToken(query);
   }
 
   @Put('token/:id')
@@ -42,9 +44,8 @@ export class AdminController {
     return this.userService.updateTokenConfig(id, updateConfig);
   }
   @Post('new-token')
-  @GuardPublic()
-  // @AuthAdminGuard()
-  // @UseGuards(AuthGuard('jwt'))
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
   addNewToken(@Body() payload: CreateTokenReqDto) {
     return this.adminService.createNewToken(payload);
   }

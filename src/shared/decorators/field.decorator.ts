@@ -1,6 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptions } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -123,6 +123,13 @@ export function StringField(options: Omit<ApiPropertyOptions, 'type'> & IStringF
   }
   if (toUpperCase) {
     decorators.push(ToUpperCase());
+  }
+  if (isArray) {
+    decorators.push(
+      Transform(({ value }) => {
+        if (typeof value === 'string') return [value];
+      }),
+    );
   }
   // strings, number string validation
   if (typeof number == 'object') {

@@ -8,6 +8,7 @@ import { QueueService } from '../../shared/modules/queue/queue.service.js';
 import { sleep } from '../../shared/utils/promise.js';
 import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
 import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
+import { TokenDeployer } from './deploy-token.js';
 import { IGenerateSignature, IUnlockToken } from './interfaces/job.interface.js';
 import { JobUnlockProvider } from './job-unlock.provider.js';
 import { SenderEVMBridge } from './sender.evmbridge.js';
@@ -26,6 +27,7 @@ export class CrawlerConsole {
     private readonly queueService: QueueService,
     private readonly unlockProviderService: JobUnlockProvider,
     private readonly poaSyncer: POASync,
+    private readonly tokenDeployerService: TokenDeployer,
   ) {}
   private readonly logger = this.loggerService.getLogger('CRAWLER_CONSOLE');
 
@@ -34,7 +36,7 @@ export class CrawlerConsole {
     description: 'Crawl ETH Bridge contract',
   })
   async handleCrawlETHBridge() {
-    const safeBlock = +this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS);
+    const safeBlock = +this.configService.get(EEnvKey.EVM_SAFE_BLOCK);
     while (true) {
       try {
         await this.blockchainEVMCrawler.handleEventCrawlBlock(safeBlock);
@@ -135,5 +137,13 @@ export class CrawlerConsole {
   async handleSyncPOA() {
     this.logger.info('SYNC_POA: started');
     await this.poaSyncer.handleSyncPOA();
+  }
+  @Command({
+    command: 'deploy-token-job',
+    description: 'handle deploy new token.',
+  })
+  async handleJobDeployToken() {
+    this.logger.info('DEPLOY_TOKEN: started');
+    await this.tokenDeployerService.deployNewToken();
   }
 }

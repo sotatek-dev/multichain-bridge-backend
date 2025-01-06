@@ -52,7 +52,7 @@ const getEnvFile = () => {
         [EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
         [EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
-        [EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
+        // [EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
         [EEnvKey.ADMIN_MESSAGE_FOR_SIGN]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_DOMAIN_NAME]: Joi.string().required(),
