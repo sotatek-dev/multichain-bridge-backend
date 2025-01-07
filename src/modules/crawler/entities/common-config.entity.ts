@@ -78,6 +78,9 @@ export class CommonConfig extends BaseEntityIncludeTime {
   @Column({ name: 'to_sc_address', type: 'varchar', nullable: true })
   toScAddress: string;
 
+  @Column({ name: 'is_hidden', default: false })
+  isHidden: boolean;
+
   @Column({
     name: 'status',
     type: 'varchar',

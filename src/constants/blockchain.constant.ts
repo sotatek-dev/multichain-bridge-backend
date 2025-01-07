@@ -23,6 +23,7 @@ export enum ETokenPairStatus {
   DISABLE = 'disable',
   CREATED = 'created',
   DEPLOYING = 'deploying',
+  DEPLOY_FAILED = 'deploy_failed',
 }
 
 export enum EMinaChainEnviroment {

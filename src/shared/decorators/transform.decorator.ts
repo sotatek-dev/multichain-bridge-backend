@@ -1,5 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Transform } from 'class-transformer';
+import { isNotEmpty } from 'class-validator';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import pkg from 'lodash';
@@ -18,12 +19,12 @@ export function Trim(): PropertyDecorator {
 }
 function toBoolean(value: string | number | boolean): boolean {
   if (typeof value === 'string') return value.toLowerCase() === 'true';
-  return Boolean(value).valueOf();
+  return !!value;
 }
 export function ToBoolean(): PropertyDecorator {
   return Transform(
     ({ value }) => {
-      if (value) return toBoolean(value);
+      if (isNotEmpty(value)) return toBoolean(value);
     },
     { toClassOnly: true },
   );

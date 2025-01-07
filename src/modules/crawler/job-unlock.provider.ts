@@ -18,7 +18,7 @@ import { sleep } from '../../shared/utils/promise.js';
 import { getNextDayInUnix, getTimeInFutureInMinutes } from '../../shared/utils/time.js';
 import { BatchJobGetPriceToken } from './batch.tokenprice.js';
 import { EventLog } from './entities/event-logs.entity.js';
-import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interfaces/job.interface.js';
+import { IGenerateSignature, IJobUnlockPayload, ISenderJobPayload } from './interfaces/job.interface.js';
 
 @Injectable()
 export class JobUnlockProvider {
@@ -176,10 +176,13 @@ export class JobUnlockProvider {
       await this.eventLogRepository.update(data.eventLogId, { nextSendTxJobTime: getNextDayInUnix().toString() });
       return;
     }
-    await this.queueService.addJobToQueue<IUnlockToken>(
+    await this.queueService.addJobToQueue<ISenderJobPayload>(
       this.getSenderQueueName(data.network),
       {
-        eventLogId: data.eventLogId,
+        type: 'unlock',
+        payload: {
+          eventLogId: data.eventLogId,
+        },
       },
       {
         jobId: `send-unlock-${data.eventLogId}`,

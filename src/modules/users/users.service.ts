@@ -15,7 +15,7 @@ import { UserRepository } from '../../database/repositories/user.repository.js';
 import { httpBadRequest } from '../../shared/exceptions/http-exeption.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
-import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
+import { UpdateCommonConfigBodyDto, UpdateTokenPairVisibilityReqDto } from './dto/common-config-request.dto.js';
 import { GetHistoryDto, GetHistoryOfUserDto } from './dto/history-response.dto.js';
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
 import { GetProofOfAssetsResponseDto, GetTokensPriceResponseDto } from './dto/user-response.dto.js';
@@ -56,6 +56,12 @@ export class UsersService {
     await this.commonConfigRepository.updateCommonConfig(id, updateConfig);
     return updateConfig;
   }
+  async updateTokenVisibility(id: number, updateConfig: UpdateTokenPairVisibilityReqDto) {
+    await this.commonConfigRepository.update(id, {
+      isHidden: updateConfig.isHidden,
+    });
+    return updateConfig;
+  }
 
   async getDailyQuotaOfUser(address: string) {
     const [dailyQuota, totalamount] = await Promise.all([
@@ -70,6 +76,7 @@ export class UsersService {
     return this.commonConfigRepository.find({
       where: {
         status: ETokenPairStatus.ENABLE,
+        isHidden: false,
       },
     });
   }
