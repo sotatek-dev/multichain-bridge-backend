@@ -6,7 +6,7 @@ import { GuardPublic } from '../../guards/guard.decorator.js';
 import { AuthAdminGuard } from '../../shared/decorators/http.decorator.js';
 import { AdminService } from './admin.service.js';
 import { CreateTokenReqDto } from './dto/admin-request.dto.js';
-import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
+import { UpdateCommonConfigBodyDto, UpdateTokenPairVisibilityReqDto } from './dto/common-config-request.dto.js';
 import { GetCommonConfigResponseDto } from './dto/common-config-response.dto.js';
 import { GetHistoryDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';
 import { GetTokensReqDto } from './dto/user-request.dto.js';
@@ -30,8 +30,8 @@ export class AdminController {
 
   @Get('tokens')
   @GuardPublic()
-  // @AuthAdminGuard()
-  // @UseGuards(AuthGuard('jwt'))
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse({ type: GetCommonConfigResponseDto })
   getCommonConfig(@Query() query: GetTokensReqDto) {
     return this.adminService.getListToken(query);
@@ -40,12 +40,21 @@ export class AdminController {
   @Put('token/:id')
   @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
-  updateCommonConfig(@Param('id') id: number, @Body() updateConfig: UpdateCommonConfigBodyDto) {
+  updateTokenPair(@Param('id') id: number, @Body() updateConfig: UpdateCommonConfigBodyDto) {
     return this.userService.updateTokenConfig(id, updateConfig);
   }
+
+  @Put('token/visibility/:id')
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
+  updateTokenPairVisibility(@Param('id') id: number, @Body() updateConfig: UpdateTokenPairVisibilityReqDto) {
+    return this.userService.updateTokenVisibility(id, updateConfig);
+  }
+
   @Post('new-token')
   @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
+  @GuardPublic()
   addNewToken(@Body() payload: CreateTokenReqDto) {
     return this.adminService.createNewToken(payload);
   }

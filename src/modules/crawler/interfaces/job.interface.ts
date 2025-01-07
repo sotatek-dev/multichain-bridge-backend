@@ -12,6 +12,13 @@ export interface IReceiveVerifiedSignature {
 export interface IGenerateSignature {
   eventLogId: number;
 }
+export interface ISenderJobPayload {
+  type: 'unlock' | 'deploy-token';
+  payload: IUnlockToken | IDeployToken;
+}
+export interface IDeployToken {
+  tokenPairId: number;
+}
 export interface IUnlockToken {
   eventLogId: number;
 }

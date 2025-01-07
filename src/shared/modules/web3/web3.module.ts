@@ -8,7 +8,7 @@ import { initializeEthContract } from '../../../config/common.config.js';
 import { EEnvKey } from '../../../constants/env.constant.js';
 import { ASYNC_CONNECTION } from '../../../constants/service.constant.js';
 import { sleep } from '../../utils/promise.js';
-import { ETHBridgeContract } from './web3.service.js';
+import { Erc20ContractTemplate, ETHBridgeContract } from './web3.service.js';
 
 @Global()
 @Module({
@@ -29,8 +29,9 @@ import { ETHBridgeContract } from './web3.service.js';
       },
       inject: [ASYNC_CONNECTION],
     },
+    Erc20ContractTemplate,
   ],
-  exports: [Web3Module, ETHBridgeContract],
+  exports: [Web3Module, ETHBridgeContract, Erc20ContractTemplate],
 })
 export class Web3Module {}
 

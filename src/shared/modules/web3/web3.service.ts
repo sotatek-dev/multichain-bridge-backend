@@ -4,7 +4,9 @@ import { TransactionReceipt } from 'web3-core';
 import { Contract, EventData } from 'web3-eth-contract';
 import pkg from 'web3-utils';
 
+import { EEnvKey } from '../../../constants/env.constant.js';
 import { sleep } from '../../utils/promise.js';
+import Erc20Abi from './abis/erc-20.js';
 import { EthBridgeAbi } from './abis/eth-bridge-contract.js';
 import { IRpcService } from './web3.module.js';
 
@@ -92,8 +94,10 @@ export class DefaultContract {
     return gasLimit;
   }
 
-  public async write(method: string, param: Array<any>): Promise<TransactionReceipt> {
-    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
+  public async write(method: string, param: Array<any>, customSignerPrivateKey?: string): Promise<TransactionReceipt> {
+    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
+      customSignerPrivateKey ?? this.rpcService.privateKeys,
+    );
 
     const data = this.contract.methods[method](...param).encodeABI();
     const gasPrice = await this.rpcService.web3.eth.getGasPrice();
@@ -116,47 +120,6 @@ export class DefaultContract {
     } as any);
 
     return this.rpcService.web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-  }
-  public async multiWrite(
-    writeData: any[],
-    specifySignerIndex?: number,
-  ): Promise<{ success: boolean; error: Error | null; data: TransactionReceipt[] | null }> {
-    try {
-      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
-        this.rpcService.privateKeys[specifySignerIndex ?? 0],
-      );
-
-      const response = [];
-      for (const element of writeData) {
-        // gas estimation
-        const nonce = await this.rpcService.getNonce(signer.address);
-        const { method, param } = element;
-        const data = this.contract.methods[method](...param).encodeABI();
-        const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-        const rawTx = {
-          nonce: nonce,
-          gasPrice: toHex(toBN(gasPrice)),
-          from: signer.address,
-          to: this.contractAddress,
-          data: data,
-        };
-        const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
-
-        const signedTx = await signer.signTransaction({
-          ...rawTx,
-          gasLimit: toHex(toBN(gasLimit).add(toBN(10000))),
-        } as any);
-        response.push(await this.rpcService.web3.eth.sendSignedTransaction(signedTx.rawTransaction));
-      }
-
-      return {
-        success: true,
-        error: null,
-        data: response,
-      };
-    } catch (error: any) {
-      return { success: false, error, data: null };
-    }
   }
 
   public async getBlockTimeByBlockNumber(blockNumber: number) {
@@ -204,16 +167,17 @@ export class ETHBridgeContract extends DefaultContract {
   public getValidatorThreshold() {
     return this.call('threshold', []);
   }
-  public async whitelistToken(tokenAddress: string): Promise<{ isWhitelisted: boolean; tokenAddress: string }> {
-    const isWhitelisted = await this.call('check', [tokenAddress]);
+  public async whitelistToken(
+    tokenAddress: string,
+  ): Promise<{ isWhitelisted: boolean; tokenAddress: string; txHash?: string }> {
+    const isWhitelisted = await this.call('whitelistTokens', [tokenAddress]);
     if (isWhitelisted) {
       return { isWhitelisted: true, tokenAddress };
     }
-    const res = await this.write('whitelistToken', [tokenAddress]);
+    const res = await this.write('setWhitelistToken', [tokenAddress, true], process.env[EEnvKey.ADMIN_EVM_PRIVATE_KEY]);
     // pooling tx hash
     await this.pollingTxStatus(res.transactionHash);
-
-    return { isWhitelisted: true, tokenAddress };
+    return { isWhitelisted: true, tokenAddress, txHash: res.transactionHash };
   }
   public mintNFT(toAddress: string) {
     return this.write('mint', [toAddress]);
@@ -242,4 +206,12 @@ export class ETHBridgeContract extends DefaultContract {
   }
 }
 
-export class Erc20Contract extends DefaultContract {}
+export class Erc20ContractTemplate {
+  constructor(private readonly rpcETHService: IRpcService) {}
+  private getErc20Contract(address: string) {
+    return new DefaultContract(this.rpcETHService, Erc20Abi, address, 0);
+  }
+  public getTokenSymbol(address: string) {
+    return this.getErc20Contract(address).call('symbol', []);
+  }
+}

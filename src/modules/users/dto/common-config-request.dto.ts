@@ -1,5 +1,5 @@
 import { EEnvKey } from '../../../constants/env.constant.js';
-import { NumberField, StringField } from '../../../shared/decorators/field.decorator.js';
+import { BooleanField, NumberField, StringField } from '../../../shared/decorators/field.decorator.js';
 
 export class UpdateCommonConfigBodyDto {
   @NumberField({
@@ -31,4 +31,8 @@ export class UpdateCommonConfigBodyDto {
     required: false,
   })
   unlockingFee: string;
+}
+export class UpdateTokenPairVisibilityReqDto {
+  @BooleanField({ required: true })
+  isHidden: boolean;
 }
