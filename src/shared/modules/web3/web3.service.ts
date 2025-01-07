@@ -6,7 +6,7 @@ import pkg from 'web3-utils';
 
 import { EEnvKey } from '../../../constants/env.constant.js';
 import { sleep } from '../../utils/promise.js';
-import Erc20Abi from './abis/erc-20.js';
+import { Erc20ABI } from './abis/erc-20.js';
 import { EthBridgeAbi } from './abis/eth-bridge-contract.js';
 import { IRpcService } from './web3.module.js';
 
@@ -209,9 +209,12 @@ export class ETHBridgeContract extends DefaultContract {
 export class Erc20ContractTemplate {
   constructor(private readonly rpcETHService: IRpcService) {}
   private getErc20Contract(address: string) {
-    return new DefaultContract(this.rpcETHService, Erc20Abi, address, 0);
+    return new DefaultContract(this.rpcETHService, Erc20ABI, address, 0);
   }
   public getTokenSymbol(address: string) {
     return this.getErc20Contract(address).call('symbol', []);
+  }
+  public getTokenDecimals(address: string) {
+    return this.getErc20Contract(address).call('decimals', []);
   }
 }
