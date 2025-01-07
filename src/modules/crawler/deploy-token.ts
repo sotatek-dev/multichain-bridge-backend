@@ -7,7 +7,7 @@ import { IsNull } from 'typeorm';
 
 import { ETokenPairStatus } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
-import { EQueueName } from '../../constants/queue.constant.js';
+import { EJobPriority, EQueueName } from '../../constants/queue.constant.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { QueueService } from '../../shared/modules/queue/queue.service.js';
@@ -148,6 +148,7 @@ export class TokenDeployer {
         jobId: `deploy-token-${tokenPairId}`,
         removeOnComplete: true,
         removeOnFail: true,
+        priority: EJobPriority.DEPLOY_TOKEN,
       },
     );
   }
@@ -160,7 +161,12 @@ export class TokenDeployer {
           tokenPairId,
         },
       },
-      { jobId: `deploy-token-${tokenPairId}`, removeOnComplete: true, removeOnFail: true },
+      {
+        jobId: `deploy-token-${tokenPairId}`,
+        removeOnComplete: true,
+        removeOnFail: true,
+        priority: EJobPriority.DEPLOY_TOKEN,
+      },
     );
   }
 }

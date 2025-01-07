@@ -7,7 +7,12 @@ import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity
 
 import { ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
-import { EQueueName, getEvmValidatorQueueName, getMinaValidatorQueueName } from '../../constants/queue.constant.js';
+import {
+  EJobPriority,
+  EQueueName,
+  getEvmValidatorQueueName,
+  getMinaValidatorQueueName,
+} from '../../constants/queue.constant.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
@@ -188,6 +193,7 @@ export class JobUnlockProvider {
         jobId: `send-unlock-${data.eventLogId}`,
         removeOnComplete: true,
         removeOnFail: true,
+        priority: EJobPriority.UNLOCK,
       },
     );
   }
