@@ -40,6 +40,7 @@ export class AdminService {
       newCommonConfig.mintingFee = payload.mintingFee;
       newCommonConfig.unlockingFee = payload.unlockingFee;
       newCommonConfig.status = ETokenPairStatus.CREATED;
+      newCommonConfig.isHidden = true;
       return newCommonConfig.save();
     });
     assert(isNumber(newTokenPair.id), 'Token pair invalid!');

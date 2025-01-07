@@ -5,3 +5,9 @@ export enum EQueueName {
 }
 export const getEvmValidatorQueueName = (index: number) => `EVM_VALIDATOR_${index}`;
 export const getMinaValidatorQueueName = (index: number) => `MINA_VALIDATOR_${index}`;
+
+// job priority, lower index is higher priority
+export enum EJobPriority {
+  DEPLOY_TOKEN,
+  UNLOCK,
+}
