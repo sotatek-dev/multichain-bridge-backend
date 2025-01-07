@@ -75,7 +75,8 @@ export class AdminService {
     if (tokenInfo.status !== ETokenPairStatus.DEPLOY_FAILED) {
       return httpBadRequest(EError.ACTION_CANNOT_PROCESSED);
     }
-
-    await this.tokenDeployerService.deployTokenMina(tokenInfo.id);
+    await this.tokenDeployerService.addJobDeployTokenMina(tokenInfo.id);
+    tokenInfo.status = ETokenPairStatus.DEPLOYING;
+    return tokenInfo.save();
   }
 }

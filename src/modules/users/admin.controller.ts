@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nest
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
+import { GuardPublic } from '../../guards/guard.decorator.js';
 import { AuthAdminGuard } from '../../shared/decorators/http.decorator.js';
 import { AdminService } from './admin.service.js';
 import { CreateTokenReqDto } from './dto/admin-request.dto.js';
@@ -53,6 +54,14 @@ export class AdminController {
   @UseGuards(AuthGuard('jwt'))
   updateTokenPairVisibility(@Param('id') id: number, @Body() updateConfig: UpdateTokenPairVisibilityReqDto) {
     return this.userService.updateTokenVisibility(id, updateConfig);
+  }
+
+  @Post('token/re-deploy/:id')
+  // @AuthAdminGuard()
+  @GuardPublic()
+  // @UseGuards(AuthGuard('jwt'))
+  redeployToken(@Param('id') id: number) {
+    return this.adminService.redeployToken(id);
   }
 
   @Post('new-token')
