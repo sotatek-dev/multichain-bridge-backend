@@ -27,7 +27,7 @@ export class AdminService {
   ) {}
   async createNewToken(payload: CreateTokenReqDto) {
     if (await this.checkTokenExist(payload.assetAddress)) {
-      httpBadRequest(EError.DUPLICATED_ACTION);
+      return httpBadRequest(EError.DUPLICATED_ACTION);
     }
     const [symbol, decimals] = await Promise.all([
       this.erc20ContractTemplate.getTokenSymbol(payload.assetAddress),
@@ -66,5 +66,16 @@ export class AdminService {
   async getListToken(payload: GetTokensReqDto) {
     const [tokens, count] = await this.commonConfigRepo.getManyAndPagination(payload);
     return toPageDto(tokens, payload, count);
+  }
+  async redeployToken(tokenPairId: number) {
+    const tokenInfo = await this.commonConfigRepo.findOneBy({ id: tokenPairId });
+    if (!tokenInfo) {
+      httpBadRequest(EError.RESOURCE_NOT_FOUND);
+    }
+    if (tokenInfo.status !== ETokenPairStatus.DEPLOY_FAILED) {
+      return httpBadRequest(EError.ACTION_CANNOT_PROCESSED);
+    }
+
+    await this.tokenDeployerService.deployTokenMina(tokenInfo.id);
   }
 }
