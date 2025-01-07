@@ -57,9 +57,8 @@ export class AdminController {
   }
 
   @Post('token/re-deploy/:id')
-  // @AuthAdminGuard()
-  @GuardPublic()
-  // @UseGuards(AuthGuard('jwt'))
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
   redeployToken(@Param('id') id: number) {
     return this.adminService.redeployToken(id);
   }
