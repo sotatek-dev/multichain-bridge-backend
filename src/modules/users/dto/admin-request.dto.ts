@@ -7,11 +7,6 @@ export class CreateTokenReqDto {
   assetAddress: string;
 
   @StringField({
-    default: 'ETH',
-  })
-  assetName: string;
-
-  @StringField({
     minimum: 0,
     number: true,
   })

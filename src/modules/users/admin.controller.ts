@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nest
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { GuardPublic } from '../../guards/guard.decorator.js';
 import { AuthAdminGuard } from '../../shared/decorators/http.decorator.js';
 import { AdminService } from './admin.service.js';
 import { CreateTokenReqDto } from './dto/admin-request.dto.js';
@@ -29,12 +28,17 @@ export class AdminController {
   }
 
   @Get('tokens')
-  @GuardPublic()
   @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
   @ApiOkResponse({ type: GetCommonConfigResponseDto })
   getCommonConfig(@Query() query: GetTokensReqDto) {
     return this.adminService.getListToken(query);
+  }
+  @Get('check/:tokenAddress')
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
+  checkTokenExist(@Param('tokenAddress') tokenAddress: string) {
+    return this.adminService.checkTokenExist(tokenAddress);
   }
 
   @Put('token/:id')
@@ -54,7 +58,6 @@ export class AdminController {
   @Post('new-token')
   @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
-  @GuardPublic()
   addNewToken(@Body() payload: CreateTokenReqDto) {
     return this.adminService.createNewToken(payload);
   }
