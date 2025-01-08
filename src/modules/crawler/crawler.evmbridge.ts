@@ -109,7 +109,7 @@ export class BlockchainEVMCrawler {
       networkFrom: ENetworkName.ETH,
       networkReceived: ENetworkName.MINA,
       tokenFromName: event.returnValues.tokenName,
-      tokenReceivedAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
+      tokenReceivedAddress: config.toAddress,
       txHashLock: event.transactionHash,
       receiveAddress: event.returnValues.receipt,
       blockNumber: event.blockNumber,
