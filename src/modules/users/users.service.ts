@@ -66,9 +66,12 @@ export class UsersService {
   async getDailyQuotaOfUser(senderAddress: string, tokenReceivedAddress: string) {
     const [dailyQuota, totalamount] = await Promise.all([
       this.commonConfigRepository.findOne({
-        where: {
-          fromAddress: tokenReceivedAddress,
-        },
+        where: [
+          {
+            fromAddress: tokenReceivedAddress,
+          },
+          { toAddress: tokenReceivedAddress },
+        ],
         select: {
           fromAddress: true,
           id: true,
