@@ -1,3 +1,5 @@
+import { BigNumber } from 'bignumber.js';
+import { isEmpty, isNotEmpty } from 'class-validator';
 import { Column, Entity } from 'typeorm';
 
 import { ENetworkName, ETokenPairStatus } from '../../../constants/blockchain.constant.js';
@@ -93,5 +95,14 @@ export class CommonConfig extends BaseEntityIncludeTime {
   constructor(value: Partial<CommonConfig>) {
     super();
     Object.assign(this, value);
+  }
+  toJSON() {
+    if (isEmpty(this.totalWethBurnt) || isEmpty(this.totalWethBurnt)) {
+      return this;
+    }
+    const totalCirculation = new BigNumber(this.totalWethMinted)
+      .minus(this.totalWethBurnt)
+      .div(BigNumber(this.fromDecimal).pow(this.toDecimal));
+    return { ...this, totalCirculation: BigNumber.maximum(totalCirculation.toString(), '0') };
   }
 }
