@@ -65,7 +65,16 @@ export class UsersService {
 
   async getDailyQuotaOfUser(senderAddress: string, tokenReceivedAddress: string) {
     const [dailyQuota, totalamount] = await Promise.all([
-      this.commonConfigRepository.getCommonConfig(),
+      this.commonConfigRepository.findOne({
+        where: {
+          fromAddress: tokenReceivedAddress,
+        },
+        select: {
+          fromAddress: true,
+          id: true,
+          dailyQuota: true,
+        },
+      }),
       this.eventLogRepository.sumAmountBridgeOfUserInDay(senderAddress, tokenReceivedAddress),
     ]);
 
