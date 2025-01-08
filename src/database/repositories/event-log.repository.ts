@@ -51,6 +51,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
       `${this.alias}.id as "eventLogId"`,
       `${this.alias}.network_received as "network"`,
       `${this.alias}.sender_address as "senderAddress"`,
+      `${this.alias}.token_received_address as "tokenReceivedAddress"`,
     ]);
     qb.leftJoin(`${this.alias}.validator`, 'signature');
 
@@ -157,10 +158,14 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     return queryBuilder.getManyAndCount();
   }
 
-  public async sumAmountBridgeOfUserInDay(address: string): Promise<{ totalamount: string }> {
+  public async sumAmountBridgeOfUserInDay(
+    address: string,
+    tokenReceivedAddress: string,
+  ): Promise<{ totalamount: string }> {
     const qb = this.createQb();
     qb.select([`${this.alias}.sender_address`, `SUM(CAST(${this.alias}.amount_from as DECIMAL(100,2))) as totalamount`])
       .where(`${this.alias}.sender_address = :address`, { address })
+      .andWhere({ tokenReceivedAddress })
       .andWhere(`${this.alias}.block_time_lock BETWEEN ${startOfDayUnix(new Date())} AND ${endOfDayUnix(new Date())}`)
       .groupBy(`${this.alias}.sender_address`);
     return qb.getRawOne() as any;

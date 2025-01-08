@@ -27,10 +27,10 @@ export class UsersController {
     return this.userService.getHistoriesOfUser(address, query);
   }
 
-  @Get('daily-quota/:address')
+  @Get('daily-quota/:address/:token')
   @GuardPublic()
-  getDailyQuota(@Param('address') address: string) {
-    return this.userService.getDailyQuotaOfUser(address);
+  getDailyQuota(@Param('address') address: string, @Param('token') token: string) {
+    return this.userService.getDailyQuotaOfUser(address, token);
   }
 
   @Get('list-supported-pairs')

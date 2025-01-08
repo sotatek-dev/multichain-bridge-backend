@@ -176,7 +176,7 @@ export class JobUnlockProvider {
 
   private async handleSendTxJobs(data: IJobUnlockPayload) {
     // check if there is enough threshhold -> then create an unlock job.
-    if (await this.isPassDailyQuota(data.senderAddress, data.network)) {
+    if (await this.isPassDailyQuota(data.senderAddress, data.network, data.tokenReceivedAddress)) {
       this.logger.warn('this tx exceed daily quota, skip until next day', data.eventLogId);
       await this.eventLogRepository.update(data.eventLogId, { nextSendTxJobTime: getNextDayInUnix().toString() });
       return;
@@ -197,13 +197,13 @@ export class JobUnlockProvider {
       },
     );
   }
-  private async isPassDailyQuota(address: string, networkReceived: ENetworkName): Promise<boolean> {
+  private async isPassDailyQuota(address: string, networkReceived: ENetworkName, token: string): Promise<boolean> {
     const fromDecimal = this.configService.get(
       networkReceived === ENetworkName.MINA ? EEnvKey.DECIMAL_TOKEN_EVM : EEnvKey.DECIMAL_TOKEN_MINA,
     );
     const [dailyQuota, todayData] = await Promise.all([
       await this.commonConfigRepository.getCommonConfig(),
-      await this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
+      await this.eventLogRepository.sumAmountBridgeOfUserInDay(address, token),
     ]);
     assert(!!dailyQuota, 'daily quota undefined');
     if (
