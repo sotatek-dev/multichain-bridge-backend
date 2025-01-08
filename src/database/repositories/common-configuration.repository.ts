@@ -33,6 +33,7 @@ export class CommonConfigRepository extends BaseRepository<CommonConfig> {
         }),
       );
     }
+    qb.orderBy('id', 'DESC');
     this.queryBuilderAddPagination(qb, dto);
     return qb.getManyAndCount();
   }
