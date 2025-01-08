@@ -29,7 +29,7 @@ export default class CommonConfigSeeder implements Seeder {
         toSymbol: 'WETH',
         fromChain: ENetworkName.ETH,
         toChain: ENetworkName.MINA,
-        status:ETokenPairStatus.ENABLE
+        status: ETokenPairStatus.ENABLE,
       }),
     );
   }
