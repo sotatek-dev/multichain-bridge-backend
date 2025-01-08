@@ -74,7 +74,7 @@ export class TokenDeployer {
     await FungibleToken.compile();
     await FungibleTokenAdmin.compile();
 
-    const feePayerPrivateKey = PrivateKey.fromBase58('EKFQWW89p2oVCd8yfM5SYVUGCiSMAByQ3yWzegLVz2cvcqMPJXgQ'); // a minter
+    const feePayerPrivateKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY)!); // a minter
     const tokenPrivateKey = PrivateKey.random();
     const tokenAdminContractPrivateKey = PrivateKey.random();
 
@@ -129,7 +129,7 @@ export class TokenDeployer {
     await this.tokenPairRepo.update(
       { id: tokenPairId, toAddress: IsNull() },
       {
-        toScAddress: tokenPrivateKey.toPublicKey().toBase58(),
+        toAddress: tokenPrivateKey.toPublicKey().toBase58(),
       },
     );
     await this.addJobWhitelistTokenEth(tokenPairId);
