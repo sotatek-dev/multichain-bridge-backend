@@ -23,7 +23,7 @@ export class CommonConfigRepository extends BaseRepository<CommonConfig> {
       qb.andWhere({ status: In(dto.statuses) });
     }
     if (isNotEmpty(dto.assetName)) {
-      qb.andWhere({ asset: ILike(`${dto.assetName}%`) });
+      qb.andWhere({ asset: ILike(`%${dto.assetName}%`) });
     }
     if (isNotEmpty(dto.tokenAddress)) {
       qb.andWhere(
