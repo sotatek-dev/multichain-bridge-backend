@@ -16,14 +16,17 @@ export class CommonConfigRepository extends BaseRepository<CommonConfig> {
     return this.createQueryBuilder(`${this.alias}`).select().getOne();
   }
 
-  public getManyAndPagination(dto: GetTokensReqDto) {
+  public getManyAndPagination(dto: GetTokensReqDto, role: 'user' | 'admin' = 'admin') {
     const qb = this.createQb();
     qb.select();
     if (isArray(dto.statuses)) {
       qb.andWhere({ status: In(dto.statuses) });
     }
     if (isNotEmpty(dto.assetName)) {
-      qb.andWhere({ asset: ILike(`${dto.assetName}%`) });
+      qb.andWhere({ asset: ILike(`%${dto.assetName}%`) });
+    }
+    if (role === 'user') {
+      qb.andWhere({ isHidden: false });
     }
     if (isNotEmpty(dto.tokenAddress)) {
       qb.andWhere(
@@ -33,6 +36,7 @@ export class CommonConfigRepository extends BaseRepository<CommonConfig> {
         }),
       );
     }
+
     qb.orderBy('id', 'DESC');
     this.queryBuilderAddPagination(qb, dto);
     return qb.getManyAndCount();
