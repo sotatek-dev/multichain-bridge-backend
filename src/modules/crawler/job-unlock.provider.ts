@@ -206,11 +206,11 @@ export class JobUnlockProvider {
         where: {
           fromAddress: token,
         },
-        select:{
-          id:true,
-          fromAddress:true,
-          dailyQuota:true
-        }
+        select: {
+          id: true,
+          fromAddress: true,
+          dailyQuota: true,
+        },
       }),
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address, token),
     ]);
