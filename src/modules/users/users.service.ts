@@ -17,7 +17,7 @@ import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
 import { UpdateCommonConfigBodyDto, UpdateTokenPairVisibilityReqDto } from './dto/common-config-request.dto.js';
 import { GetHistoryDto, GetHistoryOfUserDto } from './dto/history-response.dto.js';
-import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
+import { GetProtocolFeeBodyDto, GetTokensReqDto } from './dto/user-request.dto.js';
 import { GetProofOfAssetsResponseDto, GetTokensPriceResponseDto } from './dto/user-response.dto.js';
 
 @Injectable()
@@ -72,7 +72,11 @@ export class UsersService {
     return { dailyQuota, totalAmountOfToDay: totalamount?.totalamount || 0 };
   }
 
-  async getListTokenPair() {
+  async getListTokenPair(payload: GetTokensReqDto) {
+    const [data] = await this.commonConfigRepository.getManyAndPagination({
+      ...payload,
+      statuses: [ETokenPairStatus.ENABLE],
+    });
     return this.commonConfigRepository.find({
       where: {
         status: ETokenPairStatus.ENABLE,
