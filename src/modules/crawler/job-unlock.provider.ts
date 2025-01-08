@@ -202,7 +202,16 @@ export class JobUnlockProvider {
       networkReceived === ENetworkName.MINA ? EEnvKey.DECIMAL_TOKEN_EVM : EEnvKey.DECIMAL_TOKEN_MINA,
     );
     const [dailyQuota, todayData] = await Promise.all([
-      await this.commonConfigRepository.getCommonConfig(),
+      await this.commonConfigRepository.findOne({
+        where: {
+          fromAddress: token,
+        },
+        select:{
+          id:true,
+          fromAddress:true,
+          dailyQuota:true
+        }
+      }),
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address, token),
     ]);
     assert(!!dailyQuota, 'daily quota undefined');
