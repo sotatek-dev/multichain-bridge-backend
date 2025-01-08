@@ -78,6 +78,9 @@ export class UsersService {
         status: ETokenPairStatus.ENABLE,
         isHidden: false,
       },
+      order: {
+        id: 'DESC',
+      },
     });
   }
 
