@@ -73,19 +73,14 @@ export class UsersService {
   }
 
   async getListTokenPair(payload: GetTokensReqDto) {
-    const [data] = await this.commonConfigRepository.getManyAndPagination({
-      ...payload,
-      statuses: [ETokenPairStatus.ENABLE],
-    });
-    return this.commonConfigRepository.find({
-      where: {
-        status: ETokenPairStatus.ENABLE,
-        isHidden: false,
+    const [data] = await this.commonConfigRepository.getManyAndPagination(
+      {
+        ...payload,
+        statuses: [ETokenPairStatus.ENABLE],
       },
-      order: {
-        id: 'DESC',
-      },
-    });
+      'user',
+    );
+    return data;
   }
 
   async getProtocolFee(dto: GetProtocolFeeBodyDto) {
