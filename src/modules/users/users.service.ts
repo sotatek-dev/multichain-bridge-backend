@@ -63,10 +63,10 @@ export class UsersService {
     return updateConfig;
   }
 
-  async getDailyQuotaOfUser(address: string) {
+  async getDailyQuotaOfUser(senderAddress: string, tokenReceivedAddress: string) {
     const [dailyQuota, totalamount] = await Promise.all([
       this.commonConfigRepository.getCommonConfig(),
-      this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
+      this.eventLogRepository.sumAmountBridgeOfUserInDay(senderAddress, tokenReceivedAddress),
     ]);
 
     return { dailyQuota, totalAmountOfToDay: totalamount?.totalamount || 0 };
@@ -134,7 +134,7 @@ export class UsersService {
     assert(config, 'invalid config, please seed the value');
     const totalWethInCirculation = new BigNumber(config.totalWethMinted)
       .minus(config.totalWethBurnt)
-      .div(BigNumber(DECIMAL_BASE).pow(+this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA)))
+      .div(BigNumber(config.fromDecimal).pow(config.toDecimal))
       .toString();
     return {
       totalWethInCirculation,
