@@ -203,9 +203,12 @@ export class JobUnlockProvider {
     );
     const [dailyQuota, todayData] = await Promise.all([
       await this.commonConfigRepository.findOne({
-        where: {
-          fromAddress: token,
-        },
+        where: [
+          {
+            fromAddress: token,
+          },
+          { toAddress: token },
+        ],
         select: {
           id: true,
           fromAddress: true,
@@ -214,6 +217,8 @@ export class JobUnlockProvider {
       }),
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address, token),
     ]);
+    console.log(dailyQuota, todayData);
+
     assert(!!dailyQuota, 'daily quota undefined');
     if (
       todayData?.totalamount &&
