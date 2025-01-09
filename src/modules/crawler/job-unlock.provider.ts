@@ -217,8 +217,6 @@ export class JobUnlockProvider {
       }),
       await this.eventLogRepository.sumAmountBridgeOfUserInDay(address, token),
     ]);
-    console.log(dailyQuota, todayData);
-
     assert(!!dailyQuota, 'daily quota undefined');
     if (
       todayData?.totalamount &&
