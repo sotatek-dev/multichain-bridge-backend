@@ -73,6 +73,8 @@ export class BlockchainEVMCrawler {
     eventLogRepo: Repository<EventLog>,
     configRepo: Repository<CommonConfig>,
   ): Promise<{ success: boolean }> {
+    this.logger.info(`Handling lock event`, event.returnValues);
+
     const isExist = await eventLogRepo.findOneBy({ txHashLock: event.transactionHash });
     if (isExist) {
       this.logger.warn('Duplicated event', event.transactionHash);
@@ -82,7 +84,7 @@ export class BlockchainEVMCrawler {
     const inputAmount = event.returnValues.amount;
     const fromTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
       toTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
-    const config = await configRepo.findOneBy({ fromAddress: event.returnValues.tokenAddress });
+    const config = await configRepo.findOneBy({ fromAddress: event.returnValues.token });
     assert(!!config?.bridgeFee, 'tip config undefined');
     const {
       success,
@@ -151,7 +153,7 @@ export class BlockchainEVMCrawler {
       tokenReceivedName: EAsset.ETH,
     });
     // update total weth burned.
-    const currentConfig = await configRepo.findOneBy({ fromAddress: event.returnValues.tokenAddress });
+    const currentConfig = await configRepo.findOneBy({ fromAddress: event.returnValues.token });
     assert(currentConfig, 'comomn config not exist');
     const newTotalEthBurnt = new BigNumber(currentConfig.totalWethBurnt).plus(existLockTx.amountFrom).toString();
 
