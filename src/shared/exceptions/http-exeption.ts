@@ -9,7 +9,7 @@ import {
 import { EError } from '../../constants/error.constant.js';
 
 // 400
-export function httpBadRequest(errorCode: EError, metaData?: object) {
+export function httpBadRequest(errorCode: EError, metaData?: object): never {
   throw new BadRequestException({
     statusCode: 400,
     errorCode,
@@ -18,7 +18,7 @@ export function httpBadRequest(errorCode: EError, metaData?: object) {
 }
 
 // 401
-export function httpUnAuthorized(errorCode?: EError, metaData?: object) {
+export function httpUnAuthorized(errorCode?: EError, metaData?: object): never {
   throw new UnauthorizedException({
     statusCode: 401,
     errorCode: errorCode || EError.UNAUTHORIZED,
@@ -27,7 +27,7 @@ export function httpUnAuthorized(errorCode?: EError, metaData?: object) {
 }
 
 // 403
-export function httpForbidden(errorCode?: EError, metaData?: object) {
+export function httpForbidden(errorCode?: EError, metaData?: object): never {
   throw new ForbiddenException({
     statusCode: 403,
     errorCode: errorCode || EError.FORBIDDEN_RESOURCE,
@@ -36,7 +36,7 @@ export function httpForbidden(errorCode?: EError, metaData?: object) {
 }
 
 // 404
-export function httpNotFound(errorCode: EError, metaData?: object) {
+export function httpNotFound(errorCode: EError, metaData?: object): never {
   throw new NotFoundException({
     statusCode: 404,
     errorCode,

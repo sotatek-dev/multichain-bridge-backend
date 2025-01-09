@@ -11,6 +11,7 @@ import { BatchJobGetPriceToken } from './batch.tokenprice.js';
 import { CrawlerConsole } from './crawler.console.js';
 import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
 import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
+import { TokenDeployer } from './deploy-token.js';
 import { JobUnlockProvider } from './job-unlock.provider.js';
 import { SenderEVMBridge } from './sender.evmbridge.js';
 import { SenderMinaBridge } from './sender.minabridge.js';
@@ -36,6 +37,7 @@ import { POASync } from './services/token-poa-sync.service.js';
     BatchJobGetPriceToken,
     JobUnlockProvider,
     POASync,
+    TokenDeployer,
   ],
 })
 export class CrawlerModule {}

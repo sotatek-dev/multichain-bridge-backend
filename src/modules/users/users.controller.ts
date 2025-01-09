@@ -5,7 +5,7 @@ import { ETableName } from '../../constants/entity.constant.js';
 import { GuardPublic } from '../../guards/guard.decorator.js';
 import { EstimateBridgeRequestDto } from './dto/estimate-bridge-request.dto.js';
 import { GetHistoryOfUserDto, GetHistoryOfUserResponseDto } from './dto/history-response.dto.js';
-import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
+import { GetProtocolFeeBodyDto, GetTokensReqDto } from './dto/user-request.dto.js';
 import {
   EstimateBridgeResponseDto,
   GetListTokenPairResponseDto,
@@ -27,17 +27,17 @@ export class UsersController {
     return this.userService.getHistoriesOfUser(address, query);
   }
 
-  @Get('daily-quota/:address')
+  @Get('daily-quota/:address/:token')
   @GuardPublic()
-  getDailyQuota(@Param('address') address: string) {
-    return this.userService.getDailyQuotaOfUser(address);
+  getDailyQuota(@Param('address') address: string, @Param('token') token: string) {
+    return this.userService.getDailyQuotaOfUser(address, token);
   }
 
   @Get('list-supported-pairs')
   @GuardPublic()
   @ApiOkResponse({ type: [GetListTokenPairResponseDto] })
-  getListTokenPair() {
-    return this.userService.getListTokenPair();
+  getListTokenPair(@Query() query: GetTokensReqDto) {
+    return this.userService.getListTokenPair(query);
   }
 
   @Post('bridge/protocol-fee')

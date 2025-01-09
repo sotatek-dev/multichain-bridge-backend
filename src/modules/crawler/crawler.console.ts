@@ -8,7 +8,8 @@ import { QueueService } from '../../shared/modules/queue/queue.service.js';
 import { sleep } from '../../shared/utils/promise.js';
 import { BlockchainEVMCrawler } from './crawler.evmbridge.js';
 import { SCBridgeMinaCrawler } from './crawler.minabridge.js';
-import { IGenerateSignature, IUnlockToken } from './interfaces/job.interface.js';
+import { TokenDeployer } from './deploy-token.js';
+import { IDeployToken, IGenerateSignature, ISenderJobPayload, IUnlockToken } from './interfaces/job.interface.js';
 import { JobUnlockProvider } from './job-unlock.provider.js';
 import { SenderEVMBridge } from './sender.evmbridge.js';
 import { SenderMinaBridge } from './sender.minabridge.js';
@@ -26,6 +27,7 @@ export class CrawlerConsole {
     private readonly queueService: QueueService,
     private readonly unlockProviderService: JobUnlockProvider,
     private readonly poaSyncer: POASync,
+    private readonly tokenDeployerService: TokenDeployer,
   ) {}
   private readonly logger = this.loggerService.getLogger('CRAWLER_CONSOLE');
 
@@ -34,7 +36,7 @@ export class CrawlerConsole {
     description: 'Crawl ETH Bridge contract',
   })
   async handleCrawlETHBridge() {
-    const safeBlock = +this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS);
+    const safeBlock = +this.configService.get(EEnvKey.EVM_SAFE_BLOCK);
     while (true) {
       try {
         await this.blockchainEVMCrawler.handleEventCrawlBlock(safeBlock);
@@ -84,13 +86,17 @@ export class CrawlerConsole {
   })
   async handleSenderETHBridgeUnlock() {
     this.logger.info('ETH_SENDER_JOB: started');
-    await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.EVM_SENDER_QUEUE, async (data: IUnlockToken) => {
-      const result = await this.senderEVMBridge.handleUnlockEVM(data.eventLogId);
-      if (result.error) {
-        // catch in queueService
-        throw result.error;
-      }
-    });
+    await this.queueService.handleQueueJob<IUnlockToken>(
+      EQueueName.EVM_SENDER_QUEUE,
+      async (data: ISenderJobPayload) => {
+        switch (data.type) {
+          case 'deploy-token':
+            return this.tokenDeployerService.deployTokenEth((data.payload as IDeployToken).tokenPairId);
+          case 'unlock':
+            return this.senderEVMBridge.handleUnlockEVM((data.payload as IUnlockToken).eventLogId);
+        }
+      },
+    );
   }
 
   @Command({
@@ -115,8 +121,13 @@ export class CrawlerConsole {
   })
   async handleSenderMinaBridgeUnlock() {
     this.logger.info('MINA_SENDER_JOB: started');
-    await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.MINA_SENDER_QUEUE, (data: IUnlockToken) => {
-      return this.senderMinaBridge.handleUnlockMina(data.eventLogId);
+    await this.queueService.handleQueueJob<IUnlockToken>(EQueueName.MINA_SENDER_QUEUE, (data: ISenderJobPayload) => {
+      switch (data.type) {
+        case 'deploy-token':
+          return this.tokenDeployerService.deployTokenMina((data.payload as IDeployToken).tokenPairId);
+        case 'unlock':
+          return this.senderMinaBridge.handleUnlockMina((data.payload as IUnlockToken).eventLogId);
+      }
     });
   }
   @Command({

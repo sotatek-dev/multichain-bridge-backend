@@ -4,11 +4,11 @@ import { ConfigService } from '@nestjs/config';
 // @ts-ignore
 import Web3 from 'web3/lib/index.js';
 
-import { initializeEthContract } from '../../../config/common.config.js';
+import { initializeEthContract, IRpcInit } from '../../../config/common.config.js';
 import { EEnvKey } from '../../../constants/env.constant.js';
 import { ASYNC_CONNECTION } from '../../../constants/service.constant.js';
 import { sleep } from '../../utils/promise.js';
-import { ETHBridgeContract } from './web3.service.js';
+import { Erc20ContractTemplate, ETHBridgeContract } from './web3.service.js';
 
 @Global()
 @Module({
@@ -24,13 +24,20 @@ import { ETHBridgeContract } from './web3.service.js';
     },
     {
       provide: ETHBridgeContract,
-      useFactory: (connection: ETHBridgeContract) => {
-        return connection;
+      useFactory: ({ bridgeContract }: IRpcInit) => {
+        return bridgeContract;
+      },
+      inject: [ASYNC_CONNECTION],
+    },
+    {
+      provide: Erc20ContractTemplate,
+      useFactory: ({ erc20Template }: IRpcInit) => {
+        return erc20Template;
       },
       inject: [ASYNC_CONNECTION],
     },
   ],
-  exports: [Web3Module, ETHBridgeContract],
+  exports: [Web3Module, ETHBridgeContract, Erc20ContractTemplate],
 })
 export class Web3Module {}
 

@@ -82,8 +82,8 @@ export class BlockchainEVMCrawler {
     const inputAmount = event.returnValues.amount;
     const fromTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
       toTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
-    const config = await configRepo.findOneBy({});
-    assert(!!config?.tip, 'tip config undefined');
+    const config = await configRepo.findOneBy({ fromAddress: event.returnValues.tokenAddress });
+    assert(!!config?.bridgeFee, 'tip config undefined');
     const {
       success,
       amountReceiveNoDecimalPlace,
@@ -95,8 +95,8 @@ export class BlockchainEVMCrawler {
       fromDecimal: fromTokenDecimal,
       toDecimal: toTokenDecimal,
       inputAmountNoDecimalPlaces: inputAmount,
-      gasFeeWithDecimalPlaces: config.feeUnlockMina,
-      tipPercent: +config!.tip,
+      gasFeeWithDecimalPlaces: config.mintingFee,
+      tipPercent: +config!.bridgeFee,
     });
     if (error) {
       this.logger.error('Calculate error', error);
@@ -109,7 +109,7 @@ export class BlockchainEVMCrawler {
       networkFrom: ENetworkName.ETH,
       networkReceived: ENetworkName.MINA,
       tokenFromName: event.returnValues.tokenName,
-      tokenReceivedAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
+      tokenReceivedAddress: config.toAddress,
       txHashLock: event.transactionHash,
       receiveAddress: event.returnValues.receipt,
       blockNumber: event.blockNumber,
@@ -151,7 +151,7 @@ export class BlockchainEVMCrawler {
       tokenReceivedName: EAsset.ETH,
     });
     // update total weth burned.
-    const currentConfig = await configRepo.findOneBy({});
+    const currentConfig = await configRepo.findOneBy({ fromAddress: event.returnValues.tokenAddress });
     assert(currentConfig, 'comomn config not exist');
     const newTotalEthBurnt = new BigNumber(currentConfig.totalWethBurnt).plus(existLockTx.amountFrom).toString();
 

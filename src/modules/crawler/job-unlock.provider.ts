@@ -7,7 +7,12 @@ import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity
 
 import { ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
-import { EQueueName, getEvmValidatorQueueName, getMinaValidatorQueueName } from '../../constants/queue.constant.js';
+import {
+  EJobPriority,
+  EQueueName,
+  getEvmValidatorQueueName,
+  getMinaValidatorQueueName,
+} from '../../constants/queue.constant.js';
 import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
@@ -18,7 +23,7 @@ import { sleep } from '../../shared/utils/promise.js';
 import { getNextDayInUnix, getTimeInFutureInMinutes } from '../../shared/utils/time.js';
 import { BatchJobGetPriceToken } from './batch.tokenprice.js';
 import { EventLog } from './entities/event-logs.entity.js';
-import { IGenerateSignature, IJobUnlockPayload, IUnlockToken } from './interfaces/job.interface.js';
+import { IGenerateSignature, IJobUnlockPayload, ISenderJobPayload } from './interfaces/job.interface.js';
 
 @Injectable()
 export class JobUnlockProvider {
@@ -171,30 +176,43 @@ export class JobUnlockProvider {
 
   private async handleSendTxJobs(data: IJobUnlockPayload) {
     // check if there is enough threshhold -> then create an unlock job.
-    if (await this.isPassDailyQuota(data.senderAddress, data.network)) {
+    if (await this.isPassDailyQuota(data.senderAddress, data.network, data.tokenReceivedAddress)) {
       this.logger.warn('this tx exceed daily quota, skip until next day', data.eventLogId);
       await this.eventLogRepository.update(data.eventLogId, { nextSendTxJobTime: getNextDayInUnix().toString() });
       return;
     }
-    await this.queueService.addJobToQueue<IUnlockToken>(
+    await this.queueService.addJobToQueue<ISenderJobPayload>(
       this.getSenderQueueName(data.network),
       {
-        eventLogId: data.eventLogId,
+        type: 'unlock',
+        payload: {
+          eventLogId: data.eventLogId,
+        },
       },
       {
         jobId: `send-unlock-${data.eventLogId}`,
         removeOnComplete: true,
         removeOnFail: true,
+        priority: EJobPriority.UNLOCK,
       },
     );
   }
-  private async isPassDailyQuota(address: string, networkReceived: ENetworkName): Promise<boolean> {
+  private async isPassDailyQuota(address: string, networkReceived: ENetworkName, token: string): Promise<boolean> {
     const fromDecimal = this.configService.get(
       networkReceived === ENetworkName.MINA ? EEnvKey.DECIMAL_TOKEN_EVM : EEnvKey.DECIMAL_TOKEN_MINA,
     );
     const [dailyQuota, todayData] = await Promise.all([
-      await this.commonConfigRepository.getCommonConfig(),
-      await this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
+      await this.commonConfigRepository.findOne({
+        where: {
+          fromAddress: token,
+        },
+        select: {
+          id: true,
+          fromAddress: true,
+          dailyQuota: true,
+        },
+      }),
+      await this.eventLogRepository.sumAmountBridgeOfUserInDay(address, token),
     ]);
     assert(!!dailyQuota, 'daily quota undefined');
     if (

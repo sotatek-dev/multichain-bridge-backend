@@ -1,12 +1,12 @@
 import { EEnvKey } from '../../../constants/env.constant.js';
-import { NumberField, StringField } from '../../../shared/decorators/field.decorator.js';
+import { BooleanField, NumberField, StringField } from '../../../shared/decorators/field.decorator.js';
 
 export class UpdateCommonConfigBodyDto {
   @NumberField({
     example: 50,
     required: false,
   })
-  tip: number;
+  bridgeFee: number;
 
   @NumberField({
     example: 500,
@@ -21,7 +21,7 @@ export class UpdateCommonConfigBodyDto {
     },
     required: false,
   })
-  feeUnlockMina: string;
+  mintingFee: string;
 
   @StringField({
     example: 500,
@@ -30,5 +30,9 @@ export class UpdateCommonConfigBodyDto {
     },
     required: false,
   })
-  feeUnlockEth: string;
+  unlockingFee: string;
+}
+export class UpdateTokenPairVisibilityReqDto {
+  @BooleanField({ required: true })
+  isHidden: boolean;
 }

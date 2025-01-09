@@ -113,7 +113,7 @@ export class SCBridgeMinaCrawler {
     });
 
     // update total weth minted
-    const currentConfig = await configRepo.findOneBy({});
+    const currentConfig = await configRepo.findOneBy({ toAddress: event.event.data.tokenAddress.toBase58() });
     assert(currentConfig, 'comomn config not exist');
     const newTotalEthMinted = new BigNumber(currentConfig.totalWethMinted).plus(existLockTx.amountReceived).toString();
 
@@ -142,9 +142,9 @@ export class SCBridgeMinaCrawler {
     }
     const fromTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA),
       toTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM);
-    const config = await configRepo.findOneBy({});
+    const config = await configRepo.findOneBy({ toAddress: event.event.data.tokenAddress.toBase58() });
 
-    assert(!!config?.tip, 'tip config undefined');
+    assert(!!config?.bridgeFee, 'tip config undefined');
 
     const {
       tipWithDecimalPlaces,
@@ -156,17 +156,17 @@ export class SCBridgeMinaCrawler {
       fromDecimal: fromTokenDecimal,
       toDecimal: toTokenDecimal,
       inputAmountNoDecimalPlaces: inputAmount,
-      gasFeeWithDecimalPlaces: config.feeUnlockEth,
-      tipPercent: Number(config.tip).valueOf(),
+      gasFeeWithDecimalPlaces: config.unlockingFee,
+      tipPercent: Number(config.bridgeFee).valueOf(),
     });
     const eventUnlock: Partial<EventLog> = {
       senderAddress: JSON.parse(JSON.stringify(event.event.data.locker)),
       amountFrom: inputAmount,
-      tokenFromAddress: this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS),
+      tokenFromAddress: config.fromAddress,
       networkFrom: ENetworkName.MINA,
       networkReceived: ENetworkName.ETH,
       tokenFromName: EAsset.WETH,
-      tokenReceivedAddress: this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS),
+      tokenReceivedAddress: config.toAddress,
       txHashLock,
       receiveAddress: receiveAddress,
       blockNumber: +event.blockHeight.toString(),

@@ -6,7 +6,9 @@ import { EventLogRepository } from '../../database/repositories/event-log.reposi
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { TokenPriceRepository } from '../../database/repositories/token-price.repository.js';
 import { UserRepository } from '../../database/repositories/user.repository.js';
+import { TokenDeployer } from '../../modules/crawler/deploy-token.js';
 import { AdminController } from './admin.controller.js';
+import { AdminService } from './admin.service.js';
 import { UsersController } from './users.controller.js';
 import { UsersService } from './users.service.js';
 
@@ -21,7 +23,7 @@ import { UsersService } from './users.service.js';
     ]),
   ],
   controllers: [UsersController, AdminController],
-  providers: [UsersService],
+  providers: [UsersService, AdminService, TokenDeployer],
   exports: [UsersService],
 })
 export class UsersModule {}
