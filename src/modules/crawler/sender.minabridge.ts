@@ -36,9 +36,6 @@ export class SenderMinaBridge {
     });
     Mina.setActiveInstance(network);
     this.getContractsInfo();
-    this.compileContract().then(() => {
-      console.log('compile done');
-    });
   }
   private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   private getContractsInfo() {
