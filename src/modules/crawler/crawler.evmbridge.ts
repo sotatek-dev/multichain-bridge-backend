@@ -6,7 +6,6 @@ import { Logger } from 'log4js';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
-import { EAsset } from '../../constants/api.constant.js';
 import { EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
@@ -73,6 +72,8 @@ export class BlockchainEVMCrawler {
     eventLogRepo: Repository<EventLog>,
     configRepo: Repository<CommonConfig>,
   ): Promise<{ success: boolean }> {
+    this.logger.info(`Handling lock event`, event.returnValues);
+
     const isExist = await eventLogRepo.findOneBy({ txHashLock: event.transactionHash });
     if (isExist) {
       this.logger.warn('Duplicated event', event.transactionHash);
@@ -82,7 +83,7 @@ export class BlockchainEVMCrawler {
     const inputAmount = event.returnValues.amount;
     const fromTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_EVM),
       toTokenDecimal = this.configService.get(EEnvKey.DECIMAL_TOKEN_MINA);
-    const config = await configRepo.findOneBy({ fromAddress: event.returnValues.tokenAddress });
+    const config = await configRepo.findOneBy({ fromAddress: event.returnValues.token });
     assert(!!config?.bridgeFee, 'tip config undefined');
     const {
       success,
@@ -109,6 +110,7 @@ export class BlockchainEVMCrawler {
       networkFrom: ENetworkName.ETH,
       networkReceived: ENetworkName.MINA,
       tokenFromName: event.returnValues.tokenName,
+      tokenReceivedName: `W${event.returnValues.tokenName}`,
       tokenReceivedAddress: config.toAddress,
       txHashLock: event.transactionHash,
       receiveAddress: event.returnValues.receipt,
@@ -148,10 +150,10 @@ export class BlockchainEVMCrawler {
       amountReceived: event.returnValues.amount,
       protocolFee: event.returnValues.fee,
       tokenReceivedAddress: event.returnValues.token,
-      tokenReceivedName: EAsset.ETH,
+      // tokenReceivedName: EAsset.ETH,
     });
     // update total weth burned.
-    const currentConfig = await configRepo.findOneBy({ fromAddress: event.returnValues.tokenAddress });
+    const currentConfig = await configRepo.findOneBy({ fromAddress: event.returnValues.token });
     assert(currentConfig, 'comomn config not exist');
     const newTotalEthBurnt = new BigNumber(currentConfig.totalWethBurnt).plus(existLockTx.amountFrom).toString();
 
