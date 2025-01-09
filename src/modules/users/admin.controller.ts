@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nest
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { GuardPublic } from '../../guards/guard.decorator.js';
 import { AuthAdminGuard } from '../../shared/decorators/http.decorator.js';
 import { AdminService } from './admin.service.js';
 import { CreateTokenReqDto } from './dto/admin-request.dto.js';
@@ -34,6 +33,13 @@ export class AdminController {
   @ApiOkResponse({ type: GetCommonConfigResponseDto })
   getCommonConfig(@Query() query: GetTokensReqDto) {
     return this.adminService.getListToken(query);
+  }
+
+  @Get('token-name/:address')
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
+  getTokenName(@Param() address: string) {
+    return this.adminService.getTokenName(address);
   }
   @Get('check/:tokenAddress')
   @AuthAdminGuard()
