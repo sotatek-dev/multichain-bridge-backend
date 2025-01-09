@@ -6,7 +6,6 @@ import { Logger } from 'log4js';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { EventData } from 'web3-eth-contract';
 
-import { EAsset } from '../../constants/api.constant.js';
 import { EEventName, EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
