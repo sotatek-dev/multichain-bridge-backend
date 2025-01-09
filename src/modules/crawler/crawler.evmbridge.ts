@@ -111,6 +111,7 @@ export class BlockchainEVMCrawler {
       networkFrom: ENetworkName.ETH,
       networkReceived: ENetworkName.MINA,
       tokenFromName: event.returnValues.tokenName,
+      tokenReceivedName: `W${event.returnValues.tokenName}`,
       tokenReceivedAddress: config.toAddress,
       txHashLock: event.transactionHash,
       receiveAddress: event.returnValues.receipt,
@@ -150,7 +151,7 @@ export class BlockchainEVMCrawler {
       amountReceived: event.returnValues.amount,
       protocolFee: event.returnValues.fee,
       tokenReceivedAddress: event.returnValues.token,
-      tokenReceivedName: EAsset.ETH,
+      // tokenReceivedName: EAsset.ETH,
     });
     // update total weth burned.
     const currentConfig = await configRepo.findOneBy({ fromAddress: event.returnValues.token });
