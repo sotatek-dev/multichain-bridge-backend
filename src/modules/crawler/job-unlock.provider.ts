@@ -12,6 +12,7 @@ import { CommonConfigRepository } from '../../database/repositories/common-confi
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { QueueService } from '../../shared/modules/queue/queue.service.js';
+import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
 import { sleep } from '../../shared/utils/promise.js';
 import { getNextDayInUnix, getTimeInFutureInMinutes } from '../../shared/utils/time.js';
@@ -28,6 +29,7 @@ export class JobUnlockProvider {
     private readonly eventLogRepository: EventLogRepository,
     private readonly commonConfigRepository: CommonConfigRepository,
     private tokenPriceCrawler: BatchJobGetPriceToken,
+    private readonly redisClient: RedisClientService,
   ) {}
   private logger = this.loggerService.getLogger('JOB_UNLOCK_PROVIDER');
 
@@ -36,6 +38,7 @@ export class JobUnlockProvider {
       this.getPendingTx(true),
       this.getPendingTx(false),
       this.tokenPriceCrawler.handleCrawlInterval(),
+      this.updateTotalPendingTxCount(),
     ]);
   }
 
@@ -78,7 +81,23 @@ export class JobUnlockProvider {
       } catch (error) {
         this.logger.error(error);
       } finally {
-        await sleep(5);
+        await sleep(20);
+      }
+    }
+  }
+  private async updateTotalPendingTxCount() {
+    const ttl = 60;
+    while (true) {
+      try {
+        const counts = await this.eventLogRepository.getNumOfPendingTx();
+        this.logger.info(`SET_PENDING_TX_COUNT: ${JSON.stringify(counts)}`);
+        for (const { network, count } of counts) {
+          await this.redisClient.setCountWaitingTx(network, Number(count).valueOf(), ttl);
+        }
+      } catch (error) {
+        this.logger.warn('SET_PENDING_TX_COUNT', error);
+      } finally {
+        await sleep(ttl);
       }
     }
   }
@@ -169,7 +188,6 @@ export class JobUnlockProvider {
       },
     );
   }
-  // TODO: fix this
   private async isPassDailyQuota(address: string, networkReceived: ENetworkName): Promise<boolean> {
     const fromDecimal = this.configService.get(
       networkReceived === ENetworkName.MINA ? EEnvKey.DECIMAL_TOKEN_EVM : EEnvKey.DECIMAL_TOKEN_MINA,

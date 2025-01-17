@@ -15,6 +15,7 @@ import { TokenPriceRepository } from '../../database/repositories/token-price.re
 import { UserRepository } from '../../database/repositories/user.repository.js';
 import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exeption.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
 import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetHistoryDto, GetHistoryOfUserDto } from './dto/history-response.dto.js';
@@ -31,6 +32,7 @@ export class UsersService {
     private readonly loggerService: LoggerService,
     private readonly tokenPriceRepository: TokenPriceRepository,
     private readonly tokenPairRepostitory: TokenPairRepository,
+    private readonly redisClientService: RedisClientService,
   ) {}
   private readonly logger = this.loggerService.getLogger('USER_SERVICE');
   async getProfile(userId: number) {
@@ -130,5 +132,23 @@ export class UsersService {
     return {
       totalWethInCirculation,
     };
+  }
+  calcWaitingTime(receivedNetwork: ENetworkName, currentPendingTx: number): number {
+    const receivedNetworkEstWaiting = {
+      [ENetworkName.MINA]: 10 * 60 * (1 + currentPendingTx),
+      [ENetworkName.ETH]: 10 * (1 + currentPendingTx),
+    };
+    // total waiting tx * time_process_each + crawler delays from both lock and unlock
+    return receivedNetworkEstWaiting[receivedNetwork] + 60 + 60 * 15;
+  }
+  async estimateBridgeTime(receivedNetwork: ENetworkName) {
+    const result = {
+      receivedNetwork,
+      completeTimeEstimated: this.calcWaitingTime(
+        receivedNetwork,
+        await this.redisClientService.getCountWaitingTx(receivedNetwork),
+      ),
+    };
+    return result;
   }
 }

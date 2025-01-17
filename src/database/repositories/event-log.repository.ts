@@ -203,4 +203,11 @@ export class EventLogRepository extends BaseRepository<EventLog> {
 
     return qb.getRawOne() as any;
   }
+  async getNumOfPendingTx(): Promise<{ network: ENetworkName; count: string }[]> {
+    const qb = this.createQb();
+    qb.select(['network_received as network', 'count(1)']);
+    qb.where("status = 'waiting'");
+    qb.groupBy('network_received');
+    return qb.getRawMany();
+  }
 }
