@@ -25,6 +25,12 @@ export class AdminService {
     private readonly tokenDeployerService: TokenDeployer,
     private readonly erc20ContractTemplate: Erc20ContractTemplate,
   ) {}
+  async getTokenName(address: string) {
+    return {
+      symbol: await this.erc20ContractTemplate.getTokenSymbol(address),
+      address,
+    };
+  }
   async createNewToken(payload: CreateTokenReqDto) {
     if (await this.checkTokenExist(payload.assetAddress)) {
       return httpBadRequest(EError.DUPLICATED_ACTION);
@@ -40,6 +46,8 @@ export class AdminService {
       //   move create pair logic to helpers
       const newCommonConfig = commonConfigRepo.create();
       newCommonConfig.asset = symbol;
+      newCommonConfig.fromSymbol = symbol;
+      newCommonConfig.toSymbol = `W${symbol}`;
       newCommonConfig.fromAddress = payload.assetAddress;
       newCommonConfig.dailyQuota = +payload.dailyQuota;
       newCommonConfig.fromChain = ENetworkName.ETH;

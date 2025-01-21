@@ -35,6 +35,13 @@ export class AdminController {
   getCommonConfig(@Query() query: GetTokensReqDto) {
     return this.adminService.getListToken(query);
   }
+
+  @Get('token-name/:address')
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
+  getTokenName(@Param('address') address: string) {
+    return this.adminService.getTokenName(address);
+  }
   @Get('check/:tokenAddress')
   @AuthAdminGuard()
   @UseGuards(AuthGuard('jwt'))
