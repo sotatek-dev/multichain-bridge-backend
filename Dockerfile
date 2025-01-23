@@ -2,9 +2,9 @@ FROM node:22-alpine As build
 WORKDIR /app
 
 COPY package*.json ./
-RUN yarn
+RUN npm install
 COPY . .
-RUN yarn build
+RUN npm run build
 
 FROM node:22-alpine
 WORKDIR /app
