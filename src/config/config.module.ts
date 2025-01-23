@@ -82,4 +82,4 @@ const getEnvFile = () => {
   providers: [ConfigService],
   exports: [ConfigService],
 })
-export class ConfigurationModule { }
+export class ConfigurationModule {}
