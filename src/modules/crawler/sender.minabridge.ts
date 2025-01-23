@@ -24,6 +24,8 @@ export class SenderMinaBridge {
   private readonly feePayerKey: PrivateKey;
   private readonly bridgeKey: PrivateKey;
   private readonly tokenPublicKey: PublicKey;
+  private readonly managerPublicKey: PublicKey;
+  private readonly validatorManagerPublicKey: PublicKey
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -35,7 +37,8 @@ export class SenderMinaBridge {
     this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY)!);
     this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY)!);
     this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS)!);
-
+    this.managerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_MANAGER_CONTRACT_ADDRESS)!);
+    this.validatorManagerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_MANAGER_CONTRACT_ADDRESS)!)
     const network = Mina.Network({
       mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
       archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
@@ -108,8 +111,13 @@ export class SenderMinaBridge {
   ): Promise<{ success: boolean; error: Error | null; data: string | null }> {
     try {
       this.logger.info(`Bridge: ${this.bridgeKey.toPublicKey().toBase58()}\nToken: ${this.tokenPublicKey.toBase58}`);
-      const generatedSignatures = await this.multiSignatureRepository.findBy({
-        txId,
+      const generatedSignatures = await this.multiSignatureRepository.find({
+        where: {
+          txId,
+        },
+        order: {
+          validator: 'asc'
+        }
       });
       const signatureData = generatedSignatures
         .map(e => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
@@ -127,6 +135,12 @@ export class SenderMinaBridge {
       const token = new FungibleToken(this.tokenPublicKey);
       const tokenId = token.deriveTokenId();
       await Promise.all([
+        fetchAccount({
+          publicKey: this.validatorManagerPublicKey
+        }),
+        fetchAccount({
+          publicKey: this.managerPublicKey
+        }),
         fetchAccount({ publicKey: bridgePublicKey }),
         fetchAccount({ publicKey: feePayerPublicKey }),
         fetchAccount({ publicKey: receiverPublicKey, tokenId }),
@@ -199,7 +213,7 @@ export class SenderMinaBridge {
 
     multiSignature = new MultiSignature({
       chain: ENetworkName.MINA,
-      validator: signerPublicKey,
+      validator: `${this.configService.get(EEnvKey.THIS_VALIDATOR_INDEX)}_${signerPublicKey}`,
       txId: dataLock.id,
       signature,
     });
