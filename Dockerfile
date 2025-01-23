@@ -1,10 +1,10 @@
-FROM node:18-alpine As build
+FROM node:22-alpine As build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm i 
+RUN yarn
 COPY . .
-RUN npm run build
+RUN yarn build
 
 FROM node:18-alpine
 WORKDIR /app
