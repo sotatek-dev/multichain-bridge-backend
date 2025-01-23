@@ -122,7 +122,7 @@ export class SenderMinaBridge {
       });
       assert(generatedSignatures.length > 0)
       const signatureData = generatedSignatures
-        .map(e => [Bool(true), PublicKey.fromBase58(e.validator.split('_')[1]!), Signature.fromJSON(JSON.parse(e.signature))])
+        .map(e => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
         .flat(1);
       this.logger.info(`Found ${generatedSignatures.length} signatures for txId= ${txId}`);
       this.logger.info('compile the contract...');
