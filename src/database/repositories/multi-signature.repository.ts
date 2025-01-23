@@ -7,21 +7,4 @@ import { MultiSignature } from '../../modules/crawler/entities/multi-signature.e
 @EntityRepository(MultiSignature)
 export class MultiSignatureRepository extends BaseRepository<MultiSignature> {
   protected alias: ETableName = ETableName.MULTI_SIGNATURE;
-  public async upsertErrorAndRetryMultiSignature(validator: string, txId: number, errorCode: string) {
-    const validatorSignature = await this.findOne({
-      where: { txId, validator },
-    });
-    if (!validatorSignature) {
-      await this.save(
-        new MultiSignature({
-          txId,
-          validator,
-          retry: 1,
-          errorCode,
-        }),
-      );
-    } else {
-      await this.update({ txId, validator }, { retry: ++validatorSignature.retry, errorCode });
-    }
-  }
 }

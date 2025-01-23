@@ -25,7 +25,7 @@ export class SenderMinaBridge {
   private readonly bridgeKey: PrivateKey;
   private readonly tokenPublicKey: PublicKey;
   private readonly managerPublicKey: PublicKey;
-  private readonly validatorManagerPublicKey: PublicKey;
+  private readonly validatorManagerPublicKey: PublicKey
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -38,14 +38,13 @@ export class SenderMinaBridge {
     this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY)!);
     this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS)!);
     this.managerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_MANAGER_CONTRACT_ADDRESS)!);
-    this.validatorManagerPublicKey = PublicKey.fromBase58(
-      this.configService.get(EEnvKey.MINA_VALIDATOR_MANAGER_CONTRACT_ADDRESS)!,
-    );
+    this.validatorManagerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_MANAGER_CONTRACT_ADDRESS)!)
     const network = Mina.Network({
       mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
       archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
     });
     Mina.setActiveInstance(network);
+    this.getContractsInfo()
   }
   private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   private getContractsInfo() {
@@ -118,16 +117,12 @@ export class SenderMinaBridge {
           txId,
         },
         order: {
-          validator: 'asc',
-        },
+          index: 'asc'
+        }
       });
-      assert(generatedSignatures.length > 0);
+      assert(generatedSignatures.length > 0)
       const signatureData = generatedSignatures
-        .map(e => [
-          Bool(true),
-          PublicKey.fromBase58(e.validator.split('_')[1]!),
-          Signature.fromJSON(JSON.parse(e.signature)),
-        ])
+        .map(e => [Bool(true), PublicKey.fromBase58(e.validator.split('_')[1]!), Signature.fromJSON(JSON.parse(e.signature))])
         .flat(1);
       this.logger.info(`Found ${generatedSignatures.length} signatures for txId= ${txId}`);
       this.logger.info('compile the contract...');
@@ -143,10 +138,10 @@ export class SenderMinaBridge {
       const tokenId = token.deriveTokenId();
       await Promise.all([
         fetchAccount({
-          publicKey: this.validatorManagerPublicKey,
+          publicKey: this.validatorManagerPublicKey
         }),
         fetchAccount({
-          publicKey: this.managerPublicKey,
+          publicKey: this.managerPublicKey
         }),
         fetchAccount({ publicKey: bridgePublicKey }),
         fetchAccount({ publicKey: feePayerPublicKey }),
@@ -199,11 +194,10 @@ export class SenderMinaBridge {
 
     const { receiveAddress, amountReceived } = dataLock;
 
-    const validatorName = `${this.configService.get(EEnvKey.THIS_VALIDATOR_INDEX)}_${signerPublicKey}`;
     // check if this signature has been tried before.
     let multiSignature = await this.multiSignatureRepository.findOneBy({
       txId: dataLock.id,
-      validator: validatorName,
+      validator: signerPublicKey,
     });
     if (multiSignature) {
       this.logger.warn('signature existed');
@@ -221,7 +215,8 @@ export class SenderMinaBridge {
 
     multiSignature = new MultiSignature({
       chain: ENetworkName.MINA,
-      validator: validatorName,
+      validator: signerPublicKey,
+      index: Number(this.configService.get(EEnvKey.THIS_VALIDATOR_INDEX)),
       txId: dataLock.id,
       signature,
     });
