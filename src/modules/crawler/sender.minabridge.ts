@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
 import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
@@ -19,7 +19,7 @@ import { Manager } from './minaSc/Manager.js';
 import { ValidatorManager } from './minaSc/ValidatorManager.js';
 
 @Injectable()
-export class SenderMinaBridge {
+export class SenderMinaBridge implements OnModuleInit {
   private isContractCompiled = false;
   private readonly feePayerKey: PrivateKey;
   private readonly bridgeKey: PrivateKey;
@@ -44,10 +44,9 @@ export class SenderMinaBridge {
       archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
     });
     Mina.setActiveInstance(network);
-    this.getContractsInfo()
   }
   private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
-  private getContractsInfo() {
+  onModuleInit() {
     this.logger.log('Bridge', this.bridgeKey.toPublicKey().toBase58());
     this.logger.log('FeePayer', this.feePayerKey.toPublicKey().toBase58());
     this.logger.log('Token', this.tokenPublicKey.toBase58());
