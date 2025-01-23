@@ -9,9 +9,6 @@ jobs:
     runs-on: [self-hosted, mina-bridge-dev-v2]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
-        with:
-          node-version: v22.13.1
       - run: |
           echo "${{ secrets.MINA_BRIDGE_BE_DEV_2 }}" >> .env
           docker build . -t mina-bridge:1.0.0
