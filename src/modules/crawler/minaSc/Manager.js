@@ -10,48 +10,48 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 import { SmartContract, State, state, PublicKey, method, } from 'o1js';
 export class Manager extends SmartContract {
   constructor() {
-      super(...arguments);
-      this.admin = State();
-      this.minter_1 = State();
-      this.minter_2 = State();
-      this.minter_3 = State();
+    super(...arguments);
+    this.admin = State();
+    this.minter_1 = State();
+    this.minter_2 = State();
+    this.minter_3 = State();
   }
   async deploy(args) {
-      await super.deploy(args);
-      this.minter_1.set(args._minter_1);
-      this.minter_2.set(args._minter_2);
-      this.minter_3.set(args._minter_3);
-      this.admin.set(args._admin);
+    await super.deploy(args);
+    this.minter_1.set(args._minter_1);
+    this.minter_2.set(args._minter_2);
+    this.minter_3.set(args._minter_3);
+    this.admin.set(args._admin);
   }
   isAdmin(sender) {
-      this.admin.getAndRequireEquals().assertEquals(sender);
+    this.admin.getAndRequireEquals().assertEquals(sender);
   }
   isMinter(sender) {
-      const minter1 = this.minter_1.getAndRequireEquals();
-      const minter2 = this.minter_2.getAndRequireEquals();
-      const minter3 = this.minter_3.getAndRequireEquals();
-      // Check if sender matches any of the minters
-      const isMinter1 = sender.equals(minter1);
-      const isMinter2 = sender.equals(minter2);
-      const isMinter3 = sender.equals(minter3);
-      // Require that sender is one of the minters
-      isMinter1.or(isMinter2).or(isMinter3).assertTrue("Sender is not a minter");
+    const minter1 = this.minter_1.getAndRequireEquals();
+    const minter2 = this.minter_2.getAndRequireEquals();
+    const minter3 = this.minter_3.getAndRequireEquals();
+    // Check if sender matches any of the minters
+    const isMinter1 = sender.equals(minter1);
+    const isMinter2 = sender.equals(minter2);
+    const isMinter3 = sender.equals(minter3);
+    // Require that sender is one of the minters
+    isMinter1.or(isMinter2).or(isMinter3).assertTrue("Sender is not a minter");
   }
   async changeAdmin(_admin) {
-      this.isAdmin(this.sender.getAndRequireSignature());
-      this.admin.set(_admin);
+    this.isAdmin(this.sender.getAndRequireSignature());
+    this.admin.set(_admin);
   }
   async changeMinter_1(_minter_1) {
-      this.isAdmin(this.sender.getAndRequireSignature());
-      this.minter_1.set(_minter_1);
+    this.isAdmin(this.sender.getAndRequireSignature());
+    this.minter_1.set(_minter_1);
   }
   async changeMinter_2(_minter_2) {
-      this.isAdmin(this.sender.getAndRequireSignature());
-      this.minter_2.set(_minter_2);
+    this.isAdmin(this.sender.getAndRequireSignature());
+    this.minter_2.set(_minter_2);
   }
   async changeMinter_3(_minter_3) {
-      this.isAdmin(this.sender.getAndRequireSignature());
-      this.minter_3.set(_minter_3);
+    this.isAdmin(this.sender.getAndRequireSignature());
+    this.minter_3.set(_minter_3);
   }
 }
 __decorate([
