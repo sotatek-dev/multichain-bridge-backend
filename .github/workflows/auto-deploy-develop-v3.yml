@@ -1,0 +1,15 @@
+name: Deploy [develop] Mina Bridge
+run-name: ${{ github.actor }} is deploying develop branch [dev] 🌏 🚀 🛰️ 🌕
+on:
+  push:
+    branches:
+      - 'develop-phase-2'
+jobs:
+  DeployDevelop:
+    runs-on: [self-hosted, mina-bridge-dev-v3]
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          echo "${{ secrets.MINA_BRIDGE_BE_DEV_2 }}" >> .env
+          docker build . -t mina-bridge:1.0.0
+          docker-compose -f docker-compose.dev.yaml up -d --remove-orphans
