@@ -1,57 +1,57 @@
 services:
-  api:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run migration:run-dist && npm run start:prod;"
-    tty: true
-    restart: always
-    ports:
-      - ${PORT}:${PORT}
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
-  crawl-bridge-evm:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console crawl-eth-bridge-contract"
-    tty: true
-    restart: always
+  # api:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run migration:run-dist && npm run start:prod;"
+  #   tty: true
+  #   restart: always
+  #   ports:
+  #     - ${PORT}:${PORT}
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
+  # crawl-bridge-evm:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console crawl-eth-bridge-contract"
+  #   tty: true
+  #   restart: always
 
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
-  sender-evm:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console sender-eth-bridge-unlock"
-    tty: true
-    restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
+  # sender-evm:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console sender-eth-bridge-unlock"
+  #   tty: true
+  #   restart: always
 
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
-  crawl-bridge-mina:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console crawl-mina-bridge-contract"
-    tty: true
-    restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
+  # crawl-bridge-mina:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console crawl-mina-bridge-contract"
+  #   tty: true
+  #   restart: always
 
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
   sender-mina:
     image: mina-bridge:1.0.0
     command: >
@@ -63,111 +63,114 @@ services:
       - redis
     networks:
       - myNetwork
-    user: node
-  validate-evm-signature-1:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console validate-eth-bridge-unlock"
-    tty: true
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
     environment:
-      EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_1}
-      THIS_VALIDATOR_INDEX: 1
+      - REDIS_HOST=redis
+      - DB_HOST=postgres
+    user: node
+  # validate-evm-signature-1:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console validate-eth-bridge-unlock"
+  #   tty: true
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
+  #   environment:
+  #     EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_1}
+  #     THIS_VALIDATOR_INDEX: 1
 
-  validate-evm-signature-2:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console validate-eth-bridge-unlock"
-    tty: true
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
-    environment:
-      EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_2}
-      THIS_VALIDATOR_INDEX: 2
+  # validate-evm-signature-2:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console validate-eth-bridge-unlock"
+  #   tty: true
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
+  #   environment:
+  #     EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_2}
+  #     THIS_VALIDATOR_INDEX: 2
 
-  validate-evm-signature-3:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console validate-eth-bridge-unlock"
-    tty: true
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
-    environment:
-      EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_3}
-      THIS_VALIDATOR_INDEX: 3
-  validate-mina-signature-1:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console validate-mina-bridge-unlock"
-    tty: true
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    environment:
-      MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_1}
-      THIS_VALIDATOR_INDEX: 1
-    user: node
-  validate-mina-signature-2:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console validate-mina-bridge-unlock"
-    tty: true
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
-    environment:
-      MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_2}
-      THIS_VALIDATOR_INDEX: 2
-  validate-mina-signature-3:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console validate-mina-bridge-unlock"
-    tty: true
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
-    environment:
-      MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_3}
-      THIS_VALIDATOR_INDEX: 3
-  job-unlock-provider:
-    image: mina-bridge:1.0.0
-    command: >
-      sh -c "npm run console unlock-job-provider"
-    tty: true
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - myNetwork
-    user: node
+  # validate-evm-signature-3:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console validate-eth-bridge-unlock"
+  #   tty: true
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
+  #   environment:
+  #     EVM_VALIDATOR_PRIVATE_KEY : ${EVM_VALIDATOR_PRIVATE_KEY_3}
+  #     THIS_VALIDATOR_INDEX: 3
+  # validate-mina-signature-1:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console validate-mina-bridge-unlock"
+  #   tty: true
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   environment:
+  #     MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_1}
+  #     THIS_VALIDATOR_INDEX: 1
+  #   user: node
+  # validate-mina-signature-2:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console validate-mina-bridge-unlock"
+  #   tty: true
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
+  #   environment:
+  #     MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_2}
+  #     THIS_VALIDATOR_INDEX: 2
+  # validate-mina-signature-3:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console validate-mina-bridge-unlock"
+  #   tty: true
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
+  #   environment:
+  #     MINA_VALIDATOR_PRIVATE_KEY: ${MINA_VALIDATOR_PRIVATE_KEY_3}
+  #     THIS_VALIDATOR_INDEX: 3
+  # job-unlock-provider:
+  #   image: mina-bridge:1.0.0
+  #   command: >
+  #     sh -c "npm run console unlock-job-provider"
+  #   tty: true
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - myNetwork
+  #   user: node
   postgres:
     container_name: mina-bridge-${NODE_ENV}-postgres
     image: postgres:15.3-alpine3.18

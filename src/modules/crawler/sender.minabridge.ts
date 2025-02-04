@@ -47,11 +47,11 @@ export class SenderMinaBridge implements OnModuleInit {
   }
   private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   onModuleInit() {
-    this.logger.log('Bridge', this.bridgeKey.toPublicKey().toBase58());
-    this.logger.log('FeePayer', this.feePayerKey.toPublicKey().toBase58());
-    this.logger.log('Token', this.tokenPublicKey.toBase58());
+    this.logger.info('Bridge', this.bridgeKey.toPublicKey().toBase58());
+    this.logger.info('FeePayer', this.feePayerKey.toPublicKey().toBase58());
+    this.logger.info('Token', this.tokenPublicKey.toBase58());
   }
-  private async compileContract() {
+  public async compileContract() {
     if (!this.isContractCompiled) {
       await FungibleToken.compile();
       await FungibleTokenAdmin.compile();
@@ -121,7 +121,7 @@ export class SenderMinaBridge implements OnModuleInit {
       });
       assert(generatedSignatures.length > 0)
       const signatureData = generatedSignatures
-        .map(e => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
+        .map((e) => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
         .flat(1);
       this.logger.info(`Found ${generatedSignatures.length} signatures for txId= ${txId}`);
       this.logger.info('compile the contract...');
@@ -230,7 +230,7 @@ export class SenderMinaBridge implements OnModuleInit {
     await tx.prove();
 
     this.logger.info('send transaction...');
-    await tx.sign([this.feePayerKey, this.bridgeKey]);
+    await tx.sign([this.feePayerKey]);
 
     // update the tx status as processing. it won't be retries
 
