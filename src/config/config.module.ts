@@ -50,6 +50,8 @@ const getEnvFile = () => {
         [EEnvKey.ETH_BRIDGE_RPC_OPTIONS]: Joi.string().required(),
         [EEnvKey.SIGNER_PRIVATE_KEY]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
+        [EEnvKey.MINA_MANAGER_CONTRACT_ADDRESS]: Joi.string().required(),
+        [EEnvKey.MINA_VALIDATOR_MANAGER_CONTRACT_ADDRESS]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
         [EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
         [EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),

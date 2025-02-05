@@ -63,6 +63,9 @@ services:
       - redis
     networks:
       - myNetwork
+    environment:
+      - REDIS_HOST=redis
+      - DB_HOST=postgres
     user: node
   validate-evm-signature-1:
     image: mina-bridge:1.0.0

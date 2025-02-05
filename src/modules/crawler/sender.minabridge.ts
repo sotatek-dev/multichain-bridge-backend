@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
 import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
@@ -19,11 +19,13 @@ import { Manager } from './minaSc/Manager.js';
 import { ValidatorManager } from './minaSc/ValidatorManager.js';
 
 @Injectable()
-export class SenderMinaBridge {
+export class SenderMinaBridge implements OnModuleInit {
   private isContractCompiled = false;
   private readonly feePayerKey: PrivateKey;
   private readonly bridgeKey: PrivateKey;
   private readonly tokenPublicKey: PublicKey;
+  private readonly managerPublicKey: PublicKey;
+  private readonly validatorManagerPublicKey: PublicKey
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
@@ -35,7 +37,8 @@ export class SenderMinaBridge {
     this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY)!);
     this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY)!);
     this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS)!);
-
+    this.managerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_MANAGER_CONTRACT_ADDRESS)!);
+    this.validatorManagerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_MANAGER_CONTRACT_ADDRESS)!)
     const network = Mina.Network({
       mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
       archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
@@ -43,12 +46,12 @@ export class SenderMinaBridge {
     Mina.setActiveInstance(network);
   }
   private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
-  private getContractsInfo() {
-    this.logger.log('Bridge', this.bridgeKey.toPublicKey().toBase58());
-    this.logger.log('FeePayer', this.feePayerKey.toPublicKey().toBase58());
-    this.logger.log('Token', this.tokenPublicKey.toBase58());
+  onModuleInit() {
+    this.logger.info('Bridge', this.bridgeKey.toPublicKey().toBase58());
+    this.logger.info('FeePayer', this.feePayerKey.toPublicKey().toBase58());
+    this.logger.info('Token', this.tokenPublicKey.toBase58());
   }
-  private async compileContract() {
+  public async compileContract() {
     if (!this.isContractCompiled) {
       await FungibleToken.compile();
       await FungibleTokenAdmin.compile();
@@ -108,11 +111,17 @@ export class SenderMinaBridge {
   ): Promise<{ success: boolean; error: Error | null; data: string | null }> {
     try {
       this.logger.info(`Bridge: ${this.bridgeKey.toPublicKey().toBase58()}\nToken: ${this.tokenPublicKey.toBase58}`);
-      const generatedSignatures = await this.multiSignatureRepository.findBy({
-        txId,
+      const generatedSignatures = await this.multiSignatureRepository.find({
+        where: {
+          txId,
+        },
+        order: {
+          index: 'asc'
+        }
       });
+      assert(generatedSignatures.length > 0)
       const signatureData = generatedSignatures
-        .map(e => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
+        .map((e) => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
         .flat(1);
       this.logger.info(`Found ${generatedSignatures.length} signatures for txId= ${txId}`);
       this.logger.info('compile the contract...');
@@ -127,6 +136,12 @@ export class SenderMinaBridge {
       const token = new FungibleToken(this.tokenPublicKey);
       const tokenId = token.deriveTokenId();
       await Promise.all([
+        fetchAccount({
+          publicKey: this.validatorManagerPublicKey
+        }),
+        fetchAccount({
+          publicKey: this.managerPublicKey
+        }),
         fetchAccount({ publicKey: bridgePublicKey }),
         fetchAccount({ publicKey: feePayerPublicKey }),
         fetchAccount({ publicKey: receiverPublicKey, tokenId }),
@@ -200,6 +215,7 @@ export class SenderMinaBridge {
     multiSignature = new MultiSignature({
       chain: ENetworkName.MINA,
       validator: signerPublicKey,
+      index: Number(this.configService.get(EEnvKey.THIS_VALIDATOR_INDEX)),
       txId: dataLock.id,
       signature,
     });
@@ -214,7 +230,7 @@ export class SenderMinaBridge {
     await tx.prove();
 
     this.logger.info('send transaction...');
-    await tx.sign([this.feePayerKey, this.bridgeKey]);
+    await tx.sign([this.feePayerKey]);
 
     // update the tx status as processing. it won't be retries
 

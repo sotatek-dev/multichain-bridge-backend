@@ -17,7 +17,7 @@ export class BatchJobGetPriceToken {
     private readonly configService: ConfigService,
     private readonly tokenPriceRepository: TokenPriceRepository,
     private loggerService: LoggerService,
-  ) { }
+  ) {}
   private readonly apiKey = this.configService.get(EEnvKey.COINMARKET_KEY);
   private readonly apiUrl = this.configService.get(EEnvKey.COINMARKET_URL);
   private readonly headers = {

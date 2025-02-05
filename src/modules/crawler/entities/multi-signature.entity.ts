@@ -10,6 +10,9 @@ export class MultiSignature extends BaseEntityIncludeTime {
   @Column({ name: 'validator', type: 'varchar', nullable: true })
   validator: string;
 
+  @Column({ name: 'index', type: 'int4', nullable: true })
+  index: number;
+
   @Column({ name: 'tx_id', type: 'bigint', nullable: true })
   txId: number;
 
