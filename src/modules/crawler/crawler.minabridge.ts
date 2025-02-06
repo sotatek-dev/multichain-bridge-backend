@@ -181,6 +181,7 @@ export class SCBridgeMinaCrawler {
       tip: tipWithDecimalPlaces,
       amountReceived: amountReceiveNoDecimalPlace,
       protocolFee: protocolFeeNoDecimalPlace,
+      errorDetail: success ? '' : 'invalid amount'
     };
 
     const result = await eventLogRepo.save(eventUnlock);
