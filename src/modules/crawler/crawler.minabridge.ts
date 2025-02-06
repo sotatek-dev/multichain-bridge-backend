@@ -173,7 +173,7 @@ export class SCBridgeMinaCrawler {
       blockTimeLock: Number(Math.floor(dayjs().valueOf() / 1000)),
       event: EEventName.LOCK,
       returnValues: JSON.stringify(event),
-      status: success ? EEventStatus.WAITING : EEventStatus.PROCESSING,
+      status: success ? EEventStatus.WAITING : EEventStatus.FAILED,
       retry: 0,
       fromTokenDecimal,
       toTokenDecimal,

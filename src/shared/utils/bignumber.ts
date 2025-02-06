@@ -94,14 +94,14 @@ export const calculateUnlockFee = ({
 
     // amount received= total amount - protocol fee
     const amountReceived = BigNumber(amountReceiveConvert).minus(protocolFeeNoDecimalPlace);
-
+    let success = amountReceived.isGreaterThan(0)
     return {
       tipWithDecimalPlaces: removeSuffixDecimal(tip.toString(), toDecimal),
       amountReceiveNoDecimalPlace: amountReceived.toFixed(0),
       gasFeeWithDecimalPlaces: gasFeeWithDecimalPlaces,
       protocolFeeNoDecimalPlace: protocolFeeNoDecimalPlace.toFixed(0),
       error: null,
-      success: true,
+      success,
     };
   } catch (error) {
     return {

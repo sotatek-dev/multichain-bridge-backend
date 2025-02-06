@@ -19,4 +19,22 @@ describe('test amount fee calculation', () => {
 
     expect(result.success).toBeTruthy();
   });
+
+  it('negative amount received', () => {
+    const fromDecimal = 18,
+      toDecimal = 9,
+      gasFeeWithDecimalPlaces = '0.001', // network gas fee
+      inputAmountNoDecimalPlaces = '0', // locked amount
+      tipPercent = 5; // tip percentage. max 100
+    const result = calculateUnlockFee({
+      fromDecimal,
+      gasFeeWithDecimalPlaces,
+      inputAmountNoDecimalPlaces,
+      tipPercent,
+      toDecimal,
+    });
+    console.log(result);
+
+    expect(result.success).toBeFalsy();
+  });
 });
