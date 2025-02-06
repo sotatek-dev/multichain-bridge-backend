@@ -106,5 +106,3 @@ yarn seed:run --name {SeederName}
 
 ## Support
 If you have any issue with this repository, please feel free to contact our team 
-
-<!-- (10/3/2024) -->
