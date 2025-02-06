@@ -1,6 +1,6 @@
-import { IBaseAttribute } from '@core/base.interface';
+import { IBaseAttribute } from '../../../core/base.interface.js';
 
 export interface IUserInterface extends IBaseAttribute {
-  email: string;
-  password: string;
+  walletAddress: string;
+  name: string;
 }

@@ -1,43 +1,64 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptions } from '@nestjs/swagger';
-import { Expose, Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
+  IsDecimal,
+  IsEmail,
   IsEnum,
   IsInt,
   IsNotEmpty,
   isNumber,
   IsNumber,
   IsNumberString,
+  IsObject,
   IsOptional,
   IsPositive,
-  isString,
   IsString,
-  matches,
   Max,
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 
-import { getVariableName } from '@shared/utils/util';
+import { isDevelopmentEnvironment } from '../../shared/utils/util.js';
+import { ToBoolean, ToBooleanArray, ToLowerCase, ToUpperCase, Trim } from './transform.decorator.js';
 
-import { ToArray, ToBoolean, ToLowerCase, ToUpperCase, Trim } from './transform.decorator';
-
-interface IBaseOptions {
-  swagger?: boolean;
-  expose?: boolean;
-}
-
-interface IStringFieldOptions extends IBaseOptions {
+interface IStringFieldOptions {
   minLength?: number;
   maxLength?: number;
   toLowerCase?: boolean;
   toUpperCase?: boolean;
-  number?: boolean;
+  number?:
+    | boolean
+    | {
+        maxDecimalPlaces: number;
+      };
+  isEmail?: boolean;
+  isEthereumAddress?: boolean;
 }
+const initSharedDecorator = (options: ApiPropertyOptions, type: any) => {
+  const sharedDecorators = [];
+  if (isDevelopmentEnvironment()) {
+    sharedDecorators.push(ApiProperty({ ...options, type }));
+  }
+  if (options.required) {
+    sharedDecorators.push(IsNotEmpty());
+  } else {
+    sharedDecorators.push(IsOptional());
+  }
+  if (options.enum) {
+    sharedDecorators.push(IsEnum(options.enum));
+  }
+  if (options.isArray) {
+    sharedDecorators.push(IsArray());
+  }
 
-interface INumberFieldOptions extends IBaseOptions {
+  return sharedDecorators;
+};
+interface INumberFieldOptions {
   each?: boolean;
   minimum?: number;
   maximum?: number;
@@ -45,35 +66,10 @@ interface INumberFieldOptions extends IBaseOptions {
   isPositive?: boolean;
 }
 
-export function initDecoratorField(
-  options: ApiPropertyOptions & Partial<{ expose: boolean }>,
-  decorators: PropertyDecorator[],
-) {
-  if (options?.expose) {
-    decorators.push(Expose());
-  }
-
-  if (options?.required === false) {
-    decorators.push(IsOptional());
-  } else {
-    decorators.push(IsNotEmpty());
-  }
-
-  return applyDecorators(...decorators);
-}
-
 export function NumberField(options: Omit<ApiPropertyOptions, 'type'> & INumberFieldOptions = {}): PropertyDecorator {
-  const decorators = [Type(() => Number)];
+  const decorators = [Type(() => Number), ...initSharedDecorator(options, Number)];
 
-  const { each, int, minimum, maximum, isPositive, swagger } = options;
-
-  if (swagger !== false) {
-    decorators.push(ApiProperty({ type: Number, ...options, example: int ? 1 : 1.2 }));
-  }
-
-  if (each) {
-    decorators.push(ToArray());
-  }
+  const { int, minimum, maximum, isPositive, isArray: each = false } = options;
 
   if (int) {
     decorators.push(IsInt({ each }));
@@ -93,22 +89,13 @@ export function NumberField(options: Omit<ApiPropertyOptions, 'type'> & INumberF
     decorators.push(IsPositive({ each }));
   }
 
-  return initDecoratorField(options, decorators);
-}
-
-export function NumberFieldOption(
-  options: Omit<ApiPropertyOptions, 'type'> & INumberFieldOptions = {},
-): PropertyDecorator {
-  return NumberField({ ...options, required: false });
+  return applyDecorators(...decorators);
 }
 
 export function StringField(options: Omit<ApiPropertyOptions, 'type'> & IStringFieldOptions = {}): PropertyDecorator {
-  const decorators = [IsNotEmpty(), Trim()];
-  const { swagger, minLength, maxLength, toLowerCase, toUpperCase, number } = options;
+  const decorators = [Trim(), ...initSharedDecorator(options, String)];
 
-  if (swagger !== false) {
-    decorators.push(ApiProperty({ type: String, ...options }));
-  }
+  const { minLength, maxLength, toLowerCase, toUpperCase, number, isEmail, isArray = false } = options;
 
   if (minLength) {
     decorators.push(MinLength(minLength));
@@ -125,100 +112,51 @@ export function StringField(options: Omit<ApiPropertyOptions, 'type'> & IStringF
   if (toUpperCase) {
     decorators.push(ToUpperCase());
   }
-
-  if (number) {
-    decorators.push(IsNumberString());
+  // strings, number string validation
+  if (typeof number == 'object') {
+    decorators.push(
+      IsDecimal(
+        { decimal_digits: '0,' + number.maxDecimalPlaces },
+        {
+          each: isArray,
+          message: ctx => `${ctx.property} must be a number with max decimal places equals ${number.maxDecimalPlaces}`,
+        },
+      ),
+    );
+  } else if (typeof number === 'boolean') {
+    decorators.push(IsNumberString({}, { each: isArray }));
   } else {
-    decorators.push(IsString());
+    decorators.push(IsString({ each: isArray }));
+  }
+  //
+  if (isEmail) {
+    decorators.push(IsEmail());
   }
 
-  return initDecoratorField(options, decorators);
-}
-
-export function StringFieldOption(
-  options: Omit<ApiPropertyOptions, 'type'> & IStringFieldOptions = {},
-): PropertyDecorator {
-  return StringField({ ...options, required: false });
+  return applyDecorators(...decorators);
 }
 
 export function BooleanField(
   options: Omit<ApiPropertyOptions, 'type'> & Partial<{ swagger: boolean }> = {},
 ): PropertyDecorator {
-  const decorators = [IsBoolean(), ToBoolean()];
-
-  if (options?.swagger !== false) {
-    decorators.push(ApiProperty({ type: Boolean, ...options }));
-  }
-
-  return initDecoratorField(options, decorators);
-}
-
-export function BooleanFieldOption(
-  options: Omit<ApiPropertyOptions, 'type'> & Partial<{ swagger: boolean }> = {},
-): PropertyDecorator {
-  return BooleanField({ ...options, required: false });
-}
-
-export function EnumField<TEnum>(
-  getEnum: () => TEnum,
-  options: Omit<ApiPropertyOptions, 'type' | 'enum' | 'enumName'> &
-    Partial<{
-      each: boolean;
-      swagger: boolean;
-      enumNumber: boolean;
-    }> = {},
-): PropertyDecorator {
-  const enumValue = getEnum() as any;
-  const decorators = [IsEnum(enumValue)];
-  let description = '';
-
-  if (options?.enumNumber) {
-    const enumObject = Object.values(enumValue).filter(x => typeof x === 'string');
-    description = Object.keys(enumObject)
-      .map(key => enumObject[key] + ': ' + enumValue[enumObject[key]])
-      .join(', ');
-    decorators.push(Type(() => Number));
+  const decorators = [...initSharedDecorator(options, Boolean)];
+  if (options.isArray) {
+    decorators.push(IsBoolean({ each: true }), ToBooleanArray());
   } else {
-    description = Object.values(enumValue)
-      .map(key => key)
-      .join(', ');
+    decorators.push(IsBoolean(), ToBoolean());
   }
-
-  if (options?.swagger !== false) {
-    options = { ...options, description };
-    decorators.push(
-      ApiProperty({
-        enumName: getVariableName(getEnum),
-        ...options,
-      }),
-    );
-  }
-
-  if (options.each) {
-    decorators.push(ToArray());
-  }
-
-  return initDecoratorField(options, decorators);
+  return applyDecorators(...decorators);
 }
 
-export function EnumFieldOptional<TEnum>(
-  getEnum: () => TEnum,
-  options: Omit<ApiPropertyOptions, 'type' | 'required' | 'enum' | 'enumName'> &
-    Partial<{ each: boolean; swagger: boolean; enumNumber: boolean }> = {},
-): PropertyDecorator {
-  return EnumField(getEnum, { ...options, required: false });
-}
+export function ObjectField(options: Omit<ApiPropertyOptions, 'type'> & { type: CallableFunction }) {
+  const decorators = initSharedDecorator(options, options.type);
 
-export function IsDescriptiveNumber(options = {}) {
-  const regex = new RegExp(/^~?\d+(\.\d+)?$/);
-  return applyDecorators(
-    Transform(({ value }) => {
-      if (!isString(value)) return value;
-      if (matches(value, regex) && value.match(/\d/g).length <= 10) return value; // match the pattern (~)number(.number)
-      return -1;
-    }),
-    IsString({
-      message: v => `Field ${v.property} must be a number string with less than 10 digit.`,
-    }),
-  );
+  decorators.push(Type(() => options.type));
+  decorators.push(ValidateNested({ each: true }));
+  if (options.isArray) {
+    decorators.push(IsArray());
+  } else {
+    decorators.push(IsObject());
+  }
+  return applyDecorators(...decorators);
 }

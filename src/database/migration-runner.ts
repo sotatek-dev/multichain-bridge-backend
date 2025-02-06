@@ -1,5 +1,6 @@
 import { exec } from 'child_process';
-import { migrationDir } from 'ormconfig';
+
+import { migrationDir } from '../ormconfig.js';
 
 exec(`typeorm migration:create ${migrationDir}/${process.argv[2]}`, (error, stdout, stderr) => {
   if (error) {

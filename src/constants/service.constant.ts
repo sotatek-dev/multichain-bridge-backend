@@ -1,2 +1,2 @@
-export const RPC_SERVICE_INJECT = 'RPC_SERVICE';
-export const COLLECTION_ADDRESS_INJECT = 'COLLECTION_ADDRESS';
+export const ASYNC_CONNECTION = 'ASYNC_CONNECTION';
+export const MAX_RETRIES: number = 3;

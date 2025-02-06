@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { PageOptionsDto } from './page-options.dto';
+import { PageOptionsDto } from './page-options.dto.js';
 
 export class PageMetaDto {
   @ApiProperty({ example: 30 })
@@ -23,10 +23,10 @@ export class PageMetaDto {
 
   constructor(pageOptionsDto: PageOptionsDto, itemCount: number) {
     this.total = itemCount;
-    this.totalOfPages = Math.ceil(this.total / pageOptionsDto.limit);
+    this.totalOfPages = Math.ceil(this.total / pageOptionsDto.limit!);
     this.perPage = pageOptionsDto.limit;
     this.currentPage = pageOptionsDto.page;
-    this.hasPreviousPage = pageOptionsDto.page > 1;
-    this.hasNextPage = pageOptionsDto.page < this.totalOfPages;
+    this.hasPreviousPage = pageOptionsDto.page! > 1;
+    this.hasNextPage = pageOptionsDto.page! < this.totalOfPages;
   }
 }

@@ -3,17 +3,15 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { UserRepository } from 'database/repositories/user.repository';
 import { CustomRepositoryModule } from 'nestjs-typeorm-custom-repository';
 
-import { EEnvKey } from '@constants/env.constant';
-
-import { UsersModule } from '@modules/users/users.module';
-
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { Web3Module } from '@shared/modules/web3/web3.module';
+import { JWT_TOKEN_EXPIRE_DURATION } from '../../constants/api.constant.js';
+import { EEnvKey } from '../../constants/env.constant.js';
+import { UserRepository } from '../../database/repositories/user.repository.js';
+import { UsersModule } from '../../modules/users/users.module.js';
+import { AuthController } from './auth.controller.js';
+import { AuthService } from './auth.service.js';
+import { JwtStrategy } from './strategies/jwt.strategy.js';
 
 @Module({
   imports: [
@@ -25,14 +23,13 @@ import { Web3Module } from '@shared/modules/web3/web3.module';
         ({
           secret: configService.get(EEnvKey.JWT_SECRET_KEY),
           signOptions: {
-            expiresIn: '1d',
+            expiresIn: JWT_TOKEN_EXPIRE_DURATION,
           },
-        } as JwtModuleOptions),
+        }) as JwtModuleOptions,
       inject: [ConfigService],
     }),
     HttpModule.register({ timeout: 3000 }),
     UsersModule,
-    Web3Module
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from 'express';
 function httpRequestLoggerBuilder(req: Request): string {
   const param = `\n param: ${JSON.stringify(req.params)}`;
   const query = `\n query: ${JSON.stringify(req.query)}`;
-  const hasAuthorizationHeader = req.headers.authorization ? true : false;
+  const hasAuthorizationHeader = !!req.headers?.authorization;
   const body = req.method === 'POST' || req.method === 'PUT' ? `\n body: ${JSON.stringify(req.body)}` : '';
   const logger = `[${req.method} - ${req.baseUrl}]: ${param} ${query} ${body} hasAuthorizationHeader: ${hasAuthorizationHeader}`;
   return logger;

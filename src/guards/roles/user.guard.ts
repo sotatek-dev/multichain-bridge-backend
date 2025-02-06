@@ -1,22 +1,21 @@
 import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
+import { isNotEmpty } from 'class-validator';
 import { DataSource } from 'typeorm';
 
-import { EError } from '@constants/error.constant';
-
-import { IJwtPayload } from '@modules/auth/interfaces/auth.interface';
-import { User } from '@modules/users/entities/user.entity';
-
-import { httpBadRequest, httpForbidden } from '@shared/exceptions/http-exeption';
+import { IJwtPayload } from '../../modules/auth/interfaces/auth.interface.js';
+import { User } from '../../modules/users/entities/user.entity.js';
 
 @Injectable()
-export class UserGuard implements CanActivate {
+export class AdminGuard implements CanActivate {
   constructor(@Inject(DataSource) private readonly dataSource: DataSource) {}
 
   async canActivate(context: ExecutionContext) {
-    const { user } = context.switchToHttp().getRequest() as {
+    const {
+      user,
+    }: {
       user: IJwtPayload;
-    };
-    return true;
+    } = context.switchToHttp().getRequest();
+    return isNotEmpty(user);
   }
 
   getUser(userId: number) {

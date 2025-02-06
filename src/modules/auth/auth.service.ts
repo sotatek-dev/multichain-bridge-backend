@@ -1,46 +1,57 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UserRepository } from 'database/repositories/user.repository';
-import { DataSource, Not, QueryRunner } from 'typeorm';
+import { Logger } from 'log4js';
+import Client from 'mina-signer';
+import pkg from 'web3-utils';
 
-import { EEnvKey } from '@constants/env.constant';
-import { EError } from '@constants/error.constant';
+import { EMinaChainEnviroment } from '../../constants/blockchain.constant.js';
+import { EEnvironments, EEnvKey } from '../../constants/env.constant.js';
+import { EError } from '../../constants/error.constant.js';
+import { UserRepository } from '../../database/repositories/user.repository.js';
+import { User } from '../../modules/users/entities/user.entity.js';
+import { httpBadRequest, httpNotFound } from '../../shared/exceptions/http-exeption.js';
+import { LoggerService } from '../../shared/modules/logger/logger.service.js';
+import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
+import { LoginDto, LoginMinaDto } from './dto/auth-request.dto.js';
+import { IJwtPayload } from './interfaces/auth.interface.js';
 
-import { User } from '@modules/users/entities/user.entity';
-
-import { httpBadRequest, httpInternalServerErrorException, httpNotFound } from '@shared/exceptions/http-exeption';
-import { isPhoneNumberValid } from '@shared/utils/check-object';
-import { generateHash, validateHash } from '@shared/utils/hash-string';
-import { decode } from '@shared/utils/util';
-
-import { LoginDto, SignupDto } from './dto/auth-request.dto';
-import { IJwtPayload, IUpdateEmail } from './interfaces/auth.interface';
-
+const { toChecksumAddress } = pkg;
 @Injectable()
 export class AuthService {
+  private readonly logger: Logger;
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
     private readonly userRepository: UserRepository,
-    private dataSource: DataSource,
+    private readonly loggerService: LoggerService,
+    private readonly ethBridgeContract: ETHBridgeContract,
   ) {
+    this.logger = loggerService.getLogger('AUTH_SERVICE');
   }
 
   async login(data: LoginDto) {
-    const user = await this.userRepository.findOne({
-      where: {
-        email: data.email,
-      },
-    });
+    // Validate signature and check for address in database
+    if (!(await this.validateSignature(data.address, data.signature))) httpBadRequest(EError.INVALID_SIGNATURE);
+    const admin = await this.validateAdminAccount(data.address, true);
 
-    if (!user || user.password === null) httpBadRequest(EError.WRONG_EMAIL_OR_PASS);
+    // Generate access and refresh token
+    return this.getToken(admin!);
+  }
 
-    const checkPassword = await validateHash(data.password, user.password);
+  async loginMina(data: LoginMinaDto) {
+    try {
+      if (!(await this.validateSignatureMina(data.address, data.signature))) {
+        httpBadRequest(EError.INVALID_SIGNATURE);
+      }
+      const admin = await this.validateAdminAccount(data.address, false);
 
-    if (!checkPassword) httpBadRequest(EError.WRONG_EMAIL_OR_PASS);
-
-    return this.getToken(user);
+      // Generate access and refresh token
+      return this.getToken(admin!);
+    } catch (err) {
+      this.logger.error('[err] auth.service.ts: ---', err);
+      httpBadRequest(EError.USER_NOT_FOUND);
+    }
   }
 
   private async getToken(user: User) {
@@ -60,34 +71,63 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+  private async validateSignature(address: string, signature: string) {
+    try {
+      const recover = await this.ethBridgeContract.recover(
+        signature,
+        this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN)!,
+      );
+      const checksumRecover = toChecksumAddress(recover);
+      const checksumAddress = toChecksumAddress(address);
+
+      return checksumRecover === checksumAddress;
+    } catch (error) {
+      httpBadRequest(EError.INVALID_SIGNATURE);
+    }
+  }
+
+  private async validateSignatureMina(address: string, signature: any) {
+    let client = new Client({ network: EMinaChainEnviroment.MAINNET });
+    if (process.env.NODE_ENV !== EEnvironments.PRODUCTION) {
+      client = new Client({ network: EMinaChainEnviroment.TESTNET });
+    }
+
+    const signer = {
+      signature,
+      publicKey: address,
+      data: this.configService.get(EEnvKey.ADMIN_MESSAGE_FOR_SIGN),
+    };
+    return client.verifyMessage(signer);
+  }
+
+  private async validateAdminAccount(address: string, isEvm: boolean) {
+    if (isEvm) {
+      address = toChecksumAddress(address);
+    }
+    const admin = await this.userRepository.findOneBy({ walletAddress: address });
+
+    if (!admin) httpBadRequest(EError.USER_NOT_FOUND);
+
+    return admin;
+  }
+
   async refreshAccessToken(refreshToken: string) {
     const secret = this.configService.get<string>(EEnvKey.JWT_REFRESH_SECRET_KEY);
     let jwtData: IJwtPayload;
     try {
       jwtData = this.jwtService.verify(refreshToken, {
         secret,
-      }) as IJwtPayload;
+      });
     } catch (error) {
       httpBadRequest(EError.INVALID_TOKEN);
     }
 
     const user = await this.userRepository.findOne({
-      where: { id: jwtData.userId },
+      where: { id: jwtData!.userId },
     });
 
     if (!user) httpNotFound(EError.USER_NOT_FOUND);
 
-    return this.getToken(user);
-  }
-
-  async register(data: SignupDto) {
-    const { email, password } = data;
-    const hashedPassword = await generateHash(password);
-    const newUserData = {
-      email,
-      password: hashedPassword,
-    };
-    const newUser = await this.userRepository.save(newUserData);
-    return this.getToken(newUser);
+    return this.getToken(user!);
   }
 }

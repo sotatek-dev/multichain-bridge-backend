@@ -1,0 +1,35 @@
+@startuml 1
+title Admin update tip and daily quota
+actor User
+boundary fe as "Frontend"
+control be as "Backend"
+database Database
+autonumber
+group#LightGreen Admin changes tip, daily quota for Evm/Mina
+
+    User -> fe : Logged in with Evm/Mina wallet
+
+    note right
+        Both Evm and Mina admin accounts
+        can changes these settings.
+    end note
+    activate fe
+    fe --> User : show configuration screen
+    deactivate fe
+    User -> fe : enter new tip, daily quota value.
+    activate fe
+    fe -> be: call api PUT: /api/admin/update-common-config/:configId
+    activate be
+
+    be -> Database: persist changes
+    activate Database
+    Database --> be: update successfully
+    deactivate Database
+    be --> fe: api response 201
+    deactivate be
+    fe --> User: popup success
+    deactivate fe
+end
+
+@enduml
+

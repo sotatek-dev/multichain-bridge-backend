@@ -8,16 +8,24 @@ module.exports = {
       script: 'yarn start',
     },
     {
-      name: `mina-bridge-product-submitter-${process.env.NODE_ENV}`,
-      script: 'yarn console product-submitter',
+      name: `evm-bridge-crawler-${process.env.NODE_ENV}`,
+      script: 'yarn console:dev crawl-eth-bridge-contract',
     },
     {
-      name: `mina-bridge-product-crawler-provider-${process.env.NODE_ENV}`,
-      script: 'yarn console provider',
+      name: `evm-sender-eth-bridge-unlock-${process.env.NODE_ENV}`,
+      script: 'yarn console:dev sender-eth-bridge-unlock',
     },
     {
-      name: `mina-bridge-product-crawler-consumer-${process.env.NODE_ENV}`,
-      script: 'yarn console consumer',
+      name: `mina-bridge-crawler-${process.env.NODE_ENV}`,
+      script: 'yarn console:dev crawl-mina-bridge-contract',
+    },
+    {
+      name: `mina-sender-bridge-unlock-${process.env.NODE_ENV}`,
+      script: 'yarn console:dev sender-mina-bridge-unlock',
+    },
+    {
+      name: `get-price-token-${process.env.NODE_ENV}`,
+      script: 'yarn console:dev get-price-token',
     },
   ],
 };
