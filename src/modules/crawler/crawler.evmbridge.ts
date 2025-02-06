@@ -124,6 +124,7 @@ export class BlockchainEVMCrawler {
       tip: tipWithDecimalPlaces,
       amountReceived: amountReceiveNoDecimalPlace,
       protocolFee: protocolFeeNoDecimalPlace,
+      errorDetail: success ? '' : 'invalid amount'
     });
 
     await eventLogRepo.save(eventUnlock);
