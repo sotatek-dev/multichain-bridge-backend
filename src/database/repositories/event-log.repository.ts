@@ -57,7 +57,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
     qb.where(`${this.alias}.network_received = :network`, { network });
 
     qb.andWhere(`${this.alias}.status IN (:...status)`, {
-      status: [EEventStatus.WAITING, EEventStatus.FAILED], //  EEventStatus.PROCESSING add in future
+      status: isSignatureFullFilled ? [[EEventStatus.WAITING, EEventStatus.FAILED]] : [[EEventStatus.WAITING]], //  EEventStatus.PROCESSING add in future
     })
       .andWhere(`${this.alias}.retry < :retryNumber`, { retryNumber: MAX_RETRIES })
       .orderBy(`${this.alias}.id`, EDirection.DESC)
