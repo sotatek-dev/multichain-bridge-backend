@@ -16,6 +16,7 @@ import { QueueModule } from './shared/modules/queue/queue.module.js';
 import { RedisModule } from './shared/modules/redis/redis.module.js';
 import { Web3Module } from './shared/modules/web3/web3.module.js';
 import { isDevelopmentEnvironment } from './shared/utils/util.js';
+import { AwsModule } from './shared/modules/aws/aws.module.js';
 
 const modules = [
   ConfigurationModule,
@@ -25,6 +26,7 @@ const modules = [
   RedisModule,
   GuardModule,
   Web3Module,
+  AwsModule,
   QueueModule,
   ConsoleModule,
   ...MODULES,

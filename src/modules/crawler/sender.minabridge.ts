@@ -7,35 +7,33 @@ import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signatu
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
-import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
-import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { canTxRetry } from '../../shared/utils/unlock.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
 import { Manager } from './minaSc/Manager.js';
 import { ValidatorManager } from './minaSc/ValidatorManager.js';
+import { LambdaService } from '../../shared/modules/aws/lambda.service.js';
 
 @Injectable()
 export class SenderMinaBridge implements OnModuleInit {
   private isContractCompiled = false;
-  private readonly feePayerKey: PrivateKey;
-  private readonly bridgeKey: PrivateKey;
+  private readonly feePayerPublicKey: PublicKey;
+  private readonly bridgeBublicKey: PublicKey;
   private readonly tokenPublicKey: PublicKey;
   private readonly managerPublicKey: PublicKey;
   private readonly validatorManagerPublicKey: PublicKey
   constructor(
     private readonly configService: ConfigService,
     private readonly eventLogRepository: EventLogRepository,
-    private readonly commonConfigRepository: CommonConfigRepository,
-    private readonly tokenPairRepository: TokenPairRepository,
     private readonly multiSignatureRepository: MultiSignatureRepository,
     private readonly loggerService: LoggerService,
+    private readonly lambdaService: LambdaService
   ) {
-    this.feePayerKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.SIGNER_MINA_PRIVATE_KEY)!);
-    this.bridgeKey = PrivateKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY)!);
+    this.feePayerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_SIGNER_PUBLIC_KEY)!);
+    this.bridgeBublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS)!);
     this.tokenPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS)!);
     this.managerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_MANAGER_CONTRACT_ADDRESS)!);
     this.validatorManagerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_VALIDATOR_MANAGER_CONTRACT_ADDRESS)!)
@@ -47,8 +45,8 @@ export class SenderMinaBridge implements OnModuleInit {
   }
   private logger = this.loggerService.getLogger('SENDER_MINA_BRIDGE');
   onModuleInit() {
-    this.logger.info('Bridge', this.bridgeKey.toPublicKey().toBase58());
-    this.logger.info('FeePayer', this.feePayerKey.toPublicKey().toBase58());
+    this.logger.info('Bridge', this.bridgeBublicKey.toBase58());
+    this.logger.info('FeePayer', this.feePayerPublicKey.toBase58());
     this.logger.info('Token', this.tokenPublicKey.toBase58());
   }
   public async compileContract() {
@@ -110,7 +108,7 @@ export class SenderMinaBridge implements OnModuleInit {
     receiveAddress: string,
   ): Promise<{ success: boolean; error: Error | null; data: string | null }> {
     try {
-      this.logger.info(`Bridge: ${this.bridgeKey.toPublicKey().toBase58()}\nToken: ${this.tokenPublicKey.toBase58}`);
+      this.logger.info(`Bridge: ${this.bridgeBublicKey.toBase58()}\nToken: ${this.tokenPublicKey.toBase58}`);
       const generatedSignatures = await this.multiSignatureRepository.find({
         where: {
           txId,
@@ -128,11 +126,9 @@ export class SenderMinaBridge implements OnModuleInit {
       await this.compileContract();
 
       const fee = +this.configService.get(EEnvKey.BASE_MINA_BRIDGE_FEE); // in nanomina (1 billion = 1.0 mina)
-      const feePayerPublicKey = this.feePayerKey.toPublicKey();
-      const bridgePublicKey = this.bridgeKey.toPublicKey();
       const receiverPublicKey = PublicKey.fromBase58(receiveAddress);
 
-      const zkBridge = new Bridge(bridgePublicKey);
+      const zkBridge = new Bridge(this.bridgeBublicKey);
       const token = new FungibleToken(this.tokenPublicKey);
       const tokenId = token.deriveTokenId();
       await Promise.all([
@@ -142,8 +138,8 @@ export class SenderMinaBridge implements OnModuleInit {
         fetchAccount({
           publicKey: this.managerPublicKey
         }),
-        fetchAccount({ publicKey: bridgePublicKey }),
-        fetchAccount({ publicKey: feePayerPublicKey }),
+        fetchAccount({ publicKey: this.bridgeBublicKey }),
+        fetchAccount({ publicKey: this.feePayerPublicKey }),
         fetchAccount({ publicKey: receiverPublicKey, tokenId }),
         fetchAccount({
           publicKey: this.tokenPublicKey,
@@ -158,8 +154,8 @@ export class SenderMinaBridge implements OnModuleInit {
       // compile the contract to create prover keys
 
       this.logger.info('build transaction and create proof...');
-      const tx = await Mina.transaction({ sender: feePayerPublicKey, fee }, async () => {
-        if (!hasAccount) AccountUpdate.fundNewAccount(feePayerPublicKey);
+      const tx = await Mina.transaction({ sender: this.feePayerPublicKey, fee }, async () => {
+        if (!hasAccount) AccountUpdate.fundNewAccount(this.feePayerPublicKey);
         await zkBridge.unlock(typedAmount, receiverPublicKey, UInt64.from(txId), this.tokenPublicKey, ...signatureData);
       });
 
@@ -229,19 +225,23 @@ export class SenderMinaBridge implements OnModuleInit {
     this.logger.info('Proving tx.');
     await tx.prove();
 
-    this.logger.info('send transaction...');
-    await tx.sign([this.feePayerKey]);
+    // sign with lambda
+    const jsonTx = tx.toJSON()
+    const signedZKAppCmd = await this.lambdaService.invokeSignTxMina({ jsonTx })
+    const signedTX = Mina.Transaction.fromJSON(signedZKAppCmd.signedTx) // sign with lambda
 
+    this.logger.info('send transaction...');
     // update the tx status as processing. it won't be retries
 
     const updateResult = await this.eventLogRepository.updateLockEvenLog(txId, EEventStatus.PROCESSING);
     this.logger.log('Tx status is updated=', updateResult.affected);
-    const sentTx = await tx.send();
+    const sentTx = await signedTX.send();
 
     this.logger.info('Transaction waiting to be applied with txhash: ', sentTx.hash);
     await sentTx?.wait({ maxAttempts: 300 });
 
     assert(sentTx?.hash, 'transaction failed');
+    this.logger.info("Done for ", txId)
     return sentTx;
   }
 }
