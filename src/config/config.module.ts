@@ -48,15 +48,20 @@ const getEnvFile = () => {
         [EEnvKey.MINA_BRIDGE_RPC_OPTIONS]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_RPC_OPTIONS]: Joi.string().required(),
-        [EEnvKey.SIGNER_PRIVATE_KEY]: Joi.string().required(),
+        // signer
+        [EEnvKey.ETH_SIGNER_PUBLIC_KEY]: Joi.string().required(),
+        [EEnvKey.MINA_SIGNER_PUBLIC_KEY]: Joi.string().required(),
+        // bridge
+        [EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
         [EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
+        // validator and manager of mina
         [EEnvKey.MINA_MANAGER_CONTRACT_ADDRESS]: Joi.string().required(),
         [EEnvKey.MINA_VALIDATOR_MANAGER_CONTRACT_ADDRESS]: Joi.string().required(),
-        [EEnvKey.ETH_BRIDGE_CONTRACT_ADDRESS]: Joi.string().required(),
+        // token
         [EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
         [EEnvKey.MINA_TOKEN_BRIDGE_ADDRESS]: Joi.string().required(),
+        // login message
         [EEnvKey.ADMIN_MESSAGE_FOR_SIGN]: Joi.string().required(),
-        [EEnvKey.MINA_BRIDGE_SC_PRIVATE_KEY]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_DOMAIN_NAME]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_DOMAIN_VERSION]: Joi.string().required(),
         [EEnvKey.MINA_CRAWL_SAFE_BLOCK]: Joi.number().default(MINA_CRAWL_SAFE_BLOCK),
@@ -66,6 +71,8 @@ const getEnvFile = () => {
         // fee
         [EEnvKey.BASE_MINA_BRIDGE_FEE]: Joi.number().default(1 * Math.pow(10, 8)),
         [EEnvKey.JOB_PROVIDER_BACKOFF_IN_MINUTES]: Joi.number().default(1 * 60), // default 1 hours
+        // lambda
+        [EEnvKey.LAMBDA_REGION]: Joi.string().required()
       }).custom(value => {
         value[EEnvKey.ETH_BRIDGE_START_BLOCK] = isNumber(value[EEnvKey.ETH_BRIDGE_START_BLOCK])
           ? value[EEnvKey.ETH_BRIDGE_START_BLOCK]
@@ -82,4 +89,4 @@ const getEnvFile = () => {
   providers: [ConfigService],
   exports: [ConfigService],
 })
-export class ConfigurationModule {}
+export class ConfigurationModule { }
