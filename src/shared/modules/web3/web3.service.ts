@@ -7,7 +7,6 @@ import pkg from 'web3-utils';
 import { sleep } from '../../utils/promise.js';
 import { EthBridgeAbi } from './abis/eth-bridge-contract.js';
 import { IRpcService } from './web3.module.js';
-import { Transaction } from 'ethers';
 
 const { toBN, toHex } = pkg;
 export class DefaultContract {
@@ -105,6 +104,7 @@ export class DefaultContract {
       from: this.rpcService.publicKey,
       to: this.contractAddress,
       data: data,
+      chainId: this.rpcService.chainId
     };
 
     const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
@@ -113,7 +113,7 @@ export class DefaultContract {
       ...rawTx,
       gasLimit: toHex(toBN(gasLimit).add(toBN(10000))),
     }
-    }
+  }
   public async sendSignedTransaction(rlp: string): Promise<TransactionReceipt> {
     return this.rpcService.web3.eth.sendSignedTransaction(rlp);
   }
