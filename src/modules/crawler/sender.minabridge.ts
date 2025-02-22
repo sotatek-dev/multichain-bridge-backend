@@ -230,7 +230,7 @@ export class SenderMinaBridge implements OnModuleInit {
     const signedZKAppCmd = await this.lambdaService.invokeSignTxMina({ jsonTx })
     console.log(signedZKAppCmd);
     
-    const signedTX = Mina.Transaction.fromJSON(signedZKAppCmd.signedTx) // sign with lambda
+    const signedTX = Mina.Transaction.fromJSON(signedZKAppCmd) // sign with lambda
 
     this.logger.info('send transaction...');
     // update the tx status as processing. it won't be retries
