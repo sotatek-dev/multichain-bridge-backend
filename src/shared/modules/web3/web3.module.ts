@@ -9,6 +9,7 @@ import { EEnvKey } from '../../../constants/env.constant.js';
 import { ASYNC_CONNECTION } from '../../../constants/service.constant.js';
 import { sleep } from '../../utils/promise.js';
 import { ETHBridgeContract } from './web3.service.js';
+import { hexValue } from 'ethers/lib/utils.js';
 
 @Global()
 @Module({
@@ -39,7 +40,7 @@ export interface IRpcService {
   resetApi: () => Promise<any>;
   maxTries: number;
   publicKey: string;
-  chainId: number;
+  chainId: string;
   getNonce: (walletAddress: string) => Promise<number>;
 }
 
@@ -51,6 +52,7 @@ export const RpcFactory = async (configService: ConfigService): Promise<IRpcServ
   const getNextRPcRound = (): Web3 => {
     return new Web3(rpc[rpcRound++ % rpc.length]);
   };
+
   let web3 = getNextRPcRound();
   let isReseting = false;
   return {
@@ -58,7 +60,7 @@ export const RpcFactory = async (configService: ConfigService): Promise<IRpcServ
       return web3;
     },
     publicKey,
-    chainId: await web3.eth.getChainId(),
+    chainId: hexValue((await web3.eth.getChainId())),
     maxTries: rpc.length * 3,
     resetApi: async (): Promise<any> => {
       if (isReseting === true) {

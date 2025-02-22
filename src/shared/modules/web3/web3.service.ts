@@ -96,7 +96,7 @@ export class DefaultContract {
     const data = this.contract.methods[method](...param).encodeABI();
     const gasPrice = await this.rpcService.web3.eth.getGasPrice();
     const nonce = await this.rpcService.getNonce(this.rpcService.publicKey);
-
+ 
     // gas estimation
     const rawTx = {
       nonce: nonce,
