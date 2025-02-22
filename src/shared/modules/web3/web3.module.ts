@@ -32,13 +32,14 @@ import { ETHBridgeContract } from './web3.service.js';
   ],
   exports: [Web3Module, ETHBridgeContract],
 })
-export class Web3Module {}
+export class Web3Module { }
 
 export interface IRpcService {
   web3: Web3;
   resetApi: () => Promise<any>;
   maxTries: number;
   publicKey: string;
+  chainId: number;
   getNonce: (walletAddress: string) => Promise<number>;
 }
 
@@ -51,13 +52,13 @@ export const RpcFactory = async (configService: ConfigService): Promise<IRpcServ
     return new Web3(rpc[rpcRound++ % rpc.length]);
   };
   let web3 = getNextRPcRound();
-
   let isReseting = false;
   return {
     get web3() {
       return web3;
     },
     publicKey,
+    chainId: await web3.eth.getChainId(),
     maxTries: rpc.length * 3,
     resetApi: async (): Promise<any> => {
       if (isReseting === true) {
