@@ -33,6 +33,8 @@ export class LambdaService {
         });
 
         const response = await this.client.send(command);
+        console.log('lambda response', new TextDecoder().decode(response.Payload));
+        
         const { success = false, signedTx, message = '' } = JSON.parse(new TextDecoder().decode(response.Payload))
         assert(success, 'Sign tx mina failed from lambda ' + String(message))
         return signedTx

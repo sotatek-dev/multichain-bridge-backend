@@ -228,7 +228,7 @@ export class SenderMinaBridge implements OnModuleInit {
     // sign with lambda
     const jsonTx = tx.toJSON()
     const signedZKAppCmd = await this.lambdaService.invokeSignTxMina({ jsonTx })
-    console.log(signedZKAppCmd.signedTx);
+    console.log(signedZKAppCmd);
     
     const signedTX = Mina.Transaction.fromJSON(signedZKAppCmd.signedTx) // sign with lambda
 
