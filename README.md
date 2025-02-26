@@ -5,7 +5,6 @@
 - [General Information](#general-information)
 - [Prerequire](#prerequire)
 - [Installation](#installation)
-- [Diagram](#diagram)
 - [Support](#support)
 
 ## General Information
