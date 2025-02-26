@@ -1,0 +1,14 @@
+@startuml
+
+control job_provider
+control mina_sender
+control eth_sender
+rectangle lambda_sign_eth
+rectangle lambda_sign_mina
+
+rectangle lambda_validate_eth
+rectangle lambda_validate_mina
+
+job_provider 
+
+@enduml
