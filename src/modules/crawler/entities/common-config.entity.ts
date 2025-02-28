@@ -13,7 +13,17 @@ export class CommonConfig extends BaseEntityIncludeTime {
     default: 0,
     nullable: false,
   })
-  dailyQuota: number;
+  dailyQuotaPerAddress: number;
+
+  @Column({
+    name: 'daily_quota_system',
+    type: 'decimal',
+    precision: 78,
+    scale: 1,
+    default: 0,
+    nullable: false,
+  })
+  dailyQuotaSystem: number;
 
   @Column({
     name: 'tip',

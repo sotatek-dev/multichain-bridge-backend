@@ -71,6 +71,7 @@ export class EventLogRepository extends BaseRepository<EventLog> {
       qb.andWhere(`${this.alias}.next_validate_signature_job_time < :currentUnixTimestamp`, { currentUnixTimestamp });
       qb.having(`COUNT(signature.id) < :numOfSignaturesNeeded`, { numOfSignaturesNeeded });
     }
+    qb.orderBy('id', 'ASC')
     return qb.getRawMany();
   }
 

@@ -13,7 +13,8 @@ export default class CommonConfigSeeder implements Seeder {
     await repository.insert(
       new CommonConfig({
         tip: COMMOM_CONFIG_TIP,
-        dailyQuota: COMMON__CONFIG_DAILY_QUOTA,
+        dailyQuotaPerAddress: COMMON__CONFIG_DAILY_QUOTA,
+        dailyQuotaSystem: COMMON__CONFIG_DAILY_QUOTA * 10,
         feeUnlockEth: '0.0001',
         feeUnlockMina: '0.00001',
         asset: EAsset.ETH,
