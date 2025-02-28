@@ -4,6 +4,7 @@ import { createClient, RedisClientType } from 'redis';
 
 import { ENetworkName } from '../../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../../constants/env.constant.js';
+import { getNextDayInUnix, nowUnix } from '../../../shared/utils/time.js';
 
 @Injectable()
 export class RedisClientService implements OnModuleInit, OnModuleDestroy {
@@ -58,5 +59,33 @@ export class RedisClientService implements OnModuleInit, OnModuleDestroy {
             return new_value
         end
         `);
+  }
+  // daily quota
+  public updateDailyQuota(address: string, token: string, network: ENetworkName, amountWithDecimal: string) {
+    const ttl = getNextDayInUnix() - nowUnix();
+    return this.client.eval(`
+      local user_quota='user_quota_${network}_${token}'
+      local system_quota='system_quota_${network}_${token}_${address}'
+
+      local current_user_quota = tonumber(redis.call('GET', user_quota) or 0)
+      local current_system_quota = tonumber(redis.call('GET', system_quota) or 0)
+        
+      local new_user_quota = current_user_quota + ${amountWithDecimal}
+      local new_system_quota = current_system_quota + ${amountWithDecimal}
+
+      redis.call('SET', user_quota, new_user_quota)
+      redis.call('SET', system_quota, new_system_quota)
+
+      redis.call('EXPIRE', user_quota, ${ttl})
+      redis.call('EXPIRE', system_quota, ${ttl})
+      return ${ttl}
+      `);
+  }
+  public getDailyQuota(address: string, token: string, network: ENetworkName) {
+
+    const userQuota = `user_quota_${network}_${token}`
+    const systemQuota = `system_quota_${network}_${token}_${address}`
+
+    return Promise.all([this.client.get(userQuota), this.client.get(systemQuota)])
   }
 }

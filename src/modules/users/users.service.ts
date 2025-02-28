@@ -33,7 +33,7 @@ export class UsersService {
     private readonly tokenPriceRepository: TokenPriceRepository,
     private readonly tokenPairRepostitory: TokenPairRepository,
     private readonly redisClientService: RedisClientService,
-  ) {}
+  ) { }
   private readonly logger = this.loggerService.getLogger('USER_SERVICE');
   async getProfile(userId: number) {
     const user = await this.usersRepository.findOne({
@@ -64,13 +64,19 @@ export class UsersService {
     return updateConfig;
   }
 
-  async getDailyQuotaOfUser(address: string) {
-    const [dailyQuota, totalamount] = await Promise.all([
+  async getDailyQuotaOfUser(address: string, network: ENetworkName, token: string) {
+    const [config, quota] = await Promise.all([
       this.commonConfigRepository.getCommonConfig(),
-      this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
+      this.redisClientService.getDailyQuota(address, token, network),
     ]);
 
-    return { dailyQuota, totalAmountOfToDay: totalamount?.totalamount || 0 };
+    assert(config, 'invalid config')
+
+    const { dailyQuotaPerAddress, dailyQuotaSystem } = config;
+
+    const [curUserQuota, curSystemQuota] = quota;
+
+    return { dailyQuotaPerAddress, dailyQuotaSystem, curUserQuota: BigNumber.min(curUserQuota ?? 0, dailyQuotaPerAddress), curSystemQuota: BigNumber.min(curSystemQuota ?? 0, dailyQuotaSystem) };
   }
 
   async getListTokenPair() {
