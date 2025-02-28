@@ -25,33 +25,31 @@ export class LambdaService {
             }
         );
     }
-    async invokeSignTxMina({ jsonTx }: { jsonTx: string }) {
+    async invokeSignTxMina({ jsonTx, dailyQuotaPerAddress, dailyQuotaSystem }: { jsonTx: string, dailyQuotaPerAddress: number, dailyQuotaSystem: number }) {
         assert(typeof jsonTx === 'string', 'invalid payload mina')
         const command = new InvokeCommand({
             FunctionName: "prod-mina-bridge-sign-mina-tx",
-            Payload: JSON.stringify({ jsonTx }),
+            Payload: JSON.stringify({ jsonTx, dailyQuotaPerAddress, dailyQuotaSystem }),
         });
 
         const response = await this.client.send(command);
         console.log('lambda response', new TextDecoder().decode(response.Payload));
-        
-        const { success = false, signedTx, message = '' } = JSON.parse(new TextDecoder().decode(response.Payload))
-        assert(success, 'Sign tx mina failed from lambda ' + String(message))
-        return signedTx
+
+        const { success = false, signedTx = null, message = '', isPassedDailyQuota = false } = JSON.parse(new TextDecoder().decode(response.Payload))
+        return { signedTx, isPassedDailyQuota, message, success }
     }
-    async invokeSignTxEth(rawTxObj: any) {
+    async invokeSignTxEth({ rawTxObj, dailyQuotaPerAddress, dailyQuotaSystem }: { rawTxObj: any, dailyQuotaPerAddress: number, dailyQuotaSystem: number }) {
         assert(typeof rawTxObj === 'object', 'invalid payload eth')
         const command = new InvokeCommand({
             FunctionName: "prod-mina-bridge-sign-eth-tx",
-            Payload: JSON.stringify(rawTxObj),
+            Payload: JSON.stringify({ rawTxObj, dailyQuotaPerAddress, dailyQuotaSystem }),
         });
 
         const response = await this.client.send(command);
         console.log(JSON.parse(new TextDecoder().decode(response.Payload)));
-        
-        const { success = false, signedTx, message = '' } = JSON.parse(new TextDecoder().decode(response.Payload))
-        assert(success, 'Sign tx eth failed from lambda ' + String(message))
-        return signedTx
+
+        const { success = false, signedTx = null, message = '', isPassedDailyQuota = false } = JSON.parse(new TextDecoder().decode(response.Payload))
+        return { signedTx, isPassedDailyQuota, message, success }
 
     }
 }

@@ -8,7 +8,10 @@ export class GetCommonConfigResponseDto {
   tip: number;
 
   @ApiProperty()
-  dailyQuota: number;
+  dailyQuotaPerAddress: number;
+
+  @ApiProperty()
+  dailyQuotaSytem: number;
 
   @ApiProperty()
   asset: string;

@@ -16,6 +16,7 @@ import { Bridge } from './minaSc/Bridge.js';
 import { Manager } from './minaSc/Manager.js';
 import { ValidatorManager } from './minaSc/ValidatorManager.js';
 import { LambdaService } from '../../shared/modules/aws/lambda.service.js';
+import { getNextDayInUnix } from '../../shared/utils/time.js';
 
 @Injectable()
 export class SenderMinaBridge implements OnModuleInit {
@@ -227,10 +228,17 @@ export class SenderMinaBridge implements OnModuleInit {
 
     // sign with lambda
     const jsonTx = tx.toJSON()
-    const signedZKAppCmd = await this.lambdaService.invokeSignTxMina({ jsonTx })
-    console.log(signedZKAppCmd);
-    
-    const signedTX = Mina.Transaction.fromJSON(signedZKAppCmd) // sign with lambda
+    const { success, message, isPassedDailyQuota, signedTx } = await this.lambdaService.invokeSignTxMina({ jsonTx, dailyQuotaPerAddress: 1, dailyQuotaSystem: 1 })
+
+    if (isPassedDailyQuota) {
+      // break and udpate
+      this.eventLogRepository.update(txId, { nextSendTxJobTime: getNextDayInUnix().toString() })
+      throw new Error(`tx ${txId} passed the daily quota`)
+    }
+    if (!success) {
+      throw new Error(`tx ${txId} cannot get signature from lambda ${message}`)
+    }
+    const signedTX = Mina.Transaction.fromJSON(signedTx) // sign with lambda
 
     this.logger.info('send transaction...');
     // update the tx status as processing. it won't be retries
