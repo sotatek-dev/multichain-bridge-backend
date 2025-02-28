@@ -17,6 +17,10 @@ import { Manager } from './minaSc/Manager.js';
 import { ValidatorManager } from './minaSc/ValidatorManager.js';
 import { LambdaService } from '../../shared/modules/aws/lambda.service.js';
 import { getNextDayInUnix } from '../../shared/utils/time.js';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
+import { EventLog } from './entities/event-logs.entity.js';
+import { addDecimal } from '../../shared/utils/bignumber.js';
+import { IsNull, Not } from 'typeorm';
 
 @Injectable()
 export class SenderMinaBridge implements OnModuleInit {
@@ -31,7 +35,8 @@ export class SenderMinaBridge implements OnModuleInit {
     private readonly eventLogRepository: EventLogRepository,
     private readonly multiSignatureRepository: MultiSignatureRepository,
     private readonly loggerService: LoggerService,
-    private readonly lambdaService: LambdaService
+    private readonly lambdaService: LambdaService,
+    private readonly commonConfig: CommonConfigRepository
   ) {
     this.feePayerPublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_SIGNER_PUBLIC_KEY)!);
     this.bridgeBublicKey = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS)!);
@@ -76,8 +81,8 @@ export class SenderMinaBridge implements OnModuleInit {
       assert(dataLock?.gasFee, 'invalid gasFee');
       assert(dataLock?.amountReceived, 'invalida amount to unlock');
 
-      const { id, receiveAddress, amountReceived } = dataLock;
-      const result = await this.callUnlockFunction(amountReceived, id, receiveAddress);
+      const { receiveAddress, amountReceived } = dataLock;
+      const result = await this.callUnlockFunction(amountReceived, dataLock, receiveAddress);
       // Update status eventLog when call function unlock
       if (result.success) {
         await this.eventLogRepository.updateStatusAndRetryEvenLog({
@@ -105,14 +110,14 @@ export class SenderMinaBridge implements OnModuleInit {
 
   public async callUnlockFunction(
     amount: string,
-    txId: number,
+    txData: EventLog,
     receiveAddress: string,
   ): Promise<{ success: boolean; error: Error | null; data: string | null }> {
     try {
       this.logger.info(`Bridge: ${this.bridgeBublicKey.toBase58()}\nToken: ${this.tokenPublicKey.toBase58}`);
       const generatedSignatures = await this.multiSignatureRepository.find({
         where: {
-          txId,
+          txId: txData.id,
         },
         order: {
           index: 'asc'
@@ -122,7 +127,7 @@ export class SenderMinaBridge implements OnModuleInit {
       const signatureData = generatedSignatures
         .map((e) => [Bool(true), PublicKey.fromBase58(e.validator), Signature.fromJSON(JSON.parse(e.signature))])
         .flat(1);
-      this.logger.info(`Found ${generatedSignatures.length} signatures for txId= ${txId}`);
+      this.logger.info(`Found ${generatedSignatures.length} signatures for txId= ${txData.id}`);
       this.logger.info('compile the contract...');
       await this.compileContract();
 
@@ -157,10 +162,10 @@ export class SenderMinaBridge implements OnModuleInit {
       this.logger.info('build transaction and create proof...');
       const tx = await Mina.transaction({ sender: this.feePayerPublicKey, fee }, async () => {
         if (!hasAccount) AccountUpdate.fundNewAccount(this.feePayerPublicKey);
-        await zkBridge.unlock(typedAmount, receiverPublicKey, UInt64.from(txId), this.tokenPublicKey, ...signatureData);
+        await zkBridge.unlock(typedAmount, receiverPublicKey, UInt64.from(txData.id), this.tokenPublicKey, ...signatureData);
       });
 
-      const sentTx = await this.handleSendTxMina(txId, tx);
+      const sentTx = await this.handleSendTxMina(txData, tx);
 
       return { success: true, error: null, data: sentTx.hash };
     } catch (error) {
@@ -222,36 +227,41 @@ export class SenderMinaBridge implements OnModuleInit {
 
     return { error: null, success: true };
   }
-  public async handleSendTxMina(txId: number, tx: Mina.Transaction<false, false>) {
+  public async handleSendTxMina(txData: EventLog, tx: Mina.Transaction<false, false>) {
+    const commonConfig = await this.commonConfig.findOneBy({ id: Not(IsNull()) })
+    assert(typeof commonConfig === 'object' && commonConfig?.dailyQuotaPerAddress && commonConfig.dailyQuotaSystem, 'invalid daily quota')
     this.logger.info('Proving tx.');
     await tx.prove();
 
     // sign with lambda
     const jsonTx = tx.toJSON()
-    const { success, message, isPassedDailyQuota, signedTx } = await this.lambdaService.invokeSignTxMina({ jsonTx, dailyQuotaPerAddress: 1, dailyQuotaSystem: 1 })
+
+    const { success, message, isPassedDailyQuota, signedTx } = await this.lambdaService.invokeSignTxMina({ jsonTx, dailyQuotaPerUser: addDecimal(commonConfig?.dailyQuotaPerAddress.toString(), txData.fromTokenDecimal), dailyQuotaSystem: addDecimal(commonConfig.dailyQuotaSystem.toString(), txData.fromTokenDecimal), address: txData.senderAddress, amount: txData.amountFrom })
 
     if (isPassedDailyQuota) {
       // break and udpate
-      this.eventLogRepository.update(txId, { nextSendTxJobTime: getNextDayInUnix().toString() })
-      throw new Error(`tx ${txId} passed the daily quota`)
+      this.eventLogRepository.update(txData.id, { nextSendTxJobTime: getNextDayInUnix().toString() })
+      throw new Error(`tx ${txData.id} passed the daily quota`)
     }
     if (!success) {
-      throw new Error(`tx ${txId} cannot get signature from lambda ${message}`)
+      console.log(isPassedDailyQuota, message, signedTx);
+
+      throw new Error(`tx ${txData.id} cannot get signature from lambda ${message}`)
     }
-    const signedTX = Mina.Transaction.fromJSON(signedTx) // sign with lambda
+    const restoredSignedTX = Mina.Transaction.fromJSON(signedTx) // sign with lambda
 
     this.logger.info('send transaction...');
     // update the tx status as processing. it won't be retries
 
-    const updateResult = await this.eventLogRepository.updateLockEvenLog(txId, EEventStatus.PROCESSING);
+    const updateResult = await this.eventLogRepository.updateLockEvenLog(txData.id, EEventStatus.PROCESSING);
     this.logger.log('Tx status is updated=', updateResult.affected);
-    const sentTx = await signedTX.send();
+    const sentTx = await restoredSignedTX.send();
 
     this.logger.info('Transaction waiting to be applied with txhash: ', sentTx.hash);
     await sentTx?.wait({ maxAttempts: 300 });
 
     assert(sentTx?.hash, 'transaction failed');
-    this.logger.info("Done for ", txId)
+    this.logger.info("Done for ", txData.id)
     return sentTx;
   }
 }
