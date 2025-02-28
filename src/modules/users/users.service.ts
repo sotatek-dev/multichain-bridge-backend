@@ -74,9 +74,9 @@ export class UsersService {
 
     const { dailyQuotaPerAddress, dailyQuotaSystem } = config;
 
-    const [curUserQuota = '0', curSystemQuota = '0'] = quota;
+    const [curUserQuota, curSystemQuota] = quota;
 
-    return { dailyQuotaPerAddress, dailyQuotaSystem, curUserQuota: BigNumber.max(curUserQuota!, dailyQuotaPerAddress), curSystemQuota: BigNumber.max(curSystemQuota!, dailyQuotaSystem) };
+    return { dailyQuotaPerAddress, dailyQuotaSystem, curUserQuota: BigNumber.min(curUserQuota ?? 0, dailyQuotaPerAddress), curSystemQuota: BigNumber.min(curSystemQuota ?? 0, dailyQuotaSystem) };
   }
 
   async getListTokenPair() {
