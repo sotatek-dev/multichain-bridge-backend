@@ -11,4 +11,4 @@ export function isEmail(mail: string) {
 
 export const nullToZero = (value: string | number) => (value ? value.toString() : '0');
 export const isDevelopmentEnvironment = () =>
-  [EEnvironments.LOCAL, EEnvironments.DEV].includes(process.env[EEnvKey.NODE_ENV] as EEnvironments);
+  [EEnvironments.LOCAL, EEnvironments.DEV, EEnvironments.TEST].includes(process.env[EEnvKey.NODE_ENV] as EEnvironments);

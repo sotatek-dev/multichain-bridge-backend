@@ -1,0 +1,111 @@
+@startuml 1
+title Lock From Eth to Mina
+actor User
+boundary fe as "Frontend"
+control be as "Backend"
+participant Ethereum as "Ethereum private node"
+control evm_crawler as "EVM crawler"
+control job_provider as "Job provider"
+database db as "Database"
+queue queue1 as "Queue"
+control mina_validator_lambda as "Lambda validate tx"
+control mina_signer_lambda as "Lambda sign tx"
+
+control mina_sender as "Mina tx sender"
+control mina_crawler as "Mina crawler"
+participant Mina as "Mina private light node"
+autonumber
+
+group#LightGreen (1) User lock token from Evm
+
+    User -> fe : select network to bridge
+
+    activate fe
+    fe -> be : get list of token pairs
+    activate be
+    be --> fe : list of token pairs
+    deactivate be
+
+    User -> fe: select destination wallet, amount
+    fe --> User: display amount, tip, fee
+    User -> fe: perform bridge action
+    fe -> Ethereum: call lock tx using user's wallet
+    activate Ethereum
+    Ethereum --> fe: tx status success
+    deactivate Ethereum
+
+    fe --> User: show popup success
+    deactivate fe
+
+
+end
+group#LightGreen (2) Crawler evm fetch lock tx
+    evm_crawler->Ethereum: fetch lock events
+    activate Ethereum
+    Ethereum --> evm_crawler: return locked tx events
+    deactivate Ethereum
+
+    evm_crawler -> db: save tx to be unlock in Mina
+    activate db
+    db --> evm_crawler: saved tx with status waiting to be unlocked
+    deactivate db
+end
+group#LightGreen (3) Job Provider create queued job
+    loop
+        par
+            job_provider->db: get pending transaction need signatures
+            activate db
+            db --> job_provider: list of pending transaction
+            deactivate db
+            job_provider -> queue1: send jobs to queue
+            activate queue1
+            queue1 --> job_provider: success
+            deactivate queue1
+            else
+            job_provider->db: get validated transaction ready to be sent
+            activate db
+            db --> job_provider: list of ready transaction
+            deactivate db
+            job_provider -> queue1: send jobs to queue
+            activate queue1
+            queue1 --> job_provider: success
+            deactivate queue1
+        end
+    end
+end
+group#LightGreen (5) Job Sender process sending tx to Mina network
+
+    queue1 -> mina_sender: trigger sender by queued job
+    activate mina_sender
+    mina_sender --> db: check if signature for this tx is generated
+    activate db
+    db --> mina_sender: boolean for calling lambda signature
+    deactivate db
+
+    mina_sender --> mina_sender: build transaction
+
+    mina_sender -> Mina: Send the tx to Mina
+    activate Mina
+    Mina --> mina_sender: return tx hash
+    deactivate Mina
+    mina_sender --> mina_sender: wait for the tx to be applied
+    mina_sender --> queue1: job completed
+    deactivate mina_sender
+
+end
+group#LightGreen (6) Mina crawler confirms sent tx
+    mina_crawler -> Mina: get unlock events
+    activate mina_crawler
+    activate Mina
+    Mina --> mina_crawler: events unlock
+    deactivate Mina
+    mina_crawler ->db: mark tx unlock as completed
+    activate db
+    db -> mina_crawler: update completed
+    deactivate mina_crawler
+    deactivate db
+end
+
+
+@enduml
+

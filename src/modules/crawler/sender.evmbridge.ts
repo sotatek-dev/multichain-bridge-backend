@@ -8,7 +8,6 @@ import { getEthBridgeAddress } from '../../config/common.config.js';
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
 import { EError } from '../../constants/error.constant.js';
-import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
 import { EventLogRepository } from '../../database/repositories/event-log.repository.js';
 import { MultiSignatureRepository } from '../../database/repositories/multi-signature.repository.js';
 import { TokenPairRepository } from '../../database/repositories/token-pair.repository.js';
@@ -17,18 +16,19 @@ import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
 import { canTxRetry } from '../../shared/utils/unlock.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
+import { LambdaService } from '../../shared/modules/aws/lambda.service.js';
 
 @Injectable()
 export class SenderEVMBridge {
   constructor(
     private readonly eventLogRepository: EventLogRepository,
-    private readonly commonConfigRepository: CommonConfigRepository,
     private readonly tokenPairRepository: TokenPairRepository,
     private readonly multiSignatureRepository: MultiSignatureRepository,
     private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
-  ) {}
+    private readonly lambdaService: LambdaService
+  ) { }
   private logger = this.loggerService.getLogger('SENDER_EVM_CONSOLE');
 
   async handleUnlockEVM(txId: number): Promise<{ error: Error | null; success: boolean }> {
@@ -57,7 +57,7 @@ export class SenderEVMBridge {
       assert(dataLock?.gasFee, 'invalid gasFee');
       assert(dataLock?.amountReceived, 'invalida amount to unlock');
       const { tokenReceivedAddress, txHashLock, receiveAddress, amountReceived, protocolFee } = dataLock;
-      const result = await this.ethBridgeContract.unlock(
+      const unsignedTx = await this.ethBridgeContract.unlock(
         tokenReceivedAddress,
         BigNumber(amountReceived).plus(protocolFee).toString(),
         txHashLock,
@@ -66,7 +66,11 @@ export class SenderEVMBridge {
         dataLock.validator.map(e => e.signature),
       );
 
-      assert(result.transactionHash, 'tx send failed id = ' + txId);
+      const signedTx = await this.lambdaService.invokeSignTxEth(unsignedTx)
+      assert(typeof signedTx === 'string', 'cannot get transaction payload')
+
+      const result = await this.ethBridgeContract.sendSignedTransaction(signedTx)
+      assert(typeof result?.transactionHash === 'string', 'send tx failed')
 
       await this.updateLogStatusWithRetry(dataLock, EEventStatus.PROCESSING);
 

@@ -9,6 +9,7 @@ import { EEnvKey } from '../../../constants/env.constant.js';
 import { ASYNC_CONNECTION } from '../../../constants/service.constant.js';
 import { sleep } from '../../utils/promise.js';
 import { ETHBridgeContract } from './web3.service.js';
+import { hexValue } from 'ethers/lib/utils.js';
 
 @Global()
 @Module({
@@ -32,32 +33,34 @@ import { ETHBridgeContract } from './web3.service.js';
   ],
   exports: [Web3Module, ETHBridgeContract],
 })
-export class Web3Module {}
+export class Web3Module { }
 
 export interface IRpcService {
   web3: Web3;
   resetApi: () => Promise<any>;
   maxTries: number;
-  privateKeys: string;
+  publicKey: string;
+  chainId: string;
   getNonce: (walletAddress: string) => Promise<number>;
 }
 
 export const RpcFactory = async (configService: ConfigService): Promise<IRpcService> => {
   let rpcRound = 0;
   const rpc = configService.get<string[]>(EEnvKey.ETH_BRIDGE_RPC_OPTIONS)!;
-  const privateKeys = configService.get<string>(EEnvKey.SIGNER_PRIVATE_KEY)!;
+  const publicKey = configService.get<string>(EEnvKey.ETH_SIGNER_PUBLIC_KEY)!;
 
   const getNextRPcRound = (): Web3 => {
     return new Web3(rpc[rpcRound++ % rpc.length]);
   };
-  let web3 = getNextRPcRound();
 
+  let web3 = getNextRPcRound();
   let isReseting = false;
   return {
     get web3() {
       return web3;
     },
-    privateKeys,
+    publicKey,
+    chainId: hexValue((await web3.eth.getChainId())),
     maxTries: rpc.length * 3,
     resetApi: async (): Promise<any> => {
       if (isReseting === true) {

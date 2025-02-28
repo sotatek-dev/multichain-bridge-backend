@@ -5,7 +5,6 @@
 - [General Information](#general-information)
 - [Prerequire](#prerequire)
 - [Installation](#installation)
-- [Diagram](#diagram)
 - [Support](#support)
 
 ## General Information
@@ -106,3 +105,5 @@ yarn seed:run --name {SeederName}
 
 ## Support
 If you have any issue with this repository, please feel free to contact our team 
+
+<!-- (22/2/2025) -->

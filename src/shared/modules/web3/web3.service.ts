@@ -74,16 +74,15 @@ export class DefaultContract {
   }
 
   public async estimateGas(method: string, param: Array<any>): Promise<number> {
-    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
     const data = this.contract.methods[method](...param).encodeABI();
     const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-    const nonce = await this.rpcService.getNonce(signer.address);
+    const nonce = await this.rpcService.getNonce(this.rpcService.publicKey);
 
     // gas estimation
     const rawTx = {
       nonce: nonce,
       gasPrice: toHex(toBN(gasPrice)),
-      from: signer.address,
+      from: this.rpcService.publicKey,
       to: this.contractAddress,
       data: data,
     };
@@ -92,71 +91,31 @@ export class DefaultContract {
     return gasLimit;
   }
 
-  public async write(method: string, param: Array<any>): Promise<TransactionReceipt> {
-    const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(this.rpcService.privateKeys);
+  public async getMethodData(method: string, param: Array<any>): Promise<object> {
 
     const data = this.contract.methods[method](...param).encodeABI();
     const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-    const nonce = await this.rpcService.getNonce(signer.address);
-
+    const nonce = await this.rpcService.getNonce(this.rpcService.publicKey);
+ 
     // gas estimation
     const rawTx = {
       nonce: nonce,
       gasPrice: toHex(toBN(gasPrice)),
-      from: signer.address,
+      from: this.rpcService.publicKey,
       to: this.contractAddress,
       data: data,
+      chainId: this.rpcService.chainId
     };
 
     const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
 
-    const signedTx = await signer.signTransaction({
+    return {
       ...rawTx,
       gasLimit: toHex(toBN(gasLimit).add(toBN(10000))),
-    } as any);
-
-    return this.rpcService.web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-  }
-  public async multiWrite(
-    writeData: any[],
-    specifySignerIndex?: number,
-  ): Promise<{ success: boolean; error: Error | null; data: TransactionReceipt[] | null }> {
-    try {
-      const signer = this.rpcService.web3.eth.accounts.privateKeyToAccount(
-        this.rpcService.privateKeys[specifySignerIndex ?? 0],
-      );
-
-      const response = [];
-      for (const element of writeData) {
-        // gas estimation
-        const nonce = await this.rpcService.getNonce(signer.address);
-        const { method, param } = element;
-        const data = this.contract.methods[method](...param).encodeABI();
-        const gasPrice = await this.rpcService.web3.eth.getGasPrice();
-        const rawTx = {
-          nonce: nonce,
-          gasPrice: toHex(toBN(gasPrice)),
-          from: signer.address,
-          to: this.contractAddress,
-          data: data,
-        };
-        const gasLimit = await this.rpcService.web3.eth.estimateGas(rawTx as any);
-
-        const signedTx = await signer.signTransaction({
-          ...rawTx,
-          gasLimit: toHex(toBN(gasLimit).add(toBN(10000))),
-        } as any);
-        response.push(await this.rpcService.web3.eth.sendSignedTransaction(signedTx.rawTransaction));
-      }
-
-      return {
-        success: true,
-        error: null,
-        data: response,
-      };
-    } catch (error: any) {
-      return { success: false, error, data: null };
     }
+  }
+  public async sendSignedTransaction(rlp: string): Promise<TransactionReceipt> {
+    return this.rpcService.web3.eth.sendSignedTransaction(rlp);
   }
 
   public async getBlockTimeByBlockNumber(blockNumber: number) {
@@ -193,9 +152,6 @@ export class ETHBridgeContract extends DefaultContract {
   public getValidatorThreshold() {
     return this.call('threshold', []);
   }
-  public mintNFT(toAddress: string) {
-    return this.write('mint', [toAddress]);
-  }
   public unlock(
     tokenReceivedAddress: string,
     amount: string,
@@ -213,7 +169,7 @@ export class ETHBridgeContract extends DefaultContract {
       fee,
       _signatures,
     );
-    return this.write('unlock', [tokenReceivedAddress, amount, receiveAddress, txHashLock, fee, _signatures]);
+    return this.getMethodData('unlock', [tokenReceivedAddress, amount, receiveAddress, txHashLock, fee, _signatures]);
   }
   public async getTokenURI(tokenId: number) {
     return this.call('tokenURI', [tokenId]);
