@@ -13,8 +13,9 @@ import { CrawlContractRepository } from '../../database/repositories/crawl-contr
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
-import { calculateUnlockFee } from '../../shared/utils/bignumber.js';
+import { calculateUnlockFee, removeSuffixDecimal } from '../../shared/utils/bignumber.js';
 import { CommonConfig } from './entities/common-config.entity.js';
+import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
 
 @Injectable()
 export class BlockchainEVMCrawler {
@@ -26,6 +27,7 @@ export class BlockchainEVMCrawler {
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly loggerService: LoggerService,
     private readonly ethBridgeContract: ETHBridgeContract,
+    private readonly redisClient: RedisClientService
   ) {
     this.numberOfBlockPerJob = +this.configService.get<number>(EEnvKey.NUMBER_OF_BLOCK_PER_JOB)!;
     this.logger = loggerService.getLogger('BLOCKCHAIN_EVM_CRAWLER');
@@ -126,7 +128,13 @@ export class BlockchainEVMCrawler {
       protocolFee: protocolFeeNoDecimalPlace,
     });
 
-    await eventLogRepo.save(eventUnlock);
+    const result = await eventLogRepo.save(eventUnlock);
+
+    try {
+      await this.redisClient.updateDailyQuota(result.senderAddress, result.tokenFromAddress, result.networkFrom, removeSuffixDecimal(result.amountFrom, result.fromTokenDecimal))
+    } catch (error) {
+      this.logger.error(error)
+    }
     return { success: true };
   }
 

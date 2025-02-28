@@ -14,11 +14,12 @@ import {
   GetTokensPriceResponseDto,
 } from './dto/user-response.dto.js';
 import { UsersService } from './users.service.js';
+import { ENetworkName } from '../../constants/blockchain.constant.js';
 
 @ApiTags('Users')
 @Controller(ETableName.USERS)
 export class UsersController {
-  constructor(private readonly userService: UsersService) {}
+  constructor(private readonly userService: UsersService) { }
 
   @Get('history/:address')
   @GuardPublic()
@@ -27,10 +28,10 @@ export class UsersController {
     return this.userService.getHistoriesOfUser(address, query);
   }
 
-  @Get('daily-quota/:address')
+  @Get('daily-quota/:address/:network/:token')
   @GuardPublic()
-  getDailyQuota(@Param('address') address: string) {
-    return this.userService.getDailyQuotaOfUser(address);
+  getDailyQuota(@Param('address') address: string, @Param('network') network: ENetworkName, @Param('token') token: string) {
+    return this.userService.getDailyQuotaOfUser(address, network, token);
   }
 
   @Get('list-supported-pairs')

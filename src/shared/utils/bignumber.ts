@@ -13,9 +13,9 @@ export const addDecimal = (value: string | number, decimal: number) => {
   if (!isNumber(value) && !isNumberString(value)) return '0';
   return BigNumber(value).multipliedBy(BigNumber(10).pow(decimal)).toFixed(0);
 };
-export const removeSuffixDecimal = (value: string | number, decimal: number) => {
+export const removeSuffixDecimal = (value: string | number, decimal: number, round = 10) => {
   if (!isNumber(value) && !isNumberString(value)) return '0';
-  return BigNumber(value).div(BigNumber(10).pow(decimal)).toFixed();
+  return BigNumber(value).div(BigNumber(10).pow(decimal)).toFixed(round);
 };
 export const calculateTip = (amount: string, gasFee: string | number, tipPercent: number): BigNumber => {
   return BigNumber(amount).minus(BigNumber(gasFee)).multipliedBy(tipPercent).dividedBy(100);

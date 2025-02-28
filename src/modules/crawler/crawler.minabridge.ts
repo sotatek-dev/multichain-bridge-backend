@@ -13,9 +13,10 @@ import { EEnvKey } from '../../constants/env.constant.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
-import { calculateUnlockFee } from '../../shared/utils/bignumber.js';
+import { addDecimal, calculateUnlockFee, removeSuffixDecimal } from '../../shared/utils/bignumber.js';
 import { CommonConfig } from './entities/common-config.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
+import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
 
 interface IMinaLockTokenEventData {
   id: UInt32;
@@ -45,6 +46,7 @@ export class SCBridgeMinaCrawler {
     private readonly dataSource: DataSource,
     private readonly crawlContractRepository: CrawlContractRepository,
     private readonly loggerService: LoggerService,
+    private readonly redisClient: RedisClientService
   ) {
     this.logger = this.loggerService.getLogger('SC_BRIDGE_MINA_CRAWLER');
     const Network = Mina.Network({
@@ -185,6 +187,11 @@ export class SCBridgeMinaCrawler {
 
     const result = await eventLogRepo.save(eventUnlock);
     this.logger.info(result);
+    try {
+      await this.redisClient.updateDailyQuota(result.senderAddress, result.tokenFromAddress, result.networkFrom, removeSuffixDecimal(result.amountFrom, result.fromTokenDecimal))
+    } catch (error) {
+      this.logger.error(error)
+    }
     return {
       success: true,
     };
