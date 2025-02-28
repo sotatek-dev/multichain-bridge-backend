@@ -116,7 +116,7 @@ export class BlockchainEVMCrawler {
       blockTimeLock: Number(blockTimeOfBlockNumber.timestamp),
       event: EEventName.LOCK,
       returnValues: JSON.stringify(event.returnValues),
-      status: success ? EEventStatus.WAITING : EEventStatus.PROCESSING,
+      status: success ? EEventStatus.WAITING : EEventStatus.FAILED,
       retry: 0,
       fromTokenDecimal,
       toTokenDecimal,
@@ -124,6 +124,7 @@ export class BlockchainEVMCrawler {
       tip: tipWithDecimalPlaces,
       amountReceived: amountReceiveNoDecimalPlace,
       protocolFee: protocolFeeNoDecimalPlace,
+      errorDetail: success ? '' : 'invalid amount'
     });
 
     await eventLogRepo.save(eventUnlock);

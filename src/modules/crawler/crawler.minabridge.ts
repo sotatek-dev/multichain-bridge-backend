@@ -173,7 +173,7 @@ export class SCBridgeMinaCrawler {
       blockTimeLock: Number(Math.floor(dayjs().valueOf() / 1000)),
       event: EEventName.LOCK,
       returnValues: JSON.stringify(event),
-      status: success ? EEventStatus.WAITING : EEventStatus.PROCESSING,
+      status: success ? EEventStatus.WAITING : EEventStatus.FAILED,
       retry: 0,
       fromTokenDecimal,
       toTokenDecimal,
@@ -181,6 +181,7 @@ export class SCBridgeMinaCrawler {
       tip: tipWithDecimalPlaces,
       amountReceived: amountReceiveNoDecimalPlace,
       protocolFee: protocolFeeNoDecimalPlace,
+      errorDetail: success ? '' : 'invalid amount'
     };
 
     const result = await eventLogRepo.save(eventUnlock);

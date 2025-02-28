@@ -30,7 +30,7 @@ export class JobUnlockProvider {
     private readonly commonConfigRepository: CommonConfigRepository,
     private tokenPriceCrawler: BatchJobGetPriceToken,
     private readonly redisClient: RedisClientService,
-  ) {}
+  ) { }
   private logger = this.loggerService.getLogger('JOB_UNLOCK_PROVIDER');
 
   public async handleJob() {
@@ -171,11 +171,6 @@ export class JobUnlockProvider {
 
   private async handleSendTxJobs(data: IJobUnlockPayload) {
     // check if there is enough threshhold -> then create an unlock job.
-    if (await this.isPassDailyQuota(data.senderAddress, data.network)) {
-      this.logger.warn('this tx exceed daily quota, skip until next day', data.eventLogId);
-      await this.eventLogRepository.update(data.eventLogId, { nextSendTxJobTime: getNextDayInUnix().toString() });
-      return;
-    }
     await this.queueService.addJobToQueue<IUnlockToken>(
       this.getSenderQueueName(data.network),
       {
@@ -187,22 +182,5 @@ export class JobUnlockProvider {
         removeOnFail: true,
       },
     );
-  }
-  private async isPassDailyQuota(address: string, networkReceived: ENetworkName): Promise<boolean> {
-    const fromDecimal = this.configService.get(
-      networkReceived === ENetworkName.MINA ? EEnvKey.DECIMAL_TOKEN_EVM : EEnvKey.DECIMAL_TOKEN_MINA,
-    );
-    const [dailyQuota, todayData] = await Promise.all([
-      await this.commonConfigRepository.getCommonConfig(),
-      await this.eventLogRepository.sumAmountBridgeOfUserInDay(address),
-    ]);
-    assert(!!dailyQuota, 'daily quota undefined');
-    if (
-      todayData?.totalamount &&
-      BigNumber(todayData.totalamount).isGreaterThan(addDecimal(dailyQuota.dailyQuota, fromDecimal))
-    ) {
-      return true;
-    }
-    return false;
   }
 }

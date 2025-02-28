@@ -17,6 +17,10 @@ import { canTxRetry } from '../../shared/utils/unlock.js';
 import { EventLog } from './entities/event-logs.entity.js';
 import { MultiSignature } from './entities/multi-signature.entity.js';
 import { LambdaService } from '../../shared/modules/aws/lambda.service.js';
+import { getNextDayInUnix } from '../../shared/utils/time.js';
+import { CommonConfigRepository } from '../../database/repositories/common-configuration.repository.js';
+import { addDecimal } from '../../shared/utils/bignumber.js';
+import { IsNull, Not } from 'typeorm';
 
 @Injectable()
 export class SenderEVMBridge {
@@ -27,7 +31,8 @@ export class SenderEVMBridge {
     private readonly ethBridgeContract: ETHBridgeContract,
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
-    private readonly lambdaService: LambdaService
+    private readonly lambdaService: LambdaService,
+    private readonly commonConfig: CommonConfigRepository
   ) { }
   private logger = this.loggerService.getLogger('SENDER_EVM_CONSOLE');
 
@@ -57,7 +62,7 @@ export class SenderEVMBridge {
       assert(dataLock?.gasFee, 'invalid gasFee');
       assert(dataLock?.amountReceived, 'invalida amount to unlock');
       const { tokenReceivedAddress, txHashLock, receiveAddress, amountReceived, protocolFee } = dataLock;
-      const unsignedTx = await this.ethBridgeContract.unlock(
+      const rawTxObj = await this.ethBridgeContract.unlock(
         tokenReceivedAddress,
         BigNumber(amountReceived).plus(protocolFee).toString(),
         txHashLock,
@@ -66,7 +71,19 @@ export class SenderEVMBridge {
         dataLock.validator.map(e => e.signature),
       );
 
-      const signedTx = await this.lambdaService.invokeSignTxEth(unsignedTx)
+      const commonConfig = await this.commonConfig.findOneBy({ id: Not(IsNull()) })
+      assert(typeof commonConfig === 'object' && commonConfig?.dailyQuotaPerAddress && commonConfig.dailyQuotaSystem, 'invalid daily quota')
+
+      const { success, message, isPassedDailyQuota, signedTx } = await this.lambdaService.invokeSignTxEth({ rawTxObj, amount: dataLock.amountFrom, address: dataLock.senderAddress, dailyQuotaSystem: addDecimal(commonConfig.dailyQuotaSystem, dataLock.fromTokenDecimal), dailyQuotaPerUser: addDecimal(commonConfig.dailyQuotaPerAddress, dataLock.fromTokenDecimal), })
+
+      if (isPassedDailyQuota) {
+        // break and udpate
+        this.eventLogRepository.update(txId, { nextSendTxJobTime: getNextDayInUnix().toString() })
+        throw new Error(`tx ${txId} passed the daily quota`)
+      }
+      if (!success) {
+        throw new Error(`tx ${txId} cannot get signature from lambda ${message}`)
+      }
       assert(typeof signedTx === 'string', 'cannot get transaction payload')
 
       const result = await this.ethBridgeContract.sendSignedTransaction(signedTx)

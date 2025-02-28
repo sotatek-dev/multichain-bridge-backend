@@ -12,7 +12,13 @@ export class UpdateCommonConfigBodyDto {
     example: 500,
     required: false,
   })
-  dailyQuota: number;
+  dailyQuotaPerAddress: number;
+
+  @NumberField({
+    example: 500,
+    required: false,
+  })
+  dailyQuotaSystem: number;
 
   @StringField({
     example: 500,
