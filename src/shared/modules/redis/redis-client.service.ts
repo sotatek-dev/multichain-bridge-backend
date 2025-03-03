@@ -8,7 +8,7 @@ import { getNextDayInUnix, nowUnix } from '../../../shared/utils/time.js';
 
 @Injectable()
 export class RedisClientService implements OnModuleInit, OnModuleDestroy {
-  private client: RedisClientType;
+  public client: RedisClientType;
   constructor(private readonly configService: ConfigService) {
     this.client = createClient({
       url: `redis://${configService.get(EEnvKey.REDIS_HOST)}:${configService.get(EEnvKey.REDIS_PORT)}`,
@@ -64,8 +64,8 @@ export class RedisClientService implements OnModuleInit, OnModuleDestroy {
   public updateDailyQuota(address: string, token: string, network: ENetworkName, amountWithDecimal: string) {
     const ttl = getNextDayInUnix() - nowUnix();
     return this.client.eval(`
-      local user_quota='user_quota_${network}_${token}'
-      local system_quota='system_quota_${network}_${token}_${address}'
+      local user_quota='user_quota_${network}_${token}_${address}'
+      local system_quota='system_quota_${network}_${token}'
 
       local current_user_quota = tonumber(redis.call('GET', user_quota) or 0)
       local current_system_quota = tonumber(redis.call('GET', system_quota) or 0)
@@ -83,8 +83,9 @@ export class RedisClientService implements OnModuleInit, OnModuleDestroy {
   }
   public getDailyQuota(address: string, token: string, network: ENetworkName) {
 
-    const userQuota = `user_quota_${network}_${token}`
-    const systemQuota = `system_quota_${network}_${token}_${address}`
+    const userQuota = `user_quota_${network}_${token}_${address}`
+    const systemQuota = `system_quota_${network}_${token}`
+    console.log(userQuota, systemQuota);
 
     return Promise.all([this.client.get(userQuota), this.client.get(systemQuota)])
   }
