@@ -85,7 +85,6 @@ export class RedisClientService implements OnModuleInit, OnModuleDestroy {
 
     const userQuota = `user_quota_${network}_${token}_${address}`
     const systemQuota = `system_quota_${network}_${token}`
-    console.log(userQuota, systemQuota);
 
     return Promise.all([this.client.get(userQuota), this.client.get(systemQuota)])
   }
