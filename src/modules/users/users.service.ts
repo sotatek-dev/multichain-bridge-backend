@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
 import { BigNumber } from 'bignumber.js';
-
+import { toChecksumAddress } from 'web3-utils';
 import { EAsset } from '../../constants/api.constant.js';
 import { DECIMAL_BASE, ENetworkName } from '../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../constants/env.constant.js';
@@ -21,7 +21,6 @@ import { UpdateCommonConfigBodyDto } from './dto/common-config-request.dto.js';
 import { GetHistoryDto, GetHistoryOfUserDto } from './dto/history-response.dto.js';
 import { GetProtocolFeeBodyDto } from './dto/user-request.dto.js';
 import { GetProofOfAssetsResponseDto, GetTokensPriceResponseDto } from './dto/user-response.dto.js';
-
 @Injectable()
 export class UsersService {
   constructor(
@@ -67,7 +66,7 @@ export class UsersService {
   async getDailyQuotaOfUser(address: string, network: ENetworkName, token: string) {
     const [config, quota] = await Promise.all([
       this.commonConfigRepository.getCommonConfig(),
-      this.redisClientService.getDailyQuota(address, token, network),
+      this.redisClientService.getDailyQuota(network === ENetworkName.ETH ? toChecksumAddress(address) : address, token, network),
     ]);
 
     assert(config, 'invalid config')
