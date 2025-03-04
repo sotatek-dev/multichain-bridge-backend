@@ -4,7 +4,7 @@ import { createClient, RedisClientType } from 'redis';
 
 import { ENetworkName } from '../../../constants/blockchain.constant.js';
 import { EEnvKey } from '../../../constants/env.constant.js';
-import { getNextDayInUnix, nowUnix } from '../../../shared/utils/time.js';
+import { getSecondsUntilMidNight } from '../../../shared/utils/time.js';
 
 @Injectable()
 export class RedisClientService implements OnModuleInit, OnModuleDestroy {
@@ -62,7 +62,7 @@ export class RedisClientService implements OnModuleInit, OnModuleDestroy {
   }
   // daily quota
   public updateDailyQuota(address: string, token: string, network: ENetworkName, amountWithDecimal: string) {
-    const ttl = getNextDayInUnix() - nowUnix();
+    const ttl: number = getSecondsUntilMidNight();
     return this.client.eval(`
       local user_quota='user_quota_${network}_${token}_${address}'
       local system_quota='system_quota_${network}_${token}'
