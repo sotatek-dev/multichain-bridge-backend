@@ -1,3 +1,4 @@
+import { NetworkId } from 'o1js';
 import { EEnvironments, EEnvKey } from '../../constants/env.constant.js';
 
 export const toLower = (value: string) => value.toLowerCase();
@@ -12,3 +13,7 @@ export function isEmail(mail: string) {
 export const nullToZero = (value: string | number) => (value ? value.toString() : '0');
 export const isDevelopmentEnvironment = () =>
   [EEnvironments.LOCAL, EEnvironments.DEV, EEnvironments.TEST].includes(process.env[EEnvKey.NODE_ENV] as EEnvironments);
+
+export const getMinaNetworkId = (): NetworkId & ('mainnet' | 'testnet') => {
+  return process.env[EEnvKey.NODE_ENV] === EEnvironments.PRODUCTION ? 'mainnet' : 'testnet'
+}

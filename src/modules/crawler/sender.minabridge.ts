@@ -21,6 +21,7 @@ import { CommonConfigRepository } from '../../database/repositories/common-confi
 import { EventLog } from './entities/event-logs.entity.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
 import { IsNull, Not } from 'typeorm';
+import { getMinaNetworkId } from '../../shared/utils/util.js';
 
 @Injectable()
 export class SenderMinaBridge implements OnModuleInit {
@@ -46,6 +47,7 @@ export class SenderMinaBridge implements OnModuleInit {
     const network = Mina.Network({
       mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
       archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
+      networkId: getMinaNetworkId()
     });
     Mina.setActiveInstance(network);
   }
