@@ -15,6 +15,7 @@ import { LoggerService } from '../../shared/modules/logger/logger.service.js';
 import { ETHBridgeContract } from '../../shared/modules/web3/web3.service.js';
 import { LoginDto, LoginMinaDto } from './dto/auth-request.dto.js';
 import { IJwtPayload } from './interfaces/auth.interface.js';
+import { getMinaNetworkId } from '../../shared/utils/util.js';
 
 const { toChecksumAddress } = pkg;
 @Injectable()
@@ -87,10 +88,7 @@ export class AuthService {
   }
 
   private async validateSignatureMina(address: string, signature: any) {
-    let client = new Client({ network: EMinaChainEnviroment.MAINNET });
-    if (process.env.NODE_ENV !== EEnvironments.PRODUCTION) {
-      client = new Client({ network: EMinaChainEnviroment.TESTNET });
-    }
+    let client = new Client({ network: getMinaNetworkId() });
 
     const signer = {
       signature,

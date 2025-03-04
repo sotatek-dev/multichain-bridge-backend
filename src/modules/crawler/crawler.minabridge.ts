@@ -17,6 +17,7 @@ import { calculateUnlockFee, removeSuffixDecimal } from '../../shared/utils/bign
 import { CommonConfig } from './entities/common-config.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
 import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
+import { getMinaNetworkId } from '../../shared/utils/util.js';
 
 interface IMinaLockTokenEventData {
   id: UInt32;
@@ -52,6 +53,7 @@ export class SCBridgeMinaCrawler {
     const Network = Mina.Network({
       mina: this.configService.get(EEnvKey.MINA_BRIDGE_RPC_OPTIONS),
       archive: this.configService.get(EEnvKey.MINA_BRIDGE_ARCHIVE_RPC_OPTIONS),
+      networkId: getMinaNetworkId()
     });
     Mina.setActiveInstance(Network);
   }
