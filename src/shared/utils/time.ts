@@ -24,3 +24,7 @@ export const startOfDayUnix = (date: Date) => Math.floor(dayjs(date).startOf('da
 export const endOfDayUnix = (date: Date) => Math.floor(dayjs(date).endOf('day').valueOf() / 1000);
 export const getTimeInFutureInMinutes = (minutes: number) => dayjs(new Date()).add(minutes, 'minutes').unix();
 export const getNextDayInUnix = () => dayjs().add(1, 'days').subtract(dayjs().hour()).unix();
+export const getSecondsUntilMidNight = () => {
+    const now = dayjs()
+    return now.add(1, 'days').startOf('days').unix() - now.unix()
+}
