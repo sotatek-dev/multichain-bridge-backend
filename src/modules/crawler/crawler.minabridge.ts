@@ -13,7 +13,7 @@ import { EEnvKey } from '../../constants/env.constant.js';
 import { CrawlContractRepository } from '../../database/repositories/crawl-contract.repository.js';
 import { CrawlContract, EventLog } from '../../modules/crawler/entities/index.js';
 import { LoggerService } from '../../shared/modules/logger/logger.service.js';
-import { addDecimal, calculateUnlockFee, removeSuffixDecimal } from '../../shared/utils/bignumber.js';
+import { calculateUnlockFee, removeSuffixDecimal } from '../../shared/utils/bignumber.js';
 import { CommonConfig } from './entities/common-config.entity.js';
 import { Bridge } from './minaSc/Bridge.js';
 import { RedisClientService } from '../../shared/modules/redis/redis-client.service.js';
