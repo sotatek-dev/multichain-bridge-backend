@@ -246,8 +246,7 @@ export class SenderMinaBridge implements OnModuleInit {
       throw new Error(`tx ${txData.id} passed the daily quota`)
     }
     if (!success) {
-      console.log(isPassedDailyQuota, message, signedTx);
-
+      this.logger.error(isPassedDailyQuota, message, signedTx);
       throw new Error(`tx ${txData.id} cannot get signature from lambda ${message}`)
     }
     const restoredSignedTX = Mina.Transaction.fromJSON(signedTx) // sign with lambda
