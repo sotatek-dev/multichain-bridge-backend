@@ -25,8 +25,6 @@ export class LambdaService {
         });
 
         const response = await this.client.send(command);
-        console.log('lambda response', new TextDecoder().decode(response.Payload));
-
         const { success = false, signedTx = null, message = '', isPassedDailyQuota = false } = JSON.parse(new TextDecoder().decode(response.Payload))
         return { signedTx, isPassedDailyQuota, message, success }
     }
@@ -38,8 +36,6 @@ export class LambdaService {
         });
 
         const response = await this.client.send(command);
-        console.log(JSON.parse(new TextDecoder().decode(response.Payload)));
-
         const { success = false, signedTx = null, message = '', isPassedDailyQuota = false } = JSON.parse(new TextDecoder().decode(response.Payload))
         return { signedTx, isPassedDailyQuota, message, success }
 
