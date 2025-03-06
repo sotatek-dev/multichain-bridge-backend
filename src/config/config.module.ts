@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { isNumber } from 'class-validator';
 import Joi from 'joi';
 
-import { MINA_CRAWL_SAFE_BLOCK } from '../constants/entity.constant.js';
+import { EVM_CRAWL_SAFE_BLOCK, MINA_CRAWL_SAFE_BLOCK } from '../constants/entity.constant.js';
 import { EEnvironments, EEnvKey } from '../constants/env.constant.js';
 import redisConfig from './redis.config.js';
 
@@ -65,7 +65,7 @@ const getEnvFile = () => {
         [EEnvKey.ETH_BRIDGE_DOMAIN_NAME]: Joi.string().required(),
         [EEnvKey.ETH_BRIDGE_DOMAIN_VERSION]: Joi.string().required(),
         [EEnvKey.MINA_CRAWL_SAFE_BLOCK]: Joi.number().default(MINA_CRAWL_SAFE_BLOCK),
-        [EEnvKey.EVM_SAFE_BLOCK]: Joi.number().default(10),
+        [EEnvKey.EVM_SAFE_BLOCK]: Joi.number().default(EVM_CRAWL_SAFE_BLOCK),
         // mina validator
         [EEnvKey.MINA_VALIDATOR_THRESHHOLD]: Joi.number().required(),
         // fee
