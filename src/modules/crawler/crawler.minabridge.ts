@@ -66,9 +66,8 @@ export class SCBridgeMinaCrawler {
     const zkappAddress = PublicKey.fromBase58(this.configService.get(EEnvKey.MINA_BRIDGE_CONTRACT_ADDRESS)!);
     const zkapp = new Bridge(zkappAddress);
 
-    const events = await zkapp.fetchEvents(startBlockNumber.add(1), toBlock);
-    this.logger.info({ events });
-
+    const events = (await zkapp.fetchEvents(startBlockNumber)).filter(e => e.blockHeight.lessThan(toBlock).toBoolean());
+    this.logger.info(events.map(e => ({ ...e, blockHeight: e.blockHeight.toBigint() })));
     try {
       await this.dataSource.transaction(async entityManager => {
         this.logger.info(`[handleCrawlMinaBridge] Crawling from  ${startBlockNumber} to ${toBlock}`);
@@ -86,8 +85,8 @@ export class SCBridgeMinaCrawler {
               continue;
           }
         }
-        // udpate current latest block
-        await this.updateLatestBlockCrawl(Number(toBlock.toString()), entityManager);
+        // udpate current latest block`
+        await this.updateLatestBlockCrawl(Number(toBlock.toBigint()), entityManager);
       });
     } catch (error) {
       this.logger.error(error);
@@ -241,6 +240,6 @@ export class SCBridgeMinaCrawler {
         .toString(),
     );
 
-    return { startBlockNumber: UInt32.from(startBlockNumber), toBlock };
+    return { startBlockNumber: UInt32.from(startBlockNumber), toBlock: new UInt32(Math.min(startBlockNumber + 10000, Number(toBlock.toBigint()))) };
   }
 }

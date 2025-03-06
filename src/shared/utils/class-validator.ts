@@ -12,6 +12,5 @@ export const validateAndTransform = async <T>(
     // 'These error logs is created on purpose.'
     console.warn(errors);
   }
-  console.log(transformed);
   return { transformed, errors };
 };

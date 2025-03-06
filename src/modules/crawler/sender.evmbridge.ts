@@ -82,6 +82,7 @@ export class SenderEVMBridge {
         throw new Error(`tx ${txId} passed the daily quota`)
       }
       if (!success) {
+        this.logger.error(success, isPassedDailyQuota, message)
         throw new Error(`tx ${txId} cannot get signature from lambda ${message}`)
       }
       assert(typeof signedTx === 'string', 'cannot get transaction payload')
