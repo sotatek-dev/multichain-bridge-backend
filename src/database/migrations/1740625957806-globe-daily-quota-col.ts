@@ -7,7 +7,7 @@ export class GlobeDailyQuotaCol1740625957806 implements MigrationInterface {
             name: 'daily_quota_system',
             type: 'decimal',
             precision: 78,
-            scale: 1,
+            scale: 5,
             default: 0,
             isNullable: false
         }))
