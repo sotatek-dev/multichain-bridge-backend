@@ -40,9 +40,8 @@ export class AdminController {
   }
 
   @Post('sign-mina-config')
-  // @AuthAdminGuard()
-  @GuardPublic()
-  // @UseGuards(AuthGuard('jwt'))
+  @AuthAdminGuard()
+  @UseGuards(AuthGuard('jwt'))
   signSetMinMax(@Body() dto: SignSetMinMaxDto) {
     return this.zkSigner.signSetMinMax(dto);
   }
