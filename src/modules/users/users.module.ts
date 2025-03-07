@@ -9,6 +9,7 @@ import { UserRepository } from '../../database/repositories/user.repository.js';
 import { AdminController } from './admin.controller.js';
 import { UsersController } from './users.controller.js';
 import { UsersService } from './users.service.js';
+import { ZkSigner } from './signing.service.js';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { UsersService } from './users.service.js';
     ]),
   ],
   controllers: [UsersController, AdminController],
-  providers: [UsersService],
+  providers: [UsersService, ZkSigner],
   exports: [UsersService],
 })
-export class UsersModule {}
+export class UsersModule { }
