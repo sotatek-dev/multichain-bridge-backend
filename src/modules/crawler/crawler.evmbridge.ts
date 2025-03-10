@@ -131,6 +131,14 @@ export class BlockchainEVMCrawler {
 
     const result = await eventLogRepo.save(eventUnlock);
 
+    // update token minted counter: new minted amount = amount received in Mina end
+    const newTotalEthMinted = new BigNumber(config.totalWethMinted).plus(result.amountReceived).toString();
+
+    this.logger.info(`Current total minted ${config.totalWethMinted}`);
+    this.logger.info(`New total minted ${newTotalEthMinted}`);
+
+    await configRepo.update(config.id, { totalWethMinted: newTotalEthMinted });
+    // update redis daily quota and system quota
     try {
       await this.redisClient.updateDailyQuota(result.senderAddress, result.tokenFromAddress, result.networkFrom, removeSuffixDecimal(result.amountFrom, result.fromTokenDecimal))
     } catch (error) {
@@ -159,15 +167,6 @@ export class BlockchainEVMCrawler {
       tokenReceivedAddress: event.returnValues.token,
       tokenReceivedName: EAsset.ETH,
     });
-    // update total weth burned.
-    const currentConfig = await configRepo.findOneBy({});
-    assert(currentConfig, 'comomn config not exist');
-    const newTotalEthBurnt = new BigNumber(currentConfig.totalWethBurnt).plus(existLockTx.amountFrom).toString();
-
-    this.logger.info(`Current total burnt ${currentConfig.totalWethBurnt}`);
-    this.logger.info(`New total burnt ${newTotalEthBurnt}`);
-
-    await configRepo.update(currentConfig.id, { totalWethBurnt: newTotalEthBurnt });
     return {
       success: true,
     };

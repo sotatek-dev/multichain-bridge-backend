@@ -115,15 +115,6 @@ export class SCBridgeMinaCrawler {
       tokenReceivedName: EAsset.WETH,
     });
 
-    // update total weth minted
-    const currentConfig = await configRepo.findOneBy({});
-    assert(currentConfig, 'comomn config not exist');
-    const newTotalEthMinted = new BigNumber(currentConfig.totalWethMinted).plus(existLockTx.amountReceived).toString();
-
-    this.logger.info(`Current total minted ${currentConfig.totalWethMinted}`);
-    this.logger.info(`New total minted ${newTotalEthMinted}`);
-
-    await configRepo.update(currentConfig.id, { totalWethMinted: newTotalEthMinted });
     return {
       success: true,
     };
@@ -189,6 +180,14 @@ export class SCBridgeMinaCrawler {
 
     const result = await eventLogRepo.save(eventUnlock);
     this.logger.info(result);
+
+    // udpate token burnt counter: new burnt count += amount_from
+    const newTotalEthBurnt = new BigNumber(config.totalWethBurnt).plus(result.amountFrom).toString();
+
+    this.logger.info(`Current total burnt ${config.totalWethBurnt}`);
+    this.logger.info(`New total burnt ${newTotalEthBurnt}`);
+
+    await configRepo.update(config.id, { totalWethBurnt: newTotalEthBurnt });
     try {
       await this.redisClient.updateDailyQuota(result.senderAddress, result.tokenFromAddress, result.networkFrom, removeSuffixDecimal(result.amountFrom, result.fromTokenDecimal))
     } catch (error) {
