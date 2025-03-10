@@ -139,7 +139,7 @@ export class UsersService {
       totalWethInCirculation,
     };
   }
-  calcWaitingTime(receivedNetwork: ENetworkName, currentPendingTx: number): number {
+  calcWaitingTime(receivedNetwork: ENetworkName, currentPendingTx: number) {
     const waitCrawlMinaTime = Number(this.configService.get(EEnvKey.MINA_CRAWL_SAFE_BLOCK)) * 3 * 60; // ~ 3 min per block
     const waitCrawlEthTime = Number(this.configService.get(EEnvKey.EVM_SAFE_BLOCK)) * 10 // 10 secs a block
 
@@ -148,12 +148,12 @@ export class UsersService {
       [ENetworkName.ETH]: 10 * (1 + currentPendingTx),
     };
     // total waiting tx * time_process_each + crawler delays from both lock and unlock
-    return enqueuedAndProcessTime[receivedNetwork] + waitCrawlEthTime + waitCrawlMinaTime;
+    return { waitCrawlEthTime, waitCrawlMinaTime, completeTimeEstimated: enqueuedAndProcessTime[receivedNetwork] + waitCrawlEthTime + waitCrawlMinaTime };
   }
   async estimateBridgeTime(receivedNetwork: ENetworkName) {
     const result = {
       receivedNetwork,
-      completeTimeEstimated: this.calcWaitingTime(
+      ...this.calcWaitingTime(
         receivedNetwork,
         await this.redisClientService.getCountWaitingTx(receivedNetwork),
       ),
