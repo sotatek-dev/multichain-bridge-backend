@@ -237,7 +237,6 @@ export class SenderMinaBridge implements OnModuleInit {
 
     // sign with lambda
     const jsonTx = tx.toJSON()
-
     const { success, message, isPassedDailyQuota, signedTx } = await this.lambdaService.invokeSignTxMina({ jsonTx, dailyQuotaPerUser: addDecimal(commonConfig?.dailyQuotaPerAddress.toString(), txData.fromTokenDecimal), dailyQuotaSystem: addDecimal(commonConfig.dailyQuotaSystem.toString(), txData.fromTokenDecimal), address: txData.senderAddress, amount: txData.amountFrom })
 
     if (isPassedDailyQuota) {
