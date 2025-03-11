@@ -26,7 +26,7 @@ export class CrawlerConsole {
     private readonly queueService: QueueService,
     private readonly unlockProviderService: JobUnlockProvider,
     private readonly poaSyncer: POASync,
-  ) {}
+  ) { }
   private readonly logger = this.loggerService.getLogger('CRAWLER_CONSOLE');
 
   @Command({
@@ -34,9 +34,12 @@ export class CrawlerConsole {
     description: 'Crawl ETH Bridge contract',
   })
   async handleCrawlETHBridge() {
-    const safeBlock = +this.configService.get(EEnvKey.ETH_TOKEN_BRIDGE_ADDRESS);
+    const safeBlock = +this.configService.get(EEnvKey.EVM_SAFE_BLOCK);
+    this.logger.info("crawl with safe block ", safeBlock)
+
     while (true) {
       try {
+
         await this.blockchainEVMCrawler.handleEventCrawlBlock(safeBlock);
       } catch (error) {
         this.logger.error(error);
