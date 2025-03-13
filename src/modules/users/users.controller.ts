@@ -15,11 +15,13 @@ import {
 } from './dto/user-response.dto.js';
 import { UsersService } from './users.service.js';
 import { ENetworkName } from '../../constants/blockchain.constant.js';
+import { ZkSigner } from './signing.service.js';
+import { SignUnlockTxDto } from './dto/sign-admin.dto.js';
 
 @ApiTags('Users')
 @Controller(ETableName.USERS)
 export class UsersController {
-  constructor(private readonly userService: UsersService) { }
+  constructor(private readonly userService: UsersService, private readonly zkSigner: ZkSigner) { }
 
   @Get('history/:address')
   @GuardPublic()
@@ -69,5 +71,12 @@ export class UsersController {
   })
   estimateBridgeTime(@Query() dto: EstimateBridgeRequestDto) {
     return this.userService.estimateBridgeTime(dto.receivedNetwork);
+  }
+
+  @Post('estimate')
+  @GuardPublic()
+  getUnlockProvedTx(@Query() dto: SignUnlockTxDto) {
+    return true
+    return this.zkSigner.signUnlockTx(dto);
   }
 }

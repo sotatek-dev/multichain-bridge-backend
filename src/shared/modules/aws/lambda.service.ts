@@ -2,7 +2,6 @@ import { InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import assert from "assert";
-import { isDevelopmentEnvironment } from "../../../shared/utils/util.js";
 import { EEnvKey } from "../../../constants/env.constant.js";
 
 
@@ -39,5 +38,30 @@ export class LambdaService {
         const { success = false, signedTx = null, message = '', isPassedDailyQuota = false } = JSON.parse(new TextDecoder().decode(response.Payload))
         return { signedTx, isPassedDailyQuota, message, success }
 
+    }
+
+    // prove
+    async invokeProveAdminSetConfig({ address, min, max }: { address: `B62${string}`, min: string, max: string }) {
+        const command = new InvokeCommand({
+            FunctionName: "prod-mina-bridge-sign-admin-set-config",
+            Payload: JSON.stringify({ address, min: min.toString(), max: max.toString() }),
+        });
+
+        const response = await this.client.send(command);
+        console.log(JSON.parse(new TextDecoder().decode(response.Payload)));
+
+        const { success = false, data = null, message = '', } = JSON.parse(new TextDecoder().decode(response.Payload))
+        return { success, data, message, }
+    }
+
+    async invokeProveUserLock({ tokenAddress, amount, address }: { address: `B62${string}`, amount: string, tokenAddress: `B62${string}` }) {
+        const command = new InvokeCommand({
+            FunctionName: "prod-mina-bridge-sign-user-lock-tx",
+            Payload: JSON.stringify({ address, tokenAddress, amount: amount, }),
+        });
+
+        const response = await this.client.send(command);
+        const { success = false, data = null, message = '', } = JSON.parse(new TextDecoder().decode(response.Payload))
+        return { success, data, message, }
     }
 }

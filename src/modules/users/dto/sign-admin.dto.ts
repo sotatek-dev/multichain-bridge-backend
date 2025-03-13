@@ -9,5 +9,16 @@ export class SignSetMinMaxDto {
     max: string;
 
     @StringField()
-    address: string
+    address: `B62${string}`
+}
+
+export class SignUnlockTxDto {
+    @StringField({ number: true })
+    amount: string;
+
+    @StringField({})
+    tokenAddress: `B62${string}`;
+
+    @StringField()
+    address: `B62${string}`
 }
