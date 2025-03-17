@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import assert from 'assert';
-import { FungibleToken, FungibleTokenAdmin } from 'mina-fungible-token';
 import { AccountUpdate, Bool, fetchAccount, Mina, PrivateKey, PublicKey, Signature, UInt64 } from 'o1js';
 
 import { EEventStatus, ENetworkName } from '../../constants/blockchain.constant.js';
@@ -22,6 +21,8 @@ import { EventLog } from './entities/event-logs.entity.js';
 import { addDecimal } from '../../shared/utils/bignumber.js';
 import { IsNull, Not } from 'typeorm';
 import { getMinaNetworkId } from '../../shared/utils/util.js';
+import { FungibleToken } from './minaSc/FungibleToken.js';
+import { FungibleTokenAdmin } from './minaSc/FungibleTokenAdmin.js';
 
 @Injectable()
 export class SenderMinaBridge implements OnModuleInit {

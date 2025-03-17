@@ -8,7 +8,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
   if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { PublicKey, SmartContract, State, UInt64, method, state, Struct, Bool, Provable, Field, Signature } from 'o1js';
-import { FungibleToken } from "mina-fungible-token";
+import { FungibleToken } from "./FungibleToken.js";
 import { ValidatorManager } from './ValidatorManager.js';
 import { Manager } from './Manager.js';
 class UnlockEvent extends Struct({
