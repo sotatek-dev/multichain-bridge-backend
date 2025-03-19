@@ -10,6 +10,8 @@ import { AdminController } from './admin.controller.js';
 import { UsersController } from './users.controller.js';
 import { UsersService } from './users.service.js';
 import { ZkSigner } from './signing.service.js';
+import { ProofController } from './proof.controller.js';
+import { ZkProofer } from './proof.service.js';
 
 @Module({
   imports: [
@@ -21,8 +23,8 @@ import { ZkSigner } from './signing.service.js';
       TokenPairRepository,
     ]),
   ],
-  controllers: [UsersController, AdminController],
-  providers: [UsersService, ZkSigner],
+  controllers: [UsersController, AdminController, ProofController],
+  providers: [UsersService, ZkSigner, ZkProofer],
   exports: [UsersService],
 })
 export class UsersModule { }

@@ -1,5 +1,4 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
-import { RouteInfo } from '@nestjs/common/interfaces';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConsoleModule } from 'nestjs-console';
 
@@ -17,6 +16,8 @@ import { RedisModule } from './shared/modules/redis/redis.module.js';
 import { Web3Module } from './shared/modules/web3/web3.module.js';
 import { isDevelopmentEnvironment } from './shared/utils/util.js';
 import { AwsModule } from './shared/modules/aws/aws.module.js';
+import { ZkWorkderModule } from './shared/modules/zkworker/zkworker.module.js';
+import { RouteInfo } from '@nestjs/common/interfaces/index.js';
 
 const modules = [
   ConfigurationModule,
@@ -29,6 +30,7 @@ const modules = [
   AwsModule,
   QueueModule,
   ConsoleModule,
+  ZkWorkderModule,
   ...MODULES,
 ];
 @Module({

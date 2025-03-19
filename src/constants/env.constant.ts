@@ -51,7 +51,10 @@ export enum EEnvKey {
   EVM_SAFE_BLOCK = 'SAFE_BLOCK',
   JOB_PROVIDER_BACKOFF_IN_MINUTES = 'JOB_PROVIDER_BACKOFF_IN_MINUTES',
   // lambda
-  LAMBDA_REGION = 'LAMBDA_REGION'
+  LAMBDA_REGION = 'LAMBDA_REGION',
+  // zk worker
+  ZK_WORKER_JWT = 'ZK_WORKER_JWT'
+
 }
 
 export enum EEnvironments {

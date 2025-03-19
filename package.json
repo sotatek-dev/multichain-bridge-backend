@@ -59,7 +59,7 @@
     "mina-signer": "2.1.2",
     "nestjs-console": "^9.0.0",
     "nestjs-typeorm-custom-repository": "^1.1.1",
-    "o1js": "2.1.0",
+    "o1js": "2.2.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.11.3",
@@ -68,7 +68,8 @@
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.17",
     "typeorm-extension": "^3.2.0",
-    "web3": "1.7.4"
+    "web3": "1.7.4",
+    "zkcloudworker": "^0.25.11"
   },
   "devDependencies": {
     "@automock/adapters.nestjs": "^2.1.0",
